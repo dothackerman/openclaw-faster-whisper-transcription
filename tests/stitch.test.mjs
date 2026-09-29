@@ -7,7 +7,7 @@ test("uncertainty retains missing negation and phantom alternatives through late
   s.add([w("prefix", 1), w("not", 6), w("approved", 7)], 0, 8);
   const fresh = [w("approved", 1), w("tail", 3)];
   assert.throws(() => s.add(fresh, 6, 10), /align/);
-  s.markUncertain(fresh, 6, 10);
+  s.markUncertain(fresh, 6, 10, 10);
   s.add([w("tail", 1), w("finish", 3)], 8, 12);
   assert.equal(
     s.text(),
@@ -19,7 +19,10 @@ test("uncertainty alternatives remain inside the final transcript bound", () => 
   const s = new Stitcher();
   s.add([w("x".repeat(159980), 0), w("old", 7)], 0, 8);
   const before = s.text();
-  assert.throws(() => s.markUncertain([w("new", 1)], 6, 10), /safety limit/);
+  assert.throws(
+    () => s.markUncertain([w("new", 1)], 6, 10, 10),
+    /safety limit/,
+  );
   assert.equal(s.text(), before);
   assert.equal(s.uncertainties, 0);
 });
@@ -115,7 +118,7 @@ test("exact old-only negation repro must be marked, never silently deleted", () 
   assert.throws(() => s.add(fresh, 4, 10), /competing overlap words/);
   assert.equal(s.text(), "Do not send");
   assert.equal(s.anchors, 0);
-  s.markUncertain(fresh, 4, 10);
+  s.markUncertain(fresh, 4, 10, 10);
   assert.equal(
     s.text(),
     "Do [uncertain: earlier: not | later: (no words)] send tail",
@@ -165,7 +168,7 @@ for (const common of [[w("anchor", 7)], [w("in", 6.6), w("the", 7)]]) {
       w("tail", 8),
     ].map((word) => ({ ...word, start: word.start - 4, end: word.end - 4 }));
     assert.throws(() => s.add(fresh, 4, 10), /competing overlap words/);
-    s.markUncertain(fresh, 4, 10);
+    s.markUncertain(fresh, 4, 10, 10);
     assert.match(s.text(), /wrong/);
     assert.match(s.text(), /corrected/);
     assert.ok(s.text().endsWith(common.map((x) => x.text).join(" ") + " tail"));
@@ -207,7 +210,7 @@ test("leading semantic substitution is ambiguous despite two exact timed words",
     s.add([w(old, 6), w("agree", 6.3), w("now", 6.7)], 0, 8);
     const next = [w(fresh, 0), w("agree", 0.3), w("now", 0.7), w("tail", 3)];
     assert.throws(() => s.add(next, 6, 10), /competing first words/);
-    s.markUncertain(next, 6, 10);
+    s.markUncertain(next, 6, 10, 10);
     assert.equal(
       s.text(),
       `[uncertain: earlier: ${old} | later: ${fresh}] agree now tail`,
@@ -232,7 +235,7 @@ test("exact German trace boundary marks leading Wir/Wie despite timed corroborat
     w("weiter", 1.16, 1.36),
   ];
   assert.throws(() => s.add(next, 156.28, 162.1), /competing first words/);
-  s.markUncertain(next, 156.28, 162.1);
+  s.markUncertain(next, 156.28, 162.1, 162.1);
   assert.match(
     s.text(),
     /\[uncertain: earlier: Wir \| later: Wie\] erklärten ihr, \[uncertain: earlier: \(no words\) \| later: weiter\]/,
@@ -276,7 +279,7 @@ test("saved synthetic trace marks for/four and letter/label alternatives", () =>
     w(text, start - 43.16, end - 43.16),
   );
   assert.throws(() => s.add(next, 43.16, 48.18), /competing overlap words/);
-  s.markUncertain(next, 43.16, 48.18);
+  s.markUncertain(next, 43.16, 48.18, 48.18);
   assert.match(
     s.text(),
     /the largest \[uncertain: earlier: for \| later: four\] folded instructions/,
@@ -359,7 +362,7 @@ test("a conflicting old phrase is marked rather than assumed hallucinated", () =
   ];
   const fresh = next.map((text, i) => w(text, i * 0.05, i * 0.05 + 0.04));
   assert.throws(() => s.add(fresh, 6, 10), /competing overlap words/);
-  s.markUncertain(fresh, 6, 10);
+  s.markUncertain(fresh, 6, 10, 10);
   assert.equal(
     s.text(),
     "These are [uncertain: earlier/later: the final] words [uncertain: earlier: on the | later: of the] recording. The [uncertain: earlier: final task was to save the draft report. | later: orange umbrella.]",
@@ -371,7 +374,7 @@ test("a suffix spelling extension cannot silently change can to cannot", () => {
   s.add([w("We", 5), w("can", 6)], 0, 8);
   const fresh = [w("We", 1), w("cannot", 2), w("send", 5)];
   assert.throws(() => s.add(fresh, 4, 10), /competing overlap words/);
-  s.markUncertain(fresh, 4, 10);
+  s.markUncertain(fresh, 4, 10, 10);
   assert.equal(s.text(), "We [uncertain: earlier: can | later: cannot] send");
 });
 
@@ -388,6 +391,7 @@ test("reviewed marker preserves retry punctuation while sharing exact common tex
   s.markUncertain(
     later.split(" ").map((text) => w(text, 1, 3)),
     4,
+    10,
     10,
     {
       words: earlier
@@ -518,7 +522,7 @@ test("anchor size boundary and whole-reading fallback preserve all readings", ()
 test("deduplication never hides uncertainty when timing alone disagrees", () => {
   const s = new Stitcher();
   s.add([w("same words", 5, 7)], 0, 8);
-  s.markUncertain([w("same words", 1, 3)], 4, 10);
+  s.markUncertain([w("same words", 1, 3)], 4, 10, 10);
   assert.equal(s.text(), "[uncertain: earlier/later: same words]");
   assert.equal(s.uncertainties, 1);
 });
@@ -545,7 +549,7 @@ test("crossing contradiction is an alternative, never definite tail or reinserte
   s.add([w("cannot", 7.6, 7.9)], 0, 8);
   const fresh = [w("can", 1.6, 2.2), w("tail", 2.3, 2.6)];
   assert.throws(() => s.add(fresh, 6, 10), /align/);
-  s.markUncertain(fresh, 6, 10);
+  s.markUncertain(fresh, 6, 10, 10);
   assert.equal(s.text(), "[uncertain: earlier: cannot | later: can] tail");
   s.add([w("can", 0, 0.2), w("tail", 0.3, 0.6), w("finish", 1, 1.3)], 8, 12);
   assert.equal(
@@ -559,6 +563,7 @@ test("connected crossing group seals once while a separate following tail surviv
   s.markUncertain(
     [w("can", 1.6, 2.2), w("link", 2.1, 2.4), w("tail", 2.5, 2.8)],
     6,
+    10,
     10,
     { start: 6, words: [w("cannot", 1.6, 2.3)] },
   );
@@ -625,12 +630,12 @@ test("unique common text requires compatible timing across all original readings
 test("multi-piece Word surfaces stay atomic with exact internal whitespace", () => {
   const s = new Stitcher();
   s.add([w("Do  not send", 5, 7)], 0, 8);
-  s.markUncertain([w("Do send", 1, 3)], 4, 10);
+  s.markUncertain([w("Do send", 1, 3)], 4, 10, 10);
   assert.equal(s.text(), "[uncertain: earlier: Do  not send | later: Do send]");
   assert.equal(s.uncertainties, 1);
   const segmented = new Stitcher();
   segmented.add([w("shared phrase", 5, 7)], 0, 8);
-  segmented.markUncertain([w("shared", 1, 2), w("phrase", 2, 3)], 4, 10);
+  segmented.markUncertain([w("shared", 1, 2), w("phrase", 2, 3)], 4, 10, 10);
   assert.equal(
     segmented.text(),
     "[uncertain: earlier: shared phrase | later: shared phrase]",
@@ -640,7 +645,7 @@ test("multi-piece Word surfaces stay atomic with exact internal whitespace", () 
 test("atomic marker surfaces preserve case and literal brackets", () => {
   const s = new Stitcher();
   s.add([w("Morgen [A]", 5, 7)], 0, 8);
-  s.markUncertain([w("morgen [A]", 1, 3)], 4, 10);
+  s.markUncertain([w("morgen [A]", 1, 3)], 4, 10, 10);
   assert.equal(
     s.text(),
     "[uncertain: earlier: Morgen [A] | later: morgen [A]]",
@@ -661,6 +666,7 @@ function reviewFixture(earlier, later, retry, start = 4) {
   stitcher.markUncertain(
     relative(later),
     start,
+    10,
     10,
     retry ? { words: relative(retry), start } : undefined,
   );
@@ -760,14 +766,14 @@ test("exact character cap accepts complete alternatives and rejects one extra ch
     const before = s.text();
     if (extra) {
       assert.throws(
-        () => s.markUncertain([w("new", 1)], 6, 10),
+        () => s.markUncertain([w("new", 1)], 6, 10, 10),
         /safety limit/,
       );
       assert.equal(s.text(), before);
       assert.equal(s.uncertainties, 0);
       assert.equal(s.uncertainJoins, 0);
     } else {
-      s.markUncertain([w("new", 1)], 6, 10);
+      s.markUncertain([w("new", 1)], 6, 10, 10);
       assert.equal(s.text(), prefix + suffix);
       assert.equal(s.text().length, 160000);
     }
@@ -778,7 +784,10 @@ test("word cap rejects complete alternatives before changing text or join counte
   const s = new Stitcher();
   s.add([w("x ".repeat(23998).trim(), 1), w("old", 7)], 0, 8);
   const before = s.text();
-  assert.throws(() => s.markUncertain([w("new", 1)], 6, 10), /safety limit/);
+  assert.throws(
+    () => s.markUncertain([w("new", 1)], 6, 10, 10),
+    /safety limit/,
+  );
   assert.equal(s.text(), before);
   assert.equal(s.uncertainties, 0);
   assert.equal(s.uncertainJoins, 0);
@@ -821,11 +830,11 @@ test("identical or empty disputed readings retain all source labels", () => {
   }
 });
 
-test("expanded crossing seal cannot silently discard newly recovered words or negation", () => {
+test("backward re-decode cannot silently discard newly recovered words or negation", () => {
   for (const text of ["recovered", "not"]) {
     const s = new Stitcher();
     s.add([w("old", 7.6, 7.9)], 0, 8);
-    s.markUncertain([w("broad", 1.6, 6)], 6, 12);
+    s.markUncertain([w("broad", 1.6, 6)], 6, 13, 13);
     const before = s.text();
     const next = [w(text, 0.1, 0.3), w("future", 1, 1.2)];
     assert.throws(
@@ -834,7 +843,7 @@ test("expanded crossing seal cannot silently discard newly recovered words or ne
     );
     assert.equal(s.text(), before);
     assert.throws(
-      () => s.markUncertain(next, 11.5, 15),
+      () => s.markUncertain(next, 11.5, 15, 15),
       /conflicting words inside a sealed overlap/,
     );
     assert.equal(s.text(), before);
@@ -842,10 +851,10 @@ test("expanded crossing seal cannot silently discard newly recovered words or ne
   }
 });
 
-test("long retry crossing seal cannot discard later recovered overlap", () => {
+test("long retry witness cannot discard backward re-decode evidence", () => {
   const s = new Stitcher();
   s.add([w("old", 7.6, 7.9)], 0, 8);
-  s.markUncertain([w("new", 1.6, 1.9)], 6, 12, {
+  s.markUncertain([w("new", 1.6, 1.9)], 6, 13, 13, {
     start: 4,
     words: [w("broad", 3.6, 8)],
   });
@@ -864,12 +873,12 @@ test("sealed replay proof preserves surface, repetition and single-source proven
   ]) {
     const s = new Stitcher();
     s.add([w("Stop.", 7.6, 7.9)], 0, 8);
-    s.markUncertain([w("go", 1.6, 1.9)], 6, 10);
+    s.markUncertain([w("go", 1.6, 1.9)], 6, 10, 10);
     assert.throws(() => s.add(fresh, 7.6, 12), /sealed overlap/);
   }
   const s = new Stitcher();
   s.add([w("do", 6), w("not", 7)], 0, 8);
-  s.markUncertain([w("never", 0), w("send", 1)], 6, 10);
+  s.markUncertain([w("never", 0), w("send", 1)], 6, 10, 10);
   assert.throws(
     () => s.add([w("do", 0), w("send", 1)], 6, 12),
     /sealed overlap/,
@@ -897,4 +906,56 @@ test("exact A/B/C review preserves linked choices and rejects the unsupported hy
       false,
     );
   }
+});
+
+test("exact next-start frontier rejects crossing closure at and beyond 11.5 before mutation", () => {
+  for (const broadEnd of [11.5, 12]) {
+    const s = new Stitcher();
+    s.add([w("old", 7.6, 7.9)], 0, 8);
+    const before = s.text();
+    assert.throws(
+      () => s.markUncertain([w("broad", 1.6, broadEnd - 6)], 6, 12, 11.5),
+      /sealed overlap reaches future audio/,
+    );
+    assert.equal(s.text(), before);
+    assert.equal(s.uncertainties, 0);
+    assert.equal(s.uncertainJoins, 0);
+  }
+});
+
+test("closure ending 11.49 preserves future recovered word and zero-duration start word", () => {
+  const s = new Stitcher();
+  s.add([w("old", 7.6, 7.9)], 0, 8);
+  s.markUncertain([w("broad", 1.6, 5.49)], 6, 12, 11.5);
+  s.add(
+    [w("not", 0, 0), w("recovered", 0.1, 0.3), w("future", 1, 1.2)],
+    11.5,
+    15,
+  );
+  assert.equal(
+    s.text(),
+    "[uncertain: earlier: old | later: broad] not recovered future",
+  );
+});
+
+test("frontier closure includes long retry and pause-window half-second overlap", () => {
+  const s = new Stitcher();
+  s.add([w("old", 7.6, 7.9)], 0, 8);
+  assert.throws(
+    () =>
+      s.markUncertain([w("new", 1.6, 1.9)], 6, 12, 11.5, {
+        start: 4,
+        words: [w("retry", 3.6, 8)],
+      }),
+    /sealed overlap reaches future audio/,
+  );
+  assert.equal(s.text(), "old");
+  const pause = new Stitcher();
+  pause.add([w("old", 7.6, 7.9)], 0, 8);
+  // Current 6..10 window advances only 3.5s, leaving the pause overlap.
+  assert.throws(
+    () => pause.markUncertain([w("broad", 1.6, 3.5)], 6, 10, 9.5),
+    /sealed overlap reaches future audio/,
+  );
+  assert.equal(pause.text(), "old");
 });

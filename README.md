@@ -48,6 +48,8 @@ An ambiguous seam produces localized labeled spans such as
 across linked spans to reconstruct that candidate. Identical exact NFC choices
 merge their labels; unique monotone time-compatible common words appear once.
 Atomic Word surfaces retain punctuation, case and internal whitespace.
+Seals must end strictly before the next normal decode start, including crossing
+retry words. Otherwise finalization fails before sealing.
 Words inside a previously sealed interval are suppressed only with an exact
 timed match in one retained reading. New/conflicting evidence there aborts
 explicitly; it is not silently dropped. This conservative failure can lose the
@@ -184,9 +186,10 @@ Keep the lower-work default; **quality/usability acceptance remains rejected**.
 No real browser/Gateway/microphone or Swiss-German qualification is claimed.
 See the [paired experiment](research/overlap-retry-comparison.md) and historical
 [results](research/LONG-DURATION-RESULTS.md). All drafts still need review.
-The subsequent sealed-overlap proof guard (`293c521`) passes95 Node/18 Python
-tests and5/5 rapid finals with identical text/scores to no-retry above. Those
-five-minute results predate the guard and do not qualify its completion rate.
+The earlier witness guard (`293c521`) passed5/5 rapid finals with identical
+text/scores. The stricter next-window frontier now passes100 Node/18 Python
+tests; no new GPU run was performed. Prior recordings do not qualify its
+completion rate.
 
 After provisioning the dedicated runtime/model and a local profile, build and
 validate fixture manifests, then run the five approximately 20-second fixtures

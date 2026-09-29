@@ -288,6 +288,7 @@ export class Stitcher {
     relative: Word[],
     start: number,
     end: number,
+    safeNextStart: number,
     retry?: { words: Word[]; start: number },
   ): void {
     const absolute = relative.map((w) => ({
@@ -318,6 +319,13 @@ export class Stitcher {
       if (w.start >= seamEnd) break;
       seamEnd = Math.max(seamEnd, w.end);
     }
+    // Ordinary future windows cannot revisit a sealed interval. Strict inequality
+    // also protects zero-duration words at the next decode start. Wider-context
+    // retries can look backward, so their witness checks remain a second defense.
+    if (!Number.isFinite(safeNextStart) || !(seamEnd < safeNextStart))
+      throw new Error(
+        "Faster-Whisper sealed overlap reaches future audio; no complete transcript is available",
+      );
     const fresh = active.filter((w) => w.start < seamEnd);
     const tail = active.filter((w) => w.start >= seamEnd);
     const render = (words: Word[]) =>

@@ -534,22 +534,42 @@ test("overlapRetry defaults off and accepts only an explicit boolean", () => {
     );
 });
 
-test("new negation inside an expanded seal fails explicitly without a truncated successful final", async (t) => {
+test("expanded seal is rejected at the provider's actual next-window frontier", async (t) => {
   const f = fixture(t, { overlapRetry: false });
   await f.session.connect();
   f.session.sendAudio(Buffer.alloc(128000));
   f.jobs[0].resolve([word("old", 15.6, 15.9)]);
   await tick();
   f.session.sendAudio(Buffer.alloc(96000));
+  // Current window starts12s and advances12s; seal28 crosses next start24.
   f.jobs[1].resolve([word("broad", 3.6, 16)]);
   await tick();
-  assert.equal(f.runtime.metrics.uncertainJoins, 1);
-  f.session.sendAudio(Buffer.alloc(96000));
+  assert.equal(f.runtime.metrics.uncertainJoins, 0);
+  assert.equal(f.events.length, 1);
+  assert.equal(f.events[0][0], "error");
+  assert.match(f.events[0][1], /sealed overlap reaches future audio/);
   f.session.close();
-  f.jobs[2].resolve([word("not", 1, 1.2), word("future", 5, 5.2)]);
+  assert.equal(f.jobs.length, 2);
+  assert.equal(f.stops, 1);
+});
+
+test("pause endpoint passes its half-second-overlap frontier rather than window end", async (t) => {
+  const f = fixture(t, { overlapRetry: false });
+  await f.session.connect();
+  const speechThenPause = Buffer.alloc(32000, 0);
+  speechThenPause.fill(255, 27200);
+  f.session.sendAudio(speechThenPause);
+  assert.equal(f.jobs[0].audio.length, 32000);
+  f.jobs[0].resolve([word("old", 3.6, 3.9)]);
+  await tick();
+  f.session.sendAudio(speechThenPause);
+  assert.equal(f.jobs[1].audio.length, 36000);
+  // Current start3.5, end8, advance4: next start7.5, not window end8.
+  f.jobs[1].resolve([word("broad", 0.1, 4)]);
   await tick();
   assert.equal(f.events.length, 1);
   assert.equal(f.events[0][0], "error");
-  assert.match(f.events[0][1], /conflicting words inside a sealed overlap/);
+  assert.match(f.events[0][1], /sealed overlap reaches future audio/);
+  assert.equal(f.runtime.metrics.uncertainJoins, 0);
   assert.equal(f.stops, 1);
 });

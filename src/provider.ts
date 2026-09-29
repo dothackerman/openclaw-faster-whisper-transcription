@@ -198,7 +198,13 @@ export class Runtime {
               }
             } else metrics.retrySkipped++;
             if (!resolved)
-              stitch.markUncertain(words, windowStart, windowEnd, retry);
+              stitch.markUncertain(
+                words,
+                windowStart,
+                windowEnd,
+                (start + advance) / AUDIO_BYTES_PER_SECOND,
+                retry,
+              );
           }
           if ((state as string) === "done") return;
           decodedEnd = start + size;

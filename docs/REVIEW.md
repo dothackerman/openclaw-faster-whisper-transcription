@@ -45,7 +45,7 @@ See [source evidence](../research/long-duration-implementation.md),
 
 ## Verification
 
-- 96 Node and 18 Python deterministic tests pass, including maximum worker framing,
+- 100 Node and 18 Python deterministic tests pass, including maximum worker framing,
   independent audio/time ceilings at 60 minutes, serial overlap/tail draining,
   queue overload, pre-ready frames, cancellation, timeout, OOM/crash, disposal,
   invalid word timestamps, repeated-word seams, silence endpoints, and edit scoring.
@@ -187,3 +187,9 @@ Exact A/B/C provenance regression: `A x B y`, `A z B t`, `A x B t`
 retain merged source labels at both islands. Following any single label
 reconstructs its source and cannot produce the unsupported `A z B y` hybrid.
 All 96 Node and 18 Python tests pass; production code is unchanged.
+
+Strict frontier follow-up: provider passes actual next decode start using the
+chosen advance; connected seal must end strictly before it, including retry
+words. Exact11.49/11.5/12 cases, zero-duration words and the actual pause endpoint
+pass. Non-AlignmentError rejects before mutation. Backward-retry witnesses remain
+as a second defense.100 Node/18 Python tests pass; no new GPU qualification.

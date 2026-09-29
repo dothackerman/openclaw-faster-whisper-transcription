@@ -1,5 +1,12 @@
 # Long dictation implementation and experiment plan
 
+Sealing additionally requires strict `seamEnd < (start + advance) / 8000` using
+actual provider advance, after crossing closure and before mutation. This covers
+fixed and pause windows, including zero-duration words at the next start. A
+violation fails explicitly; final windows receive no exemption. Optional retries
+that look backward still require bounded single-reading witnesses before filtering
+already sealed words. No previous GPU completion qualifies this stricter guard.
+
 Current boundary/editorial screen: fresh words starting before the old seam end
 belong to its alternative even when they end after it. Extend sealing through
 the connected overlap of old/fresh/retry words; only words starting beyond that
