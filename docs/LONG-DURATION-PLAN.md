@@ -16,13 +16,14 @@ Run deterministic seal/render tests and rapid fixtures first. Only consider a
 paced rerun after complete rapid finals and review of visible burden; do not
 inherit qualification from the earlier seam partition.
 
-Current uncertainty experiment: retain the preceding 16-second audio window and
-attempt at most one wider-context decode (20-second cap) per ambiguous boundary
+Current default: preserve two labeled readings without retry. With explicit
+`overlapRetry: true`, retain the preceding 16-second audio window and attempt
+at most one wider-context decode (20-second cap) per ambiguous boundary
 on the same serial GPU lane. During Stop, retry only if the remaining original
 4.5-second budget exceeds max(500 ms, 1.5 × last decode time); this estimate never
 extends the deadline. A retry is unmarked only if both prior word sequences
 survive monotonically with timed matches, followed by successful reconciliation.
-Otherwise seal localized `[uncertain: option | option]` spans and continue.
+Otherwise seal localized `[uncertain: earlier: option | later: option]` spans and continue.
 Presentation keeps safely agreed exact NFC surfaces once; punctuation/case
 alternatives remain distinct. Empty choices stay `(no words)`. No preferred reading is selected.
 A sole deduplicated reading still carries a marker because timing may be ambiguous.

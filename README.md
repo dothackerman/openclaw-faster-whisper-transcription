@@ -43,15 +43,18 @@ Completed audio beyond that bounded context is not retained. Final text, includi
 uncertainty alternatives, is bounded to 160,000 characters / 24,000 words. Queue overload,
 ceiling or deadline failure return an error and **no successful truncated final**.
 The total Stop drain remains **4.5 seconds**, including in-flight work.
-An ambiguous seam gets at most one bounded local overlap re-decode. If it remains
-ambiguous, final text includes localized `[uncertain: option | option]` spans
-with competing word choices; review and edit it before Send. Exact NFC duplicate
-readings are omitted. Only identical, unique, monotone, time-compatible words
-are hoisted outside localized spans; punctuation and case differences remain.
-A span shows word choices, e.g. `[uncertain: soll | wollen]`, without decoder labels.
-An absent reading remains explicit as `(no words)`; this never chooses a winner. Markers are never sent
-automatically and are not verified transcription. The retry shares the existing
-Stop deadline and may be skipped when too little time remains.
+An ambiguous seam produces localized labeled spans such as
+`[uncertain: earlier: not | later: (no words)]`. Follow a consistent source label
+across linked spans to reconstruct that candidate. Identical exact NFC choices
+merge their labels; unique monotone time-compatible common words appear once.
+Atomic Word surfaces retain punctuation, case and internal whitespace. No reading
+is selected as verified. Review and edit these spans before Send; nothing is sent
+automatically.
+
+`overlapRetry` defaults to `false`: two readings, no extra overlap inference.
+Opting in permits one at-most-20-second wider-context decode per ambiguous seam,
+within the existing Stop deadline. It may add a third labeled reading; measured
+rapid tests did not justify its GPU work or establish human-review benefit.
 
 Only the initial fresh prefix can anchor an unmarked splice; its full suffix remains fresh,
 preserving recovered words. A wholly contained old-only word before that anchor
@@ -160,33 +163,23 @@ synthetic eSpeak NG audio from self-authored scripts. Hashes are in
 `fixtures/public/manifest.json` and `fixtures/public/long-manifest.json`.
 They do not establish real microphone or dialect quality.
 
-Current labeled-choice candidate (`f558a9a`) completes 5/5 rapid fixtures, with
-four spans/211 marker characters. Visible WER/CER are 23.94%/19.24%, versus
-18.31%/10.90% before labels. Removing only source labels reproduces the preceding
-texts exactly: added editorial overhead, not a recognition change. Both retries
-remain marked. Keep the source-identity safeguard, but quality acceptance remains
-rejected. No new five-minute run was performed after this short-screen regression.
+The paired rapid retry comparison (`72ca434`) delivered5/5 with both policies.
+Visible WER was unchanged at34/142 (23.94%). Disabling retry reduced marker text
+from211 to178 characters, CER from19.24% to17.02%, and retry decode from4231ms
+tozero. Host peak VRAM was2829/2797MiB (on/off). Latency favored off, but normal
+decode also ran faster; this single pair does not isolate a stable speedup.
 
-The previous measured candidate (`3eabf11`) passes the crossing-word seal, exact NFC
-surface and unique/timed-anchor regressions. Rapid screening completed first:
-5/5 finals, two uncertain joins/four spans/123 marker characters, zero repeated-phrase
-insertions, visible WER/CER 18.31% / 10.90%. The subsequent paced five-minute
-stock-code run completes 300 seconds / 34 windows with eight uncertain joins,
-25 spans and 947 marker characters. Visible WER/CER are 21.44% / 16.39%, including
-all choices; five repeated-phrase inserted words remain. These are draft-editing
-metrics, not ASR quality gains or usability acceptance.
+Default no-retry candidate `fddd592` then completed300 seconds/34 windows through
+the paced stock-code harness: provider final924ms, composer insertion5037ms,
+no Send, exact audio hashes. Eight joins/25 spans contain1280 marker characters.
+Visible WER/CER are28.64%/24.85%, including labels/alternatives; five repeated-phrase
+inserted words remain. Final20 errors13, final5 exact. Retry work iszero; peak
+host VRAM2829MiB. This single five-minute run is not a paired retry-quality test.
 
-Provider finalization took 2238 ms; stock insertion 5010 ms, with no auto-send.
-Final five words are exact; visible final-20 errors are 14. No verified tail or
-general reliability is claimed. None of the ten retries across the rapid and
-five-minute runs resolved its join; five-minute retries add 9209 ms decode wall
-time. Tests use actual stock code with simulated capture/RPC and real local GPU,
-not a real browser, Gateway or microphone. The draft still needs review. Atomic Word surfaces retain their whitespace;
-normalized text and scores are unchanged from the preceding renderer.
-The subsequent labeled-choice format preserves earlier/later/retry identity across
-uncertain spans; the measurements above predate those labels and do not qualify
-that format. Select the same source label across linked spans to recover its
-complete candidate, including omissions; merged labels denote identical choices.
+Keep the lower-work default; **quality/usability acceptance remains rejected**.
+No real browser/Gateway/microphone or Swiss-German qualification is claimed.
+See the [paired experiment](research/overlap-retry-comparison.md) and historical
+[results](research/LONG-DURATION-RESULTS.md). All drafts still need review.
 
 After provisioning the dedicated runtime/model and a local profile, build and
 validate fixture manifests, then run the five approximately 20-second fixtures

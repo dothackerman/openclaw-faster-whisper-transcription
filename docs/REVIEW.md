@@ -23,8 +23,9 @@ Worker request capacity: 30 seconds / 240,000 bytes, with derived base64 framing
 Worker response: 64 KiB, 512 timed words, 16,000 text characters. Final transcript:
 160,000 characters / 24,000 words. Wall/audio ceiling: 60 minutes. All overflow,
 crash/OOM and timeout failures insert no successful truncated prefix. Ambiguous
-seams receive one bounded context retry, then visibly marked alternatives if
-unresolved. Presentation removes exact NFC duplicate readings. Only identical, unique,
+seams retain two visibly marked readings by default. Explicit `overlapRetry: true`
+permits one bounded context retry. Exact NFC duplicate choices merge their source
+labels; every candidate stays reconstructible across marked gaps. Only identical, unique,
 monotone words with compatible timing appear outside localized spans; empty
 alternatives and punctuation/case differences stay explicit. At most three
 512-token readings use bounded pairwise order checks; larger readings stay whole
@@ -44,7 +45,7 @@ See [source evidence](../research/long-duration-implementation.md),
 
 ## Verification
 
-- 89 Node and 18 Python deterministic tests pass, including maximum worker framing,
+- 91 Node and 18 Python deterministic tests pass, including maximum worker framing,
   independent audio/time ceilings at 60 minutes, serial overlap/tail draining,
   queue overload, pre-ready frames, cancellation, timeout, OOM/crash, disposal,
   invalid word timestamps, repeated-word seams, silence endpoints, and edit scoring.
@@ -71,7 +72,7 @@ See [source evidence](../research/long-duration-implementation.md),
   tests cover nonempty insertion, silence and exact uncertainty-marker text with no send through the actual
   relay and stock encoding/controller. The fake-clock TTL test proves the 30-minute
   host obstacle. Native loader/catalog/disposal passes on the extracted npm artifact.
-  After the labeled-choice candidate `f558a9a`, package build/check and extracted-artifact loader were rerun
+  After the default no-retry candidate `fddd592`, package build/check and extracted-artifact loader were rerun
   sequentially and passed; no concurrent `dist` rebuild occurred during loading.
   Source was read-only.
 - Published SDK remains an exact locked development dependency; no stub or vendored
@@ -112,7 +113,7 @@ See [source evidence](../research/long-duration-implementation.md),
   cost. A third reading may aid review, but its value remains unvalidated; no
   quality, latency or default-policy improvement is inferred.
 
-Current `f558a9a` preserves source labels across every disputed gap; exact
+Historical `f558a9a` preserves source labels across every disputed gap; exact
 alternatives merge labels instead of losing source identity. Reconstruction tests
 select a consistent label, including omissions and fallback. Rapid5/5 delivered;
 four spans/211 characters; visible WER34/142 (23.94%), CER173/899 (19.24%).
@@ -122,6 +123,21 @@ insertions. Both retries remain marked, costing3555ms. Maximum final latency3016
 This is extra editorial overhead, not a quality gain. Keep semantic safeguard,
 reject quality acceptance; no new paced five-minute run after rapid regression.
 The five-minute numbers above are historical and do not qualify this format.
+
+Current default `fddd592` disables overlap retry after the clean paired rapid
+comparison at `72ca434`: both5/5, WER34/142, marker characters211/178 (on/off),
+CER173/899 versus153/899, extra decode4231/0ms. Retain true as explicit opt-in.
+A no-retry semantic regression proves old negation remains labeled without a
+third GPU job. All source-identity/crossing/atomic-surface guards remain.
+
+The single no-retry paced run completes300s/34windows, exact audio hashes,
+provider final924ms and stock insertion5037ms, no Send. Eight joins/25spans/
+1280chars; visible WER175/611 (28.64%), CER949/3819 (24.85%),34 substitutions,
+3 deletions,138 insertions,5 repeated-phrase inserted words, final20 errors13,
+final5 exact. Zero retry work; normal decode35512ms; host VRAM551/2829MiB
+baseline/peak, queue18.024s, lag17.524s including lookahead. This is not a fresh
+paired five-minute comparison. Keep lower-work default, reject quality acceptance.
+See [paired policy evidence](../research/overlap-retry-comparison.md).
 
 ## Experiment and public-data boundary
 

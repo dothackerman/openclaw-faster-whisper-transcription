@@ -41,3 +41,28 @@ measured research. No measured recognition or human-review benefit justifies the
 extra work in this screen. This does not prove a third reading never helps.
 Preserve both labeled readings and all semantic guards. Proceed with one paced
 five-minute no-retry validation; overall quality acceptance remains unresolved.
+
+## One no-retry paced validation — clean `fddd592`
+
+300 seconds/34 windows, input/relay/fixture hashes match, no Send. Provider final
+924ms; stock insertion5037ms. Eight uncertain joins/25 labeled spans/1280 marker
+characters. Visible WER175/611 (28.64%), CER949/3819 (24.85%):34 substitutions,
+3 deletions,138 insertions,5 repeated-phrase inserted words. Final20 errors13;
+final5 exact. Normal decode35512ms; retry decode0ms/count0, skipped8. Queue peak
+18.024s, max lag17.524s includes lookahead. Host memory baseline551MiB,
+peak2829MiB. The modest rapid VRAM difference did not persist at this duration;
+no general VRAM-saving claim. GPU samples remain host-wide.
+
+Keep no-retry default for eliminated extra inference with no rapid word-edit
+penalty. This run validates transport/finalization only: quality/usability
+acceptance remains rejected. There is no same-format fresh retry-on five-minute
+comparator, so older unlabeled five-minute scores are not a causal comparison.
+A third reading's human-review value remains unmeasured. No claim of real-mic,
+Swiss-German, or60-minute stock-host acceptance. Tests:91 Node/18 Python plus
+six stock-controller and three stock-relay checks pass.
+
+Reproduction uses explicit local profile copies differing only in overlapRetry,
+then `node scripts/experiment.mjs PROFILE fixtures/public/rapid-manifest.json
+OUTPUT 1 chunked` and `scripts/score_long.py OUTPUT`. For the paced composer mode,
+use the README's stock-source harness invocation and five-minute manifest. Run
+serially; retain the paired raw outputs privately and ledger hashes publicly.

@@ -1,5 +1,23 @@
 # Long dictation: preliminary measured results
 
+## No-retry policy — paired rapid `72ca434`, paced default `fddd592`
+
+[Full paired evidence and limits](overlap-retry-comparison.md). Default now
+`overlapRetry: false`; explicit true remains opt-in. Both rapid profiles5/5,
+WER34/142 unchanged; CER173/899→153/899, markers211→178chars, retry decode
+4231→0ms. No retry resolves. Peak host VRAM2829→2797MiB in the rapid pair;
+normal decode also changed substantially, limiting latency attribution.
+
+The single no-retry paced run completes300s/34windows with exact audio hashes,
+no Send, provider final924ms/stock5037ms. Eight joins/25spans/1280chars,
+WER175/611 (28.64%), CER949/3819 (24.85%),5 repeated-phrase inserted words,
+final20 errors13/final5 exact. Retry0ms; normal decode35512ms; peak2829MiB.
+No fresh labeled retry-on five-minute comparator: do not interpret older scores
+as a measured ASR gain/loss caused by disabling retry. Keep reduced-work default,
+reject quality/usability acceptance. Ledger: retry-on-rapid, retry-off-rapid,
+retry-off-five. Synthetic fixtures and simulated capture/RPC remain limitations.
+
+
 ## Linked source labels — clean `f558a9a`
 
 Every disputed gap now preserves earlier/later/retry identity; identical exact
