@@ -64,7 +64,15 @@ export class Stitcher {
         // Every fresh word discarded by this splice must belong to the matched
         // contiguous run. A later anchor alone cannot justify dropping a word
         // newly recovered earlier in the overlap (including a negation).
-        if (bestRun !== anchor[1] + 1)
+        const firstOldInWindow = this.words.findIndex((w) => w.end > start);
+        const matchedOldStart = anchor[0] - bestRun + 1;
+        // Symmetrically, an old-only word inside this audio window cannot be
+        // retained before the anchor without agreement from the fresh decode.
+        // Words ending before the fresh window remain outside its jurisdiction.
+        if (
+          bestRun !== anchor[1] + 1 ||
+          (firstOldInWindow >= 0 && firstOldInWindow < matchedOldStart)
+        )
           throw new Error(
             "Faster-Whisper could not align all words at a chunk boundary; no complete transcript is available",
           );

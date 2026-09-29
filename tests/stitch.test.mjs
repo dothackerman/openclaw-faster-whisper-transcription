@@ -19,6 +19,30 @@ test("exact review repro: tied single-word anchors must not delete recovered@5.5
   assert.equal(s.text(), "alpha anchor");
   assert.equal(s.anchors, 0);
 });
+test("symmetric review repro rejects an unmatched old-only word between matches", () => {
+  const s = new Stitcher();
+  s.add([w("alpha", 5), w("old-only", 5.5), w("anchor", 7)], 0, 8);
+  assert.throws(
+    () => s.add([w("alpha", 1), w("anchor", 3), w("tail", 4)], 4, 10),
+    /align all words/,
+  );
+  assert.equal(s.anchors, 0);
+});
+test("old-only overlap prefix cannot survive before a fully matching fresh prefix", () => {
+  const s = new Stitcher();
+  s.add([w("old-only", 4.5), w("alpha", 5), w("anchor", 7)], 0, 8);
+  assert.throws(
+    () => s.add([w("alpha", 1), w("anchor", 3), w("tail", 4)], 4, 10),
+    /align all words/,
+  );
+  assert.equal(s.anchors, 0);
+});
+test("old words ending before the next audio window remain valid committed context", () => {
+  const s = new Stitcher();
+  s.add([w("earlier", 3), w("alpha", 5), w("anchor", 7)], 0, 8);
+  s.add([w("alpha", 1), w("anchor", 3), w("tail", 4)], 4, 10);
+  assert.equal(s.text(), "earlier alpha anchor tail");
+});
 for (const common of [[w("anchor", 7)], [w("in", 6.6), w("the", 7)]]) {
   test(`a corrected word before later common tokens (${common.map((x) => x.text).join(" ")}) must not revert silently`, () => {
     const s = new Stitcher();
