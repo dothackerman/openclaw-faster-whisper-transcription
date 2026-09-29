@@ -42,6 +42,10 @@ plus one 16-second snapshot; completed recording audio is not retained. Final te
 is bounded to 160,000 characters / 24,000 words. Queue overload, ambiguous seams,
 ceiling or deadline failure return an error and **no successful truncated final**.
 The total Stop drain remains **4.5 seconds**, including in-flight work.
+An overlap match must account for every fresh word discarded at its splice;
+unmatched recovered words cause an explicit session failure rather than silently
+disappearing. This conservative policy can reject ordinary speech and is still
+under qualification; earlier successful five-minute results used a weaker rule.
 
 The plugin has a **60-minute wall/audio safety ceiling**. However, stock OpenClaw
 2026.9.6 expires transcription sessions after **30 minutes**; this plugin cannot

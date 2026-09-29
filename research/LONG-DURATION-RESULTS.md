@@ -6,6 +6,43 @@ All speech here is self-authored, non-looped eSpeak NG synthesis transported as
 paragraph audio and padding to 300 seconds. Public manifests record every hash.
 No private OG recordings, real microphone, or Swiss-German acceptance is claimed.
 
+## Latest qualification: conservative seam proof (`94bda99`)
+
+**Current five-minute qualification fails.** Previous successful five-minute
+results below used a weaker merge and do not qualify this revision. The old
+latest-anchor splice could silently delete a freshly recovered negation. The
+new rule requires all discarded fresh words to belong to the contiguous timed
+matching sequence; otherwise it fails the whole session without a final.
+
+Both new runs used clean commit `94bda998fabad94e7b1af1cba4f4e15ec90fa6c9`, the
+same medium/float16/beam5 model and fixed manifests. No inference setting changed.
+
+- Rapid: **4/5 finals**. `long-de20` fails with "could not align all words at a
+  chunk boundary" after 20 seconds accepted. Boundary, mixed, silence and English
+  finish in 635, 521, 4 and 754 ms respectively. English retains one substitution;
+  mixed retains five substitutions and fails the final-five-word check. Boundary
+  and silence have no lexical errors. There are no scored deletions, insertions
+  or repeated-phrase insertions in the successful subset. Its WER 6/107 = 5.61%
+  and CER 11/680 = 1.62% exclude failed German and **cannot be compared as a quality
+  gain** against the prior five-fixture aggregate.
+- Five-minute fixture, paced stock-code/real-GPU integration: **0/1 finals**.
+  The fifth attempted window fails the same prefix-proof check after **49.152
+  seconds** of accepted audio; four windows had been merged. The remaining
+  fixture is not delivered after error. No final transcript, tail-completeness
+  score, WER/CER or final latency exists. This is a failed five-minute test, not
+  a shortened successful recording. Maximum buffered audio was 17.480 seconds;
+  maximum unprocessed coverage (including lookahead) was 17.408 seconds. GPU
+  memory was 551 MiB baseline, 2797 MiB peak, 551 MiB after disposal.
+
+Keep the deletion guard; reject current release/long-dictation qualification.
+Explicit rejection is safer than claiming a transcript with silently discarded
+fresh words, but it loses the session's text and is not acceptable recording
+reliability. A future reconciliation change must account for competing overlap
+hypotheses and be measured again, not merely restore the higher callback count.
+The append-only ledger retains both new failures and the earlier results.
+
+## Historical candidate measurements
+
 Initial screens are dirty-tree experiments with per-artifact hashes in the
 append-only [ledger](experiments.jsonl). They are development evidence, not a
 clean-release comparison. The same five 20-second fixtures were used throughout.

@@ -35,10 +35,12 @@ See [source evidence](../research/long-duration-implementation.md),
 
 ## Verification
 
-- 35 Node and 13 Python deterministic tests pass, including maximum worker framing,
+- 39 Node and 13 Python deterministic tests pass, including maximum worker framing,
   independent audio/time ceilings at 60 minutes, serial overlap/tail draining,
   queue overload, pre-ready frames, cancellation, timeout, OOM/crash, disposal,
   invalid word timestamps, repeated-word seams, silence endpoints, and edit scoring.
+  New regressions reject silent deletion of a fresh overlap negation, ensure no
+  provider final on that error, and reject subset-manifest reference/hash drift.
 - Four tests through the unmodified stock composer pass: reproduce stale partial
   insertion, retain the asynchronous final tail, insert no prefix on overload,
   and suppress late insertion after composer disposal.
@@ -46,6 +48,8 @@ See [source evidence](../research/long-duration-implementation.md),
   tests cover nonempty insertion and silent no-insertion/no-send through the actual
   relay and stock encoding/controller. The fake-clock TTL test proves the 30-minute
   host obstacle. Native loader/catalog/disposal passes on the extracted npm artifact.
+  After `94bda99`, package build/check and extracted-artifact loader were rerun
+  sequentially and passed; no concurrent `dist` rebuild occurred during loading.
   Source was read-only.
 - Published SDK remains an exact locked development dependency; no stub or vendored
   declaration. The prior clean-clone CI-equivalent checks pass (34 Node, 13 Python,
@@ -57,10 +61,15 @@ See [source evidence](../research/long-duration-implementation.md),
   relay, and real GPU worker passed exact audio hashes and editable late insertion
   with no chat-send RPC. The first five-minute run completed transport/insertion but exposed a
   repeated-tail stitching bug, now covered by a regression and fixed. A corrected
-  five-minute run passed byte integrity and tail regression: 551 ms provider final,
+  historical five-minute run at `9d27248` passed byte integrity and tail regression: 551 ms provider final,
   5008 ms stock commit, zero final-20-word edits, 5.73% WER / 2.59% CER. Model
   recognition still has 26 substitutions, eight deletions and one insertion;
   this is not complete-transcript quality acceptance.
+  These completion metrics predate the stricter fresh-prefix proof at `94bda99`
+  and do not qualify the current implementation; see the latest failure evidence.
+  The new clean reruns produce 4/5 rapid finals (German fails) and fail the
+  five-minute fixture after 49.152 seconds accepted audio. No final is emitted
+  on these seam errors. Current long-dictation release qualification is rejected.
 
 ## Experiment and public-data boundary
 
@@ -78,6 +87,8 @@ is used or tracked. Local detailed hypotheses, telemetry and runtime/model files
 stay ignored. The package excludes fixtures, research, tests, local results,
 environments, model weights and the SDK dependency tree. Project code is MIT;
 separately provisioned dependencies keep their own licenses.
+The fixture CI gate now also requires both rapid/five-minute subset manifests
+to match the canonical long manifest exactly, including references and metadata.
 
 ## Remaining acceptance limits
 

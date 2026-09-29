@@ -79,7 +79,9 @@ pre-creation 10-second buffer remain host limitations.
 
 Completed evaluation and rejected alternatives are recorded in
 [LONG-DURATION-RESULTS.md](../research/LONG-DURATION-RESULTS.md). The corrected
-five-minute synthetic integration meets its measured final budget and final-word
-check but retains model recognition errors. Real microphone/Swiss-German acceptance
+five-minute synthetic integration at `9d27248` met its measured final budget and
+final-word check but retained model recognition errors. It predates the stricter
+fresh-prefix overlap proof at `94bda99`; current qualification must use the new
+failure evidence, not inherit that completion result. Real microphone/Swiss-German acceptance
 and the host change needed for an actual 60-minute session remain outside this
 prototype's verified support.

@@ -2,6 +2,26 @@
 
 Independent architect notes; do not replace incoming researcher files.
 
+## Fresh-prefix deletion correction
+
+Independent QA found that a late overlap anchor could discard a real word that
+only the fresh hypothesis recovered. Executing the pre-fix implementation from
+`0050c30` on old "Do send this" and fresh "Do not send this message" confirms a
+successful merged "Do send this message". Matching later words does not justify
+deleting the negation. The `94bda99` fix requires the selected contiguous,
+time-consistent match to cover every fresh word through the splice anchor.
+Otherwise reconciliation throws; the provider clears the session and emits only
+an error. Adversarial tests cover an interior recovered negation, an unmatched
+leading word, and the provider's no-final behavior. Existing repetition and
+hallucinated-tail tests remain passing. This is a conservative failure policy,
+not proof that the recognizer heard every spoken word or that failures preserve
+the user's dictation. Failing the session loses its text as documented.
+
+An offline replay of the saved 34-window five-minute trace first rejects window
+5 (43.16–48.18 seconds): a changed token before a later matching sequence no
+longer gets silently discarded. This is diagnostic evidence only; paced reruns
+and acceptance decisions are recorded separately in the append-only ledger.
+
 ## Exact-source TTL and transcript-bound recheck
 
 Rechecked for Kappa on 2026-09-29 against the same prepared source commit.
