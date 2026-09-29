@@ -35,7 +35,7 @@ See [source evidence](../research/long-duration-implementation.md),
 
 ## Verification
 
-- 45 Node and 13 Python deterministic tests pass, including maximum worker framing,
+- 46 Node and 13 Python deterministic tests pass, including maximum worker framing,
   independent audio/time ceilings at 60 minutes, serial overlap/tail draining,
   queue overload, pre-ready frames, cancellation, timeout, OOM/crash, disposal,
   invalid word timestamps, repeated-word seams, silence endpoints, and edit scoring.
@@ -46,6 +46,8 @@ See [source evidence](../research/long-duration-implementation.md),
   returning a successful transcript that discards or reverts the fresh word.
   Symmetric old-only overlap regressions also pass; both retained old and
   discarded fresh prefixes must be covered by the matching sequence.
+  This includes exact old `phantom@6, anchor@7` versus fresh `anchor@7, tail@8`
+  in a window beginning at 6 seconds; the merge explicitly rejects the phantom.
 - Four tests through the unmodified stock composer pass: reproduce stale partial
   insertion, retain the asynchronous final tail, insert no prefix on overload,
   and suppress late insertion after composer disposal.

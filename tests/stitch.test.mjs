@@ -19,6 +19,17 @@ test("exact review repro: tied single-word anchors must not delete recovered@5.5
   assert.equal(s.text(), "alpha anchor");
   assert.equal(s.anchors, 0);
 });
+test("exact symmetric repro: phantom@6 cannot survive fresh coverage starting at 6", () => {
+  const s = new Stitcher();
+  s.add([w("phantom", 6), w("anchor", 7)], 0, 8);
+  // Fresh absolute anchor@7/tail@8 are relative 1/2 in the window at 6s.
+  assert.throws(
+    () => s.add([w("anchor", 1), w("tail", 2)], 6, 10),
+    /align all words/,
+  );
+  assert.equal(s.anchors, 0);
+  assert.equal(s.text(), "phantom anchor"); // Failed add is transactional, not a final.
+});
 test("symmetric review repro rejects an unmatched old-only word between matches", () => {
   const s = new Stitcher();
   s.add([w("alpha", 5), w("old-only", 5.5), w("anchor", 7)], 0, 8);

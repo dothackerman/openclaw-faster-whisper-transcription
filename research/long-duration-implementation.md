@@ -50,6 +50,24 @@ fresh-word, corrected-tail and genuine repetition regressions still pass.
 All 45 Node and 13 Python tests pass. The stricter policy can reject more sessions;
 the new clean paced results must be used for its qualification.
 
+The additional exact symmetric repro is now a regression too: old `phantom@6,
+anchor@7`, fresh `anchor@7, tail@8` with window start 6 seconds. The 300-ms
+phantom span ends at 6.3, so it is inside fresh time coverage, not exempt earlier
+context. `firstOldInWindow = 0` precedes `matchedOldStart = 1`, and the guarded
+merge throws without a successful final. All 46 Node and 13 Python tests pass,
+including genuine repetition and corrected-tail cases. No production code change
+was needed for this additional exact test.
+
+The final paced post-production-change run is `long-symmetric-five` at clean
+`73aaec5`: failure after 32.768 seconds accepted, not five-minute acceptance.
+After adding the exact phantom regression, every recorded runtime/harness source
+hash and the Python worker hash was compared with the current files and matched.
+In particular, `src/stitch.ts` is SHA-256
+`fff4fb6fc30f83bb2e3d4e1c35ec87ee4890998949a3f1f0fc374d7288ab2dd8`.
+Thus that paced rerun exercises the current production seam code, rather than
+the older `9d27248` profile. Rapid German/boundary failures remain documented;
+the conservative guard is not represented as usable long-dictation reliability.
+
 An offline replay of the saved 34-window five-minute trace first rejects window
 5 (43.16–48.18 seconds): a changed token before a later matching sequence no
 longer gets silently discarded. This is diagnostic evidence only; paced reruns
