@@ -30,6 +30,26 @@ later single common token and a two-token `in the` sequence. All 42 Node and
 This resolves the precise silent-deletion repro, not overall seam reliability:
 the previously recorded rapid German and five-minute failures still apply.
 
+### Symmetric retained-prefix follow-up
+
+The exact symmetric interior case (old `alpha@5, old-only@5.5, anchor@7`, fresh
+`alpha@5, anchor@7, tail@8`) already fails the fresh-prefix guard because its
+matching run is broken. A further case exposed a remaining gap: old
+`old-only@4.5, alpha@5, anchor@7` versus the same fresh hypothesis succeeded under
+`8fa9dcc`, retaining an unconfirmed old word before the first fresh match. This
+was independently executed against that revision, not inferred from code alone.
+
+`73aaec5` additionally requires every retained old word whose end is after the
+fresh window start, through the chosen anchor, to belong to that same contiguous
+token/time matching run. Together the checks form a conservative monotone
+one-to-one prefix alignment with no unmatched words on either side. Old words
+ending before the fresh audio window are outside that comparison. This does not
+choose an earlier tie as a workaround. Three new tests cover the symmetric
+interior conflict, old-only leading overlap, and valid earlier context; the exact
+fresh-word, corrected-tail and genuine repetition regressions still pass.
+All 45 Node and 13 Python tests pass. The stricter policy can reject more sessions;
+the new clean paced results must be used for its qualification.
+
 An offline replay of the saved 34-window five-minute trace first rejects window
 5 (43.16–48.18 seconds): a changed token before a later matching sequence no
 longer gets silently discarded. This is diagnostic evidence only; paced reruns

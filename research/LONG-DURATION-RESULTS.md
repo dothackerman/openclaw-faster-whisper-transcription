@@ -6,9 +6,37 @@ All speech here is self-authored, non-looped eSpeak NG synthesis transported as
 paragraph audio and padding to 300 seconds. Public manifests record every hash.
 No private OG recordings, real microphone, or Swiss-German acceptance is claimed.
 
-## Latest qualification: conservative seam proof (`94bda99`)
+## Latest qualification: symmetric prefix proof (`73aaec5`)
 
-**Current five-minute qualification fails.** Previous successful five-minute
+**Reject release and five-minute qualification.** Both overlapping prefixes must
+now be confirmed before the splice: not only discarded fresh words but retained
+old words inside the fresh audio window. Exact fresh-only, symmetric old-only,
+correction, repetition and tail regressions pass. These guarantees are narrower
+than successful recognition, and the conservative rejection rate is not usable
+recording reliability.
+
+Clean `73aaec5fc71c194c417ccf9a9fda0d78613fb1bf`, same model/fixtures/settings:
+
+- Rapid **3/5 finals**: German and boundary both fail alignment at 20 seconds
+  accepted audio. Mixed, silence and English complete in 519, 4 and 800 ms.
+  Mixed has five substitutions and an inexact final-five suffix; English has
+  one substitution; silence has no false words. The successful subset has no
+  scored deletions/insertions and WER 6/68 (8.82%), CER 11/405 (2.72%). These
+  exclude two failed fixtures and are not a comparable aggregate quality gain.
+- Five-minute paced stock-code integration **0/1 finals**: third attempted
+  window fails after **32.768 seconds** accepted; two windows had been merged.
+  No final, final latency, tail score or WER/CER exists. Buffered audio peaks at
+  17.096 seconds; unprocessed coverage peaks at 16.896 seconds including lookahead.
+  The rest of the fixture is not delivered after error. This is a failed test,
+  not a completed five-minute recording.
+
+Keep the conservative ambiguity guard; reject qualification. Both runs are
+appended to the ledger. Earlier one-sided-guard and pre-guard results follow as
+historical evidence; no newer failure overwrites the measured `9d27248` result.
+
+## Previous qualification: fresh-prefix proof (`94bda99`)
+
+**This revision's five-minute qualification fails.** Previous successful five-minute
 results below used a weaker merge and do not qualify this revision. The old
 latest-anchor splice could silently delete a freshly recovered negation. The
 new rule requires all discarded fresh words to belong to the contiguous timed
@@ -140,6 +168,8 @@ exactly. The omitted German sentence remains absent from the model hypothesis.
 **Keep the bounded-throughput/tail-correction milestone; reject full transcript
 quality acceptance.** Two synthetic paced runs are not an hour-long soak, and
 there is no measured five-minute full-utterance quality comparator or real-mic claim.
+For that profile, this corrected paced result supersedes the first 42/611-edit
+run; both remain archived. It predates both conservative prefix-proof changes.
 
 The final rapid regression at clean `923cf52` has the same measured runtime source
 hashes as the corrected five-minute run. It again completed 5/5 fixtures: 14/142 word
