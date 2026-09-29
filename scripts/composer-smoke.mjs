@@ -264,3 +264,45 @@ test(
     assert.ok(h.requests.every((method) => method.startsWith("talk.")));
   },
 );
+
+test("provider final or completed-close cannot request stock capture auto-stop", async (t) => {
+  const h = harness(t);
+  await h.prefix();
+  h.emit({ type: "transcript", text: "Recovered accepted text", final: true });
+  h.emit({ type: "close", reason: "completed" });
+  await tick();
+  assert.equal(h.controller.active, true);
+  assert.deepEqual(h.commits, []);
+  assert.equal(h.requests.includes("talk.session.close"), false);
+  // Explicit user Stop is still necessary for this accumulated final.
+  assert.equal(await h.controller.finishActive(), true);
+  assert.deepEqual(h.commits, [
+    { text: "Recovered accepted text", late: undefined },
+  ]);
+  assert.ok(h.requests.every((method) => method.startsWith("talk.")));
+});
+
+test("final then error recovers only a snapshot, not a successful stop-and-drain handshake", async (t) => {
+  const h = harness(t);
+  await h.prefix();
+  h.emit({ type: "transcript", text: "Recovered accepted text", final: true });
+  h.emit({ type: "error", message: "Synthetic safety ceiling interruption" });
+  await tick();
+  assert.equal(h.controller.active, false);
+  assert.equal(h.errors.length, 1);
+  assert.deepEqual(h.commits, [
+    { text: "Recovered accepted text", late: undefined },
+  ]);
+  // Speech captured while a provider finalizes cannot be recovered by publishing
+  // a later final after the error-triggered snapshot commit.
+  h.emit({
+    type: "transcript",
+    text: "Speech during finalization",
+    final: true,
+  });
+  await tick();
+  assert.deepEqual(h.commits, [
+    { text: "Recovered accepted text", late: undefined },
+  ]);
+  assert.ok(h.requests.every((method) => method.startsWith("talk.")));
+});

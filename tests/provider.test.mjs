@@ -476,3 +476,24 @@ test("crossing can/cannot stays in the only final alternative after bounded retr
   ]);
   assert.equal(f.runtime.metrics.uncertainJoins, 1);
 });
+
+test("wall ceiling loses decoded text and suppresses a late in-flight result", async (t) => {
+  t.mock.timers.enable({ apis: ["setTimeout"] });
+  const f = fixture(t);
+  await f.session.connect();
+  f.session.sendAudio(Buffer.alloc(128000));
+  f.jobs[0].resolve([word("Already decoded", 15)]);
+  await tick();
+  f.session.sendAudio(Buffer.alloc(96000));
+  assert.equal(f.jobs.length, 2);
+  t.mock.timers.tick(SESSION_SECONDS * 1000);
+  assert.equal(f.session.isConnected(), false);
+  assert.equal(f.events.length, 1);
+  assert.equal(f.events[0][0], "error");
+  assert.match(f.events[0][1], /60-minute/);
+  f.jobs[1].resolve([word("Already decoded", 3), word("late tail", 5)]);
+  await tick();
+  f.session.close();
+  assert.equal(f.events.length, 1);
+  assert.equal(f.stops, 1);
+});

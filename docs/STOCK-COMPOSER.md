@@ -60,8 +60,10 @@ by `onError` could make this particular composer preserve its snapshot and stop,
 but that is an interrupted-session recovery path, not an acknowledged successful
 stop: capture continues during inference and there is no agreement on the last
 accepted sample. An error first causes the relay to be removed before a late final.
-We have not substituted either sequence for a safe ceiling protocol or claimed
-it tested. A separately reviewed host change should stop capture, establish the
+Stock-controller regressions now confirm that final/completed-close leaves
+capture active, and final-then-error commits only the existing snapshot while
+ignoring a later final. These simulated tests do not qualify either sequence as
+a safe ceiling protocol. A separately reviewed host change should stop capture, establish the
 last accepted audio boundary, keep the relay alive for bounded final draining,
 and insert recovered text with an explicit stopped/incomplete status when needed.
 That design must cover both TTL expiry and the plugin safety ceiling.
@@ -85,3 +87,6 @@ input and RPC transport are simulated; stock encoding/controller/session/relay a
 the Python/GPU inference are real. There is no listening Gateway process or browser
 engine in this test. It is a paced source-level whole-path integration test, not
 production end-to-end acceptance.
+
+See the [ceiling lifecycle audit](../research/ceiling-lifecycle-audit.md) for exact
+wall/audio boundaries, source evidence, and the retained release limitation.

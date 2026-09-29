@@ -80,6 +80,9 @@ If reached on a host with a longer lifetime, it clears the entire in-memory
 dictation and inserts no text, including text already decoded. There is no recovery
 file. This behavior does not satisfy loss-safe hour-long dictation; do not rely on
 the 60-minute guard as a usable recording limit.
+This remains a **release limitation**, even after a hypothetical TTL increase:
+the provider contract cannot request a successful capture-stop/drain handshake.
+See the [ceiling audit](research/ceiling-lifecycle-audit.md).
 See [long-duration design and host limitations](docs/LONG-DURATION-PLAN.md) and
 [measured long-duration results](research/LONG-DURATION-RESULTS.md). Synthetic
 replay cannot qualify real microphones or Swiss German.

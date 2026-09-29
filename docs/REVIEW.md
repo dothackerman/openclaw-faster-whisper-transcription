@@ -44,7 +44,7 @@ See [source evidence](../research/long-duration-implementation.md),
 
 ## Verification
 
-- 88 Node and 18 Python deterministic tests pass, including maximum worker framing,
+- 89 Node and 18 Python deterministic tests pass, including maximum worker framing,
   independent audio/time ceilings at 60 minutes, serial overlap/tail draining,
   queue overload, pre-ready frames, cancellation, timeout, OOM/crash, disposal,
   invalid word timestamps, repeated-word seams, silence endpoints, and edit scoring.
@@ -150,3 +150,8 @@ works. The in-process composer harness simulates microphone input and RPC transp
 it exercises stock UI/relay code but cannot test device/browser/network behavior.
 The browser itself has a 10-second pre-creation buffer and no bounded post-creation
 RPC queue. These host-owned behaviors are outside a provider-only implementation.
+
+Ceiling follow-up: [exact audit](../research/ceiling-lifecycle-audit.md) retains
+the abort/data-loss behavior as a release limitation. Six stock-controller tests
+now include final/completed-close and final-then-error counterexamples; neither
+is a safe automatic completion protocol. No runtime or host change is made.
