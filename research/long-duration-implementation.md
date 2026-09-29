@@ -2,6 +2,25 @@
 
 Independent architect notes; do not replace incoming researcher files.
 
+## Atomic ASR word rendering follow-up
+
+The review against the historical 37.64% five-minute result correctly identifies
+one remaining representational risk: splitting a single timed `Word` into several
+rendering tokens can present a subset as agreed. The renderer now passes each
+original Word surface and absolute interval intact, applying NFC only for surface
+comparison/display. It preserves internal whitespace, punctuation, case and literal
+brackets. Distinct segmentations remain marked, even if joining their surfaces
+produces the same visible phrase. This is deliberately conservative.
+
+Connected crossing closure, midpoint compatibility, unique monotonic anchors and
+transactional output bounds remain unchanged. We retain compact unlabeled choices:
+adding earlier/later/retry to every pocket increases editorial overhead without
+establishing which reading is correct. We do not add an optimization DP: rejecting
+both reordered anchors is simpler and conservative. Tests cover atomic multi-piece
+words, literal surfaces, negation, crossing words and following tail. All 79 Node
+and 18 Python tests pass. Plan: clean rapid screen; prior five-minute results remain
+historical and do not qualify this representation change.
+
 ## Crossing-word sealing and exact-surface anchors
 
 The old `end <= seamEnd` alternative partition wrongly made a fresh word crossing

@@ -374,11 +374,23 @@ test("reviewed marker preserves retry punctuation while sharing exact common tex
     "beten die Etmas zu leiten und stellten den Monitor weiter von der Wand.";
   const later = "und schmelzen den Monitor weiter von der";
   const s = new Stitcher();
-  s.add([w(earlier, 5, 7)], 0, 8);
-  s.markUncertain([w(later, 1, 3)], 4, 10, {
-    words: [w(earlier.slice(0, -1), 1, 3)],
-    start: 4,
-  });
+  s.add(
+    earlier.split(" ").map((text) => w(text, 5, 7)),
+    0,
+    8,
+  );
+  s.markUncertain(
+    later.split(" ").map((text) => w(text, 1, 3)),
+    4,
+    10,
+    {
+      words: earlier
+        .slice(0, -1)
+        .split(" ")
+        .map((text) => w(text, 1, 3)),
+      start: 4,
+    },
+  );
   assert.equal(
     s.text(),
     "[uncertain: beten die Etmas zu leiten | (no words)] und [uncertain: stellten | schmelzen] den Monitor weiter von der [uncertain: Wand. | (no words) | Wand]",
@@ -573,4 +585,23 @@ test("unique common text requires compatible timing across all original readings
     "[uncertain: shared old | shared new]",
   );
   assert.throws(() => renderUncertainty(input, [[]]), /timing/);
+});
+
+test("multi-piece Word surfaces stay atomic with exact internal whitespace", () => {
+  const s = new Stitcher();
+  s.add([w("Do  not send", 5, 7)], 0, 8);
+  s.markUncertain([w("Do send", 1, 3)], 4, 10);
+  assert.equal(s.text(), "[uncertain: Do  not send | Do send]");
+  assert.equal(s.uncertainties, 1);
+  const segmented = new Stitcher();
+  segmented.add([w("shared phrase", 5, 7)], 0, 8);
+  segmented.markUncertain([w("shared", 1, 2), w("phrase", 2, 3)], 4, 10);
+  assert.equal(segmented.text(), "[uncertain: shared phrase | shared phrase]");
+});
+
+test("atomic marker surfaces preserve case and literal brackets", () => {
+  const s = new Stitcher();
+  s.add([w("Morgen [A]", 5, 7)], 0, 8);
+  s.markUncertain([w("morgen [A]", 1, 3)], 4, 10);
+  assert.equal(s.text(), "[uncertain: Morgen [A] | morgen [A]]");
 });

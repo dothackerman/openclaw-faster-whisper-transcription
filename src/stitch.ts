@@ -281,16 +281,12 @@ export class Stitcher {
         .map((w) => w.text.trim())
         .filter(Boolean)
         .join(" ");
-    // Word objects occasionally contain multiple surface pieces. Keep the
-    // originating span for each piece; never fabricate narrower timestamps.
-    const split = (words: Word[]) =>
-      words.flatMap((w) => {
-        const text = w.text.trim().replaceAll("[", "(").replaceAll("]", ")");
-        return text ? text.split(/\s+/u).map((text) => ({ ...w, text })) : [];
-      });
-    const readings = [split(old), split(fresh)];
+    // A provider Word is an atomic surface plus its original absolute interval.
+    // Splitting it invents independently alignable pieces and can turn only part
+    // of a disputed word object into apparently agreed text.
+    const readings = [old, fresh];
     if (retryAbsolute)
-      readings.push(split(retryAbsolute.filter((w) => w.start < seamEnd)));
+      readings.push(retryAbsolute.filter((w) => w.start < seamEnd));
     const compact = renderUncertainty(
       readings.map((r) => r.map((w) => w.text)),
       readings,
