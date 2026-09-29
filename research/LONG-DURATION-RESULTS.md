@@ -6,7 +6,64 @@ All speech here is self-authored, non-looped eSpeak NG synthesis transported as
 paragraph audio and padding to 300 seconds. Public manifests record every hash.
 No private OG recordings, real microphone, or Swiss-German acceptance is claimed.
 
-## Latest evidence: retain old-only overlap words (`a6911b9`)
+## Latest evidence: compact alternatives (`e0157ce`)
+
+**Keep compact presentation; usability/release acceptance remains rejected.** Clean
+`e0157ce5a8553206a45a7d6a928991a22e95dc5e` removes lexically duplicate readings
+and factors shared prefix/suffix words outside each marker, without selecting a
+winner. Empty alternatives remain explicit; timing-only ambiguity stays marked.
+Old-only negation, leading substitutions and Python/Node coverage safeguards remain.
+The supplied 223-character marker is 143 characters after duplicate removal.
+
+Fresh same-fixture medium/float16/beam5 reruns on the repo-local RTX 3060 Laptop:
+
+- **Rapid 5/5 finals**, two retries/two markers. Marker characters **280 versus
+  527** in `a6911b9`; visible WER **50/142 (35.21%)**, CER **232/899 (25.81%)**,
+  versus 76/142 and 390/899. German has seven substitutions/27 insertions; English
+  one substitution/10 insertions; mixed five substitutions and inexact final five;
+  boundary/silence error-free. No scored deletions; six repeated-phrase inserted
+  words. Retries add **2651 ms**; longest final **2416 ms** (German), English
+  **1965 ms**, boundary **730 ms**, mixed **585 ms**, silence **4 ms**.
+- **Full paced five-minute completion:** 300000.121 ms delivery, 300 seconds /
+  2,400,000 PCMU bytes with identical fixture/input/relay hashes; **34 normal
+  windows, eight anchors, 17 gaps, eight retries/eight markers**. Retry audio
+  remains 16.94–18.66 seconds; total extra decode wall time **8120.390 ms**.
+  No retry skipped, no auto-send, editable marked draft inserted.
+- **Five-minute visible text:** marker characters **1888 versus 2050**; WER
+  **230/611 (37.64%)**, CER **1310/3819 (34.30%)**, versus 257/611 and 1452/3819.
+  34 substitutions, two deletions, 194 insertions, five adjacent duplicates,
+  **120 repeated-phrase inserted words**. Score includes labels and all remaining
+  alternatives. Final-20 errors **three**, final five exact: no verified tail claim.
+- **Stop:** provider final **1651 ms**, stock editable insertion **5009 ms**;
+  provider budget remains 4500 ms. Queue peak **17.480 s**, maximum unprocessed
+  coverage **17.408 s** includes lookahead, not solely GPU waiting.
+- **GPU:** baseline **551 MiB**, peak **2981 MiB**, post-disposal **551 MiB**;
+  mean sampled host utilization **22.01%**. Retry wall time is higher than the
+  prior run's 6642 ms. Host-wide telemetry and one run cannot attribute that change
+  or establish an efficiency/latency improvement; decoder scheduling was unchanged.
+
+A separate deterministic presentation replay reformats each saved `a6911b9` marker
+through the new `Stitcher.markUncertain` and compares the entire resulting draft to
+the fresh run: **all five rapid texts and the five-minute text match exactly**.
+Method: parse the old earlier/later/retry readings, convert `(no words)` to an empty
+array, assign each complete reading a synthetic word span 1–2 s, add old in window
+0–4 s, then mark fresh/retry in window 0–5 s. Replace that old marker with the
+rendered result; surrounding draft text stays unchanged. This checks presentation
+only, not audio/timestamp alignment. Artifact hashes and equality results are in
+`compact-presentation-replay`; the GPU ledger IDs are `long-compact-rapid` and
+`long-compact-five`. Core lexical-v1 normalization is unchanged; the long scorer
+adds an explicit count of characters inside complete uncertainty markers.
+
+This is reduced **visible editing overhead, not an ASR quality gain**, especially
+not a gain over the older 5.73% run with unsafe seam semantics. Distinct readings
+remain; common interior words are not heuristically aligned or truncated just to
+reduce score. Eight joins and 1888 marker characters still impose high review
+burden. No general reliability, real-mic, Swiss-German or hour-long acceptance.
+The integration uses actual stock code with simulated DOM/capture/RPC and real GPU,
+not a real browser/Gateway/mic. The 300-second fixture contains 218.332 seconds
+synthetic speech plus pauses/padding. Stock expiry and other loss risks remain.
+
+## Previous evidence: retain old-only overlap words (`a6911b9`)
 
 **Keep the omission safeguard; reject usability/release acceptance.** Clean
 `a6911b94a585e19efea2dae59c299251389af735` requires every lexical old word that

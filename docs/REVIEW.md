@@ -68,7 +68,7 @@ See [source evidence](../research/long-duration-implementation.md),
   tests cover nonempty insertion, silence and exact uncertainty-marker text with no send through the actual
   relay and stock encoding/controller. The fake-clock TTL test proves the 30-minute
   host obstacle. Native loader/catalog/disposal passes on the extracted npm artifact.
-  After the retry/marker candidate `a6911b9`, package build/check and extracted-artifact loader were rerun
+  After the retry/marker candidate `e0157ce`, package build/check and extracted-artifact loader were rerun
   sequentially and passed; no concurrent `dist` rebuild occurred during loading.
   Source was read-only.
 - Published SDK remains an exact locked development dependency; no stub or vendored
@@ -89,18 +89,20 @@ See [source evidence](../research/long-duration-implementation.md),
   and do not qualify the current implementation. The stricter unmarked `1a3f6fc`
   failed at window #24 after 212.480 seconds. Subsequent `036514b` and `565b9d1`
   completed with one/two markers but still silently discarded old-only words
-  after a valid first anchor. Current clean `a6911b9` prevents that omission.
-  Rapid fixtures complete 5/5 with two markers/two retries and marked WER/CER
-  53.52% / 43.38%. The full paced 300-second stock-code replay completes all
+  after a valid first anchor. `a6911b9` prevents that omission; current clean
+  `e0157ce` additionally compacts presentation without changing distinct readings.
+  Rapid completes 5/5 with two markers (280 characters versus 527), visible
+  WER/CER 35.21% / 25.81%. The paced 300-second stock-code run delivers all
   2,400,000 bytes with matching hashes and 34 normal windows. Eight retries cost
-  6642 ms and leave eight markers. Provider final is 1317 ms; stock insertion is
-  5008 ms, no auto-send. Verbatim marked WER is 257/611 (42.06%), CER 1452/3819
-  (38.02%): 34 substitutions, two deletions and 221 insertions, including labels
-  and all alternatives. The scorer counts 137 repeated-phrase inserted words;
-  final-20 errors are three, final five exact. Keep the omission safeguard and
-  bounded marked completion; **reject usability/release acceptance and quality
-  gain** because review burden is high. Actual stock code uses simulated capture,
-  DOM and RPC, not a live browser/Gateway/mic.
+  8120 ms and leave eight markers (1888 characters versus 2050). Provider final
+  1651 ms, stock insertion 5009 ms, no auto-send. Visible WER 230/611 (37.64%),
+  CER 1310/3819 (34.30%): 34 substitutions, two deletions and 194 insertions,
+  including marker labels and alternatives. There are 120 repeated-phrase inserted
+  words; final-20 errors three, final five exact. Re-rendering all six previous
+  fixture drafts reproduces the fresh text exactly: this is presentation overhead
+  reduction, not ASR quality gain. **Usability/release acceptance stays rejected.**
+  These are actual stock-code tests with simulated capture/DOM/RPC and real GPU,
+  not a live browser/Gateway/mic.
 
 ## Experiment and public-data boundary
 

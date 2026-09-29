@@ -26,6 +26,17 @@ five-minute GPU reruns. Score the actual compact visible text with the unchanged
 lexical metric, adding marker-character counts. Compare edit burden to verbose
 `a6911b9`, not an ASR quality gain against older less-safe splice policies.
 
+Clean `e0157ce` completed 68 Node / 18 Python and seven stock composer/relay
+checks. Rapid 5/5 keeps two markers but reduces their characters 527→280; visible
+WER/CER 35.21% / 25.81%. Paced five-minute completes 300 seconds/34 normal windows
+with eight markers (2050→1888 characters), 8120 ms retry work, provider final
+1651 ms, stock insertion 5009 ms, no Send. Visible WER/CER 37.64% / 34.30%; final-20
+errors three, final five exact. Reformatting saved verbose drafts reproduces every
+fresh text exactly. Keep compact presentation; reject usability acceptance and
+ASR quality-gain claims. [Measured results](LONG-DURATION-RESULTS.md) include the
+presentation replay recipe and append-only evidence IDs.
+
+
 ## Old-only overlap after a valid anchor
 
 The first-fresh-anchor splice formerly discarded the entire old suffix. Exact

@@ -154,20 +154,17 @@ synthetic eSpeak NG audio from self-authored scripts. Hashes are in
 `fixtures/public/manifest.json` and `fixtures/public/long-manifest.json`.
 They do not establish real microphone or dialect quality.
 
-The previous candidate (`a6911b9`) completes 5/5 rapid fixtures and a paced
-five-minute stock-code integration replay, with old-only overlap words protected
-by retry/marked alternatives. **Usability and release acceptance are rejected:**
-the rapid set needs two markers, and the five-minute run needs eight markers and
-eight retries (6642 ms extra decode work). Provider finalization takes 1317 ms;
-stock editable insertion takes 5008 ms with no auto-send. Verbatim marked
-five-minute WER/CER are 42.06% / 38.02%, including labels and all alternatives.
-The final five words are exact, but the final-20 metric has three errors. This
-high edit burden is not a quality improvement or a verified transcript. The test
-uses actual stock code with simulated capture/RPC, not a real browser, Gateway
-or microphone. Completion does not establish general five-minute reliability.
-
-Compact marker presentation is being remeasured; it does not change decoder
-quality, seam decisions or the existing correctness safeguards.
+The current candidate (`e0157ce`) completes 5/5 rapid fixtures and a paced
+five-minute stock-code integration replay with compact marked alternatives.
+**Usability and release acceptance remain rejected:** the rapid set has two markers,
+and the five-minute run has eight. Five-minute marker text is 1888 characters
+versus 2050 in the previous verbose presentation. Visible WER/CER are 37.64% /
+34.30%, including labels and all alternatives, versus 42.06% / 38.02% previously.
+Reformatting the previous draft reproduces the fresh text exactly: this is less
+presentation overhead, **not better ASR recognition**. Eight retries cost 8120 ms;
+provider final takes 1651 ms and stock insertion 5009 ms, with no auto-send. Final
+five words are exact; final-20 errors remain three. Actual stock code uses simulated
+capture/RPC, not a real browser, Gateway or microphone. The draft remains unverified.
 
 After provisioning the dedicated runtime/model and a local profile, build and
 validate fixture manifests, then run the five approximately 20-second fixtures
