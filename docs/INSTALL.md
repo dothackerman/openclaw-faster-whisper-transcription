@@ -123,6 +123,11 @@ no process uses it. Never delete shared caches or another Python environment.
   partial is inserted as success. These are quality/throughput qualification failures.
 - Ceiling: the plugin fails closed at 60 minutes; the stock host expires sessions
   at 30 minutes first. There is no provider-only renewal setting.
+  Both paths can lose the whole final-only dictation. No install/config step here
+  enables safe hour-long recording. The separate host proposal needs roughly a
+  65-minute guard, graceful expiry drain and browser-visible auto-Stop; merely
+  setting a host TTL to 60 minutes would be insufficient. See the
+  [host lifetime review](../research/host-ttl-change.md).
 - Slow insertion after a quick decode: the stock late-final listener waits for
   relay close. This is separate from GPU inference latency.
 

@@ -48,7 +48,10 @@ The plugin has a **60-minute wall/audio safety ceiling**. However, stock OpenCla
 extend that host limit. Neither 30 nor 60 minutes is qualified recording support.
 On stock OpenClaw, stop well before expiry and start another recording manually;
 this does not satisfy uninterrupted hour-long dictation. That requirement needs a
-separately reviewed host change for a longer/configurable TTL and safe expiry drain.
+separately reviewed host change for a longer TTL, safe expiry drain and visible
+auto-Stop. The proposed host guard is about 65 minutes: TTL starts at session
+creation, so exactly 60 minutes leaves insufficient lifecycle/drain headroom.
+This is an upstream proposal, not a plugin setting or a support claim.
 The plugin cannot promise a recoverable final when the host expires its session.
 **Loss risk:** the current plugin ceiling is an abort, not an automatic save.
 If reached on a host with a longer lifetime, it clears the entire in-memory

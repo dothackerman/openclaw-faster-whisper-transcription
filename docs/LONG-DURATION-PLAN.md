@@ -42,9 +42,27 @@ Host obstacle verified: stock relay expires at 30 minutes without renewal. A ful
 
 Available paths: keep the stock host and manually finish/restart recordings well
 before expiry, accepting that this does not meet uninterrupted hour-long dictation;
-or separately authorize an upstream host change with configurable lifetime and
-expiry final-drain semantics. Changing only the timer constant would not resolve
+or separately authorize an upstream host change with a longer transcription-only
+lifetime and expiry final-drain semantics. Changing only the timer constant would not resolve
 the current expiry path's loss of late finals. Neither path is deployed here.
+
+The independent [host lifetime review](../research/host-ttl-change.md) recommends
+an approximately **65-minute host guard for a 60-minute recording ceiling**.
+Host TTL starts at session creation, not at a guaranteed recording-start boundary;
+startup, queued audio delivery and the five-second final drain need headroom.
+Exactly 60 minutes of host TTL therefore does not guarantee 60 minutes of recording.
+65 minutes is a proposed internal guard, not supported recording duration or an
+existing configuration option. A targeted fixed transcription TTL is the smaller
+upstream proposal; configurability would require additional schema/runtime work.
+
+That separate change must also keep an expiring relay registered during bounded
+final drain, visibly auto-Stop capture at the recording ceiling, and surface an
+unexpected timeout while preserving any confirmed final for editable insertion.
+Current expiry deletes the relay before drain and labels it completed; stock
+capture may continue until a later append fails, losing the entire final-only
+transcript. Raising TTL alone or changing only the error label does not fix this.
+Real-browser/microphone and near-60-minute boundary tests remain required; the
+five-minute synthetic source-level replay does not qualify those behaviors.
 The current plugin ceiling also aborts and discards all session text; it is a
 memory/time guard, not a safe auto-finalization feature. Hour-long acceptance
 requires capture-stop acknowledgement and final-drain/recovery behavior at both
