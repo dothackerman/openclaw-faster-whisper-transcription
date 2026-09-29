@@ -47,6 +47,24 @@ fixtures, medium/float16/beam5, repo-local RTX 3060 Laptop environment:
   sampled mean host utilization **22.96%**. These host-wide samples and one run
   do not establish a latency/GPU-efficiency improvement. Decoder policy is unchanged.
 
+**Retry-resolution audit (same completed clean runs, no new inference): 0/10
+retried joins resolved without marking.** Rapid 0/2 costs 2533 ms on top of
+7981 ms normal decoding (31.7% extra); five-minute 0/8 costs 8439 ms on top of
+28427 ms (29.7% extra). This is decode wall time, not isolated GPU kernel time.
+Host-wide GPU figures above cannot assign incremental memory/load to retries.
+For successful complete runs, `resolved = retries - (uncertainJoins - retrySkipped)`:
+`src/provider.ts` attempts at most one retry per ambiguous join, and every other
+join is marked. Never apply this inference to failed, cancelled or incomplete
+runs, nor substitute the 23 rendered spans for eight joins. The mocked successful
+retry test verifies a code path, not observed GPU/ASR benefit.
+
+**Reject a claimed automatic-retry resolution, quality or latency benefit on this
+corpus.** A retry can supply another editable reading, but its value has not been
+validated. These measurements do not justify retries as an optimization. The next
+policy comparison should use short fixed fixtures with retries disabled before
+any default-policy change or further long recording. This audit changes no runtime
+behavior and does not repeat the paced run. Evidence: `localized-retry-resolution-audit`.
+
 Presentation replay parses each saved `a6911b9` marker into its earlier/later/retry
 word arrays (with `(no words)` as empty), calls `renderUncertainty`, and replaces
 only that marker. **All five rapid drafts and the five-minute draft exactly match

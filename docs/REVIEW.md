@@ -106,6 +106,13 @@ See [source evidence](../research/long-duration-implementation.md),
   exactly, proving presentation change, not ASR improvement. Keep the editorial
   format, but do not claim general usability, release or microphone acceptance.
   These tests use actual stock code with simulated capture/DOM/RPC and real GPU.
+- Audit of those same complete runs finds **0/10 real GPU retries resolved a join**
+  (rapid 0/2, five-minute 0/8). Five-minute retry decode work is 8439 ms on top of
+  28427 ms normal decode, a 29.7% increment. This is wall time; host GPU samples
+  cannot isolate retry cost. Mock resolution tests are not quality evidence.
+  A third reading may aid review, but its value is unvalidated. No retry benefit
+  or policy improvement is claimed; a short no-retry comparator should precede
+  changing the default or spending another long recording on that question.
 
 ## Experiment and public-data boundary
 
