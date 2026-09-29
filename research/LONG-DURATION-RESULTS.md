@@ -6,7 +6,37 @@ All speech here is self-authored, non-looped eSpeak NG synthesis transported as
 paragraph audio and padding to 300 seconds. Public manifests record every hash.
 No private OG recordings, real microphone, or Swiss-German acceptance is claimed.
 
-## Latest qualification: initial fresh prefix (`c0e6b83`)
+## Latest qualification: isolated-old ambiguity (`1a3f6fc`)
+
+**Five-minute acceptance remains rejected.** Clean
+`1a3f6fc272e5bf740772941aa9b71762e61821ad` replaces the blanket old-prefix guard
+with a 200-ms isolation margin before the first fresh token. Exact #13 broad
+`We` timing now preserves `a chair`; the isolated phantom still rejects. Nearby
+or overlapping old-only words may remain, which can retain spurious words; this
+is an uncalibrated timing heuristic, not a completeness or hallucination guarantee.
+
+- Rapid: **5/5 finals**, unchanged **15/142 word edits (10.56% WER)** and
+  **32/899 character edits (3.56% CER)** versus `c0e6b83`. German has eight
+  substitutions and one insertion; English one substitution; mixed five
+  substitutions and an inexact final-five suffix. Boundary and silence have
+  zero edits. No scored deletions or repeated-phrase insertions. Finals in
+  fixture order German/boundary/mixed/silence/English: 736/594/486/4/634 ms.
+- Paced five-minute stock-code/real-GPU integration: **0/1 finals**. Window #13
+  passes, but the 24th attempted window fails after **212.480 seconds accepted**,
+  with 23 successful merges (10 overlap joins, 12 gaps). Remaining fixture audio
+  is not delivered. No final WER/CER, tail score or final latency exists. Queue
+  peak 17.096 seconds; unprocessed coverage 16.896 seconds including lookahead.
+  GPU memory 551 MiB baseline, 3516 MiB peak, 551 MiB after disposal. This is a
+  failed five-minute test, not supported 212-second dictation or a complete run.
+
+Saved-hypothesis replay independently reaches the same failing window. Unlike
+#13, #24 has old words wholly inside fresh audio and ending 740/240 ms before
+the first fresh token. The symmetric isolated-word guard deliberately rejects
+that ambiguity. No wider context re-decode or recovery is implemented. Keep the
+specific broad-timestamp fix for review, reject release/long-duration acceptance.
+All historical runs remain separately attributed in the append-only ledger.
+
+## Previous qualification: initial fresh prefix (`c0e6b83`)
 
 **Reject long-dictation/quality acceptance.** Clean
 `c0e6b8393758888458cdd1789ca30f2239f7d236` anchors only the initial fresh prefix,

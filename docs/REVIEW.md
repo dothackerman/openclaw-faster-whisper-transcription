@@ -35,7 +35,7 @@ See [source evidence](../research/long-duration-implementation.md),
 
 ## Verification
 
-- 50 Node and 13 Python deterministic tests pass, including maximum worker framing,
+- 52 Node and 13 Python deterministic tests pass, including maximum worker framing,
   independent audio/time ceilings at 60 minutes, serial overlap/tail draining,
   queue overload, pre-ready frames, cancellation, timeout, OOM/crash, disposal,
   invalid word timestamps, repeated-word seams, silence endpoints, and edit scoring.
@@ -44,7 +44,9 @@ See [source evidence](../research/long-duration-implementation.md),
   The exact `alpha@5 / recovered@5.5 / anchor@7 / tail@8` repro now retains the
   recovered word using only the initial fresh prefix anchor. A leading substitution
   requires two subsequent exact timed words; the fresh suffix always remains.
-  Old-only words fully within new audio before the first anchor still fail.
+  Old-only words fully within new audio before the first anchor fail when at
+  least 200 ms separates their end from the first fresh token; uncertain nearby
+  or overlapping timestamps are retained. Exact trace #13 and threshold cases pass.
   This includes exact old `phantom@6, anchor@7` versus fresh `anchor@7, tail@8`
   in a window beginning at 6 seconds; the merge explicitly rejects the phantom.
 - Four tests through the unmodified stock composer pass: reproduce stale partial
@@ -54,7 +56,7 @@ See [source evidence](../research/long-duration-implementation.md),
   tests cover nonempty insertion and silent no-insertion/no-send through the actual
   relay and stock encoding/controller. The fake-clock TTL test proves the 30-minute
   host obstacle. Native loader/catalog/disposal passes on the extracted npm artifact.
-  After `c0e6b83`, package build/check and extracted-artifact loader were rerun
+  After `1a3f6fc`, package build/check and extracted-artifact loader were rerun
   sequentially and passed; no concurrent `dist` rebuild occurred during loading.
   Source was read-only.
 - Published SDK remains an exact locked development dependency; no stub or vendored
@@ -73,9 +75,9 @@ See [source evidence](../research/long-duration-implementation.md),
   this is not complete-transcript quality acceptance.
   These completion metrics predate the stricter fresh-prefix proof at `94bda99`
   and do not qualify the current implementation; see the latest failure evidence.
-  The latest initial-prefix clean reruns at `c0e6b83` produce 5/5 rapid finals
-  (10.56% WER / 3.56% CER, one extra German substitution versus `a24cce4`)
-  and fail the five-minute fixture after 114.176 seconds
+  The latest isolated-old-ambiguity clean reruns at `1a3f6fc` produce 5/5 rapid finals
+  (10.56% WER / 3.56% CER, unchanged from `c0e6b83`)
+  and fail the five-minute fixture at window #24 after 212.480 seconds
   accepted audio. No final is emitted
   on these seam errors. Current long-dictation release qualification is rejected.
 

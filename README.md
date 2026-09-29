@@ -44,7 +44,9 @@ ceiling or deadline failure return an error and **no successful truncated final*
 The total Stop drain remains **4.5 seconds**, including in-flight work.
 Only the initial fresh prefix can anchor a splice; its full suffix remains fresh,
 preserving recovered words. A wholly contained old-only word before that anchor
-causes explicit failure; left-clipped context may remain. A leading substitution
+causes explicit failure if it ends at least 200 ms before the first fresh token.
+Overlapping/nearby timestamps and left-clipped context may remain; this can also
+retain spurious words and is not a calibrated confidence guarantee. A leading substitution
 requires acoustic overlap and two following exact timed words, and retains the
 old first spelling. The fresh suffix can still replace correct old words with
 incorrect ones. This heuristic can reject ordinary speech and is not qualified
@@ -141,7 +143,7 @@ synthetic eSpeak NG audio from self-authored scripts. Hashes are in
 They do not establish real microphone or dialect quality.
 
 Current rc2 evidence: 5/5 rapid finals, with German/mixed recognition errors.
-The five-minute fixture fails after 114.176 seconds of accepted audio. These
+The five-minute fixture fails after 212.480 seconds of accepted audio. These
 commands reproduce evaluation, not a claim of supported five-minute dictation.
 
 After provisioning the dedicated runtime/model and a local profile, build and

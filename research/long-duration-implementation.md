@@ -2,7 +2,36 @@
 
 Independent architect notes; do not replace incoming researcher files.
 
-## Initial fresh-prefix candidate (`c0e6b83`)
+## Isolated-old ambiguity candidate (`1a3f6fc`)
+
+The exact saved window #13 starts at 108.98. Old `a` occupies 109.32–109.56 and
+`chair.` 109.56–109.74; old `We` is 110.04–110.28. Fresh `We` spans
+108.98–110.08 and is followed by the same timed `agreed to keep ... task`.
+The old words are not isolated before the fresh token; they overlap its broad
+estimated span. Treating every old start inside the window as a phantom was too
+strict. The new candidate rejects an old-only word before the initial anchor
+only when its start is inside the fresh window **and** it ends at least 200 ms
+before the fresh first token starts. The exact phantom at 6.0–6.3 versus fresh
+anchor at 7.0 still rejects (700-ms separation). Tests cover the inclusive 200-ms
+boundary, a permitted 190-ms gap, and the exact full #13 phrase/timestamps.
+
+This is a heuristic uncertainty margin, not calibrated confidence or timestamp
+ground truth. Old-only words overlapping/near the first fresh token may remain,
+including potentially spurious words. It does not prove absence of hallucinations
+or preserve all real words under inaccurate timestamps. Initial-prefix and
+corroborated leading-substitution rules remain unchanged. No automatic re-decode
+has been added; clearly isolated ambiguity still fails with no final.
+
+All 52 Node and 13 Python tests pass. Offline sequential replay of the saved
+34-window hypotheses now passes 23 windows (10 overlap joins, 12 gaps), then
+rejects #24 at 207.34. Its fresh first `und` begins at 208.68; old `die` ends
+207.94 and `Etmas` ends 208.44, separated by 740 and 240 ms respectively while
+fully within the fresh audio. This remains a materially different case from the
+broad first-word overlap at #13. The failed offline transcript is not scored as
+a complete five-minute output or used for latency claims. Fresh paced tests
+record qualification separately.
+
+## Previous initial fresh-prefix candidate (`c0e6b83`)
 
 Only the first fresh word may anchor the splice. Candidates match that token
 within 0.8 seconds midpoint tolerance; exact initial runs rank ahead of leading
