@@ -42,14 +42,13 @@ plus one 16-second snapshot; completed recording audio is not retained. Final te
 is bounded to 160,000 characters / 24,000 words. Queue overload, ambiguous seams,
 ceiling or deadline failure return an error and **no successful truncated final**.
 The total Stop drain remains **4.5 seconds**, including in-flight work.
-An overlap match must account for every fresh word discarded and every retained
-old word wholly covered by the overlapping audio before its splice;
-unmatched recovered words cause an explicit session failure rather than silently
-disappearing. This conservative policy can reject ordinary speech and is still
-under qualification; earlier successful five-minute results used a weaker rule.
-Time-coincident one-for-one substitutions may retain the old spelling before
-the anchor; unmatched insertions/deletions still fail. Timestamp alignment does
-not establish which spelling is correct or prove that no speech was missed.
+Only the initial fresh prefix can anchor a splice; its full suffix remains fresh,
+preserving recovered words. A wholly contained old-only word before that anchor
+causes explicit failure; left-clipped context may remain. A leading substitution
+requires acoustic overlap and two following exact timed words, and retains the
+old first spelling. The fresh suffix can still replace correct old words with
+incorrect ones. This heuristic can reject ordinary speech and is not qualified
+for complete dictation; timestamps do not prove that no speech was missed.
 
 The plugin has a **60-minute wall/audio safety ceiling**. However, stock OpenClaw
 2026.9.6 expires transcription sessions after **30 minutes**; this plugin cannot

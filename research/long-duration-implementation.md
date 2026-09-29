@@ -2,7 +2,39 @@
 
 Independent architect notes; do not replace incoming researcher files.
 
-## Current timed-substitution policy (`a24cce4`)
+## Initial fresh-prefix candidate (`c0e6b83`)
+
+Only the first fresh word may anchor the splice. Candidates match that token
+within 0.8 seconds midpoint tolerance; exact initial runs rank ahead of leading
+substitutions, then longer initial runs and closer timing break ties. A leading
+one-for-one substitution is allowed only with positive-duration acoustic overlap
+of at least half the shorter word and at least two following exact timed words.
+The old first word is retained (e.g. `Wir` rather than fresh `Wie`), then the entire
+fresh suffix replaces the old suffix. Later matches never discard a fresh prefix.
+
+This explicitly changes the earlier corrected-word policy: `alpha recovered
+anchor tail` and a newly recovered negation are retained, including through the
+provider final. Post-anchor substitutions use the fresh spelling: the exact saved
+for/four case retains fresh `four`, while correcting `letter` to `label`.
+That does not establish which recognizer hypothesis is correct. An old-only word
+after the initial anchor is part of the superseded suffix, not silently retained.
+The symmetric guard still rejects any wholly contained old-only word before the
+first fresh anchor, including the exact phantom case. Old words starting before
+the new window are clipped context. No bounded re-decode fallback is implemented.
+
+All 50 Node and 13 Python tests pass: recovered insertion/negation retention,
+phantom rejection, exact German Wir/Wie timing and insufficient-corroboration
+rejection, for/four suffix policy, corrected repeated tail, and real repetitions.
+Offline sequential replay of saved hypotheses still rejects at window 13. An
+independent pairwise diagnostic initializes each boundary from the immediately
+preceding saved window: 27/33 boundaries pass, six reject (#13 at 108.98, #20 at
+173.60, #24 at 207.34, #26 at 223.78, #28 at 241.10, #34 at 293.98 seconds).
+This is not a complete transcript or paced measurement. We cannot reproduce the
+research suggestion's all-34-window success while enforcing this symmetric guard;
+the generic repeated-tail regression passes but saved boundary #34 is rejected.
+Clean rapid and paced-five-minute runs qualify this candidate separately.
+
+## Previous timed-substitution policy (`a24cce4`)
 
 The symmetric exact-token guard was too strict for time-coincident substitutions.
 The saved window at 31.16 seconds contains `for` at 43.72–44.00; the window at

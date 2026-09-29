@@ -35,18 +35,16 @@ See [source evidence](../research/long-duration-implementation.md),
 
 ## Verification
 
-- 49 Node and 13 Python deterministic tests pass, including maximum worker framing,
+- 50 Node and 13 Python deterministic tests pass, including maximum worker framing,
   independent audio/time ceilings at 60 minutes, serial overlap/tail draining,
   queue overload, pre-ready frames, cancellation, timeout, OOM/crash, disposal,
   invalid word timestamps, repeated-word seams, silence endpoints, and edit scoring.
-  New regressions reject silent deletion of a fresh overlap negation, ensure no
-  provider final on that error, and reject subset-manifest reference/hash drift.
-  The exact `alpha@5 / recovered@5.5 / anchor@7 / tail@8` review repro fails.
-  One-for-one time-coincident substitutions now retain the old spelling through
-  the anchor, with an explicit overlap-duration check; corrected suffixes remain
-  fresh. This differs from unpaired insertion/deletion, which still fails.
-  Symmetric old-only overlap regressions also pass; both retained old and
-  discarded fresh prefixes must be covered by monotone token/time pairs.
+  New regressions retain a fresh overlap negation through the provider's only
+  final, reject ambiguous leading overlap, and reject subset-manifest reference/hash drift.
+  The exact `alpha@5 / recovered@5.5 / anchor@7 / tail@8` repro now retains the
+  recovered word using only the initial fresh prefix anchor. A leading substitution
+  requires two subsequent exact timed words; the fresh suffix always remains.
+  Old-only words fully within new audio before the first anchor still fail.
   This includes exact old `phantom@6, anchor@7` versus fresh `anchor@7, tail@8`
   in a window beginning at 6 seconds; the merge explicitly rejects the phantom.
 - Four tests through the unmodified stock composer pass: reproduce stale partial
@@ -56,7 +54,7 @@ See [source evidence](../research/long-duration-implementation.md),
   tests cover nonempty insertion and silent no-insertion/no-send through the actual
   relay and stock encoding/controller. The fake-clock TTL test proves the 30-minute
   host obstacle. Native loader/catalog/disposal passes on the extracted npm artifact.
-  After `a24cce4`, package build/check and extracted-artifact loader were rerun
+  After `c0e6b83`, package build/check and extracted-artifact loader were rerun
   sequentially and passed; no concurrent `dist` rebuild occurred during loading.
   Source was read-only.
 - Published SDK remains an exact locked development dependency; no stub or vendored
@@ -75,8 +73,8 @@ See [source evidence](../research/long-duration-implementation.md),
   this is not complete-transcript quality acceptance.
   These completion metrics predate the stricter fresh-prefix proof at `94bda99`
   and do not qualify the current implementation; see the latest failure evidence.
-  The latest timed-substitution clean reruns at `a24cce4` produce 5/5 rapid finals
-  (9.86% WER / 3.23% CER, unchanged from the earlier successful rapid profile)
+  The latest initial-prefix clean reruns at `c0e6b83` produce 5/5 rapid finals
+  (10.56% WER / 3.56% CER, one extra German substitution versus `a24cce4`)
   and fail the five-minute fixture after 114.176 seconds
   accepted audio. No final is emitted
   on these seam errors. Current long-dictation release qualification is rejected.

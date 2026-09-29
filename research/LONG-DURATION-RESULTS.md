@@ -6,7 +6,40 @@ All speech here is self-authored, non-looped eSpeak NG synthesis transported as
 paragraph audio and padding to 300 seconds. Public manifests record every hash.
 No private OG recordings, real microphone, or Swiss-German acceptance is claimed.
 
-## Latest qualification: timed substitutions (`a24cce4`)
+## Latest qualification: initial fresh prefix (`c0e6b83`)
+
+**Reject long-dictation/quality acceptance.** Clean
+`c0e6b8393758888458cdd1789ca30f2239f7d236` anchors only the initial fresh prefix,
+retains all following fresh words, and still rejects a wholly contained old-only
+word before that anchor. A leading substitution requires two subsequent exact
+timed words. Exact recovered-word/negation retention, phantom rejection, German
+Wir/Wie, for/four, corrected-tail and genuine repetition tests pass. The new
+for/four policy retains fresh `four`; it does not claim that spelling is correct.
+
+- Rapid: **5/5 finals**, WER **15/142 = 10.56%**, CER **32/899 = 3.56%**.
+  Versus the same-fixture `a24cce4` run, German adds one substitution (eight
+  substitutions and one insertion now). English remains one substitution;
+  mixed remains five substitutions and an inexact final-five suffix. Boundary
+  and silence remain error-free. No scored deletions or repeated-phrase
+  insertions. Finals: German 731 ms, boundary 600 ms, mixed 470 ms, silence
+  3 ms, English 646 ms. Completion recovery is not a quality gain; this run's
+  lexical score is slightly worse than the prior 14/142-edit candidate.
+- Paced five-minute stock-code/real-GPU integration: **0/1 finals**, failing at
+  the thirteenth attempted window after **114.176 seconds accepted** and 12
+  successful merges. No final, WER/CER, tail score or final latency exists.
+  Queue peak 16.984 seconds; unprocessed coverage 16.896 seconds including
+  lookahead. GPU memory 551 MiB baseline, 2918 MiB peak, 551 MiB after disposal.
+  This is a failed five-minute test, not a shortened success.
+
+The saved-hypothesis diagnostic passes the reported window-5 and window-18 cases,
+but sequential reassembly stops at #13. Independent adjacent-window checks reject
+#13, #20, #24, #26, #28 and #34 with the symmetric guard enabled (27/33 pass).
+Those checks are not a complete transcript or paced evidence. In particular,
+passing the constructed repeated-tail regression does not mean the actual final
+saved boundary #34 succeeds; it is rejected. No all-34-window success is claimed.
+Keep the recovered-word mechanism for review, reject release qualification.
+
+## Previous qualification: timed substitutions (`a24cce4`)
 
 **Five-minute qualification still fails.** Clean
 `a24cce4edbcad07e20dc67d4cfedd7b64c212721` pairs overlap-prefix words monotonically,
