@@ -32,17 +32,24 @@ Audio and transcripts stay in memory and private subprocess pipes, never ordinar
 logs. Native stderr is drained without retention. Model loading is lazy on first
 connect; the warm child exits after 120 idle seconds to release GPU memory.
 Crashes, OOM, startup/decode timeouts, and finalization failures are visible.
-There is no automatic CPU fallback or private-audio retry. Linux parent-death
+There is no automatic CPU fallback or retry after worker/OOM failure. Linux parent-death
 signaling also terminates the worker if its Gateway parent exits unexpectedly.
 
 Recording is processed continuously with pause-aware windows, a **16-second
 maximum and 4-second overlap** at forced boundaries, not a short recording cap. A single serial decoder joins timed
 words across overlaps. The rolling audio queue is limited to 32 seconds (256 KB),
-plus one 16-second snapshot; completed recording audio is not retained. Final text
-is bounded to 160,000 characters / 24,000 words. Queue overload, ambiguous seams,
+plus the previous/current 16-second windows and one at-most-20-second retry.
+Completed audio beyond that bounded context is not retained. Final text, including
+uncertainty alternatives, is bounded to 160,000 characters / 24,000 words. Queue overload,
 ceiling or deadline failure return an error and **no successful truncated final**.
 The total Stop drain remains **4.5 seconds**, including in-flight work.
-Only the initial fresh prefix can anchor a splice; its full suffix remains fresh,
+An ambiguous seam gets at most one bounded local overlap re-decode. If it remains
+ambiguous, final text includes `[uncertain: earlier: ... | later: ... | retry: ...]`
+with competing readings; review and edit it before Send. Markers are never sent
+automatically and are not verified transcription. The retry shares the existing
+Stop deadline and may be skipped when too little time remains.
+
+Only the initial fresh prefix can anchor an unmarked splice; its full suffix remains fresh,
 preserving recovered words. A wholly contained old-only word before that anchor
 causes explicit failure if it ends at least 200 ms before the first fresh token.
 Overlapping/nearby timestamps and left-clipped context may remain; this can also
@@ -142,8 +149,9 @@ synthetic eSpeak NG audio from self-authored scripts. Hashes are in
 `fixtures/public/manifest.json` and `fixtures/public/long-manifest.json`.
 They do not establish real microphone or dialect quality.
 
-Current rc2 evidence: 5/5 rapid finals, with German/mixed recognition errors.
-The five-minute fixture fails after 212.480 seconds of accepted audio. These
+The previous unmarked candidate completed 5/5 rapid fixtures but failed the
+five-minute fixture after 212.480 seconds. The new uncertainty/retry candidate
+requires fresh GPU qualification. These
 commands reproduce evaluation, not a claim of supported five-minute dictation.
 
 After provisioning the dedicated runtime/model and a local profile, build and

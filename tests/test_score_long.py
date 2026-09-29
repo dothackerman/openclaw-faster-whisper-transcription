@@ -5,6 +5,11 @@ import unittest
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]/'scripts'))
 from score_long import edits
 class LongScoreTests(unittest.TestCase):
+    def test_marked_output_requires_review_and_alternatives_are_not_stripped(self):
+        result=edits('not approved','[uncertain: earlier: not approved | later: approved]')
+        self.assertEqual(result['uncertaintyMarkers'],1)
+        self.assertTrue(result['reviewRequired'])
+        self.assertGreater(result['insertions'],0)
     def test_missing_and_repeated_words_have_separate_counts(self):
         result=edits('one two three end','one one three end')
         self.assertEqual(result['substitutions']+result['deletions']+result['insertions'],1)

@@ -241,6 +241,7 @@ try {
         row = {
           ...row,
           status: "ok",
+          reviewRequired: result.text.includes("[uncertain:"),
           text: result.text,
           reference: fixture.reference,
           firstPartialMs: firstPartial,

@@ -119,8 +119,10 @@ no process uses it. Never delete shared caches or another Python environment.
 - Final timeout: do not raise the budget above 4.5 seconds. OpenClaw drops results
   after five. Inspect measured queue lag and GPU throughput before changing a profile. No
   speculative text is inserted as a successful final.
-- Cannot keep up / alignment failure: the whole dictation fails explicitly. No
-  partial is inserted as success. These are quality/throughput qualification failures.
+- Cannot keep up: queue overflow fails the dictation explicitly.
+- Uncertain alignment: one bounded wider-context decode is attempted; unresolved
+  alternatives appear in a visible `[uncertain: ...]` span in the final editable
+  draft. Review both readings before Send. This is not fully verified output.
 - Ceiling: the plugin fails closed at 60 minutes; the stock host expires sessions
   at 30 minutes first. There is no provider-only renewal setting.
   Both paths can lose the whole final-only dictation. No install/config step here

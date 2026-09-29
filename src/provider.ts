@@ -8,9 +8,10 @@ import {
   OVERLAP_SECONDS,
   QUEUE_SECONDS,
   SESSION_SECONDS,
+  RETRY_AUDIO_SECONDS,
 } from "./limits.js";
 import { endpoint } from "./endpoint.js";
-import { Stitcher } from "./stitch.js";
+import { AlignmentError, Stitcher, type Word } from "./stitch.js";
 
 type Request = Parameters<
   RealtimeTranscriptionProviderPlugin["createSession"]
@@ -25,6 +26,11 @@ export class Runtime {
     anchors: 0,
     gaps: 0,
     receivedSeconds: 0,
+    retries: 0,
+    retryDecodeMs: [] as number[],
+    retryAudioSeconds: [] as number[],
+    retrySkipped: 0,
+    uncertaintyMarkers: 0,
   };
   private decoder?: Decoder;
   private active?: { abort: (e: Error) => void };
@@ -68,6 +74,9 @@ export class Runtime {
       offset = 0,
       total = 0,
       decodedEnd = 0;
+    let previousAudio = Buffer.alloc(0),
+      previousStart = 0;
+    let finalDeadline = Infinity;
     let busy = false,
       loaded = false;
     const stitch = new Stitcher();
@@ -84,6 +93,8 @@ export class Runtime {
       clearTimeout(lifetime);
       buffer.fill(0);
       buffer = Buffer.alloc(0);
+      previousAudio.fill(0);
+      previousAudio = Buffer.alloc(0);
       stitch.clear();
       if (this.active === owner) {
         this.active = undefined;
@@ -115,20 +126,89 @@ export class Runtime {
         start = offset;
       const advance = cut?.advance ?? Math.min(strideBytes, size);
       const snapshot = Buffer.from(buffer.subarray(0, size));
+      let retained = false;
       const started = performance.now();
+      const metrics = this.metrics;
       void this.decoder!.decodeWindow(snapshot)
-        .then((words) => {
+        .then(async (words) => {
           if (state === "done") return;
-          stitch.add(
-            words,
-            start / AUDIO_BYTES_PER_SECOND,
-            (start + size) / AUDIO_BYTES_PER_SECOND,
-          );
+          const decodeMs = performance.now() - started;
+          const windowStart = start / AUDIO_BYTES_PER_SECOND;
+          const windowEnd = (start + size) / AUDIO_BYTES_PER_SECOND;
+          try {
+            stitch.add(words, windowStart, windowEnd);
+          } catch (e) {
+            if (!(e instanceof AlignmentError)) throw e;
+            let retry: { words: Word[]; start: number } | undefined;
+            let resolved = false;
+            const retryStart = Math.max(
+              previousStart,
+              start + size - RETRY_AUDIO_SECONDS * AUDIO_BYTES_PER_SECOND,
+            );
+            // One wider-context retry, only when it adds retained audio. During
+            // Stop reserve enough of the existing budget; never extend it.
+            if (
+              previousAudio.length &&
+              retryStart < start &&
+              previousStart + previousAudio.length >= start &&
+              finalDeadline - performance.now() >= Math.max(500, decodeMs * 1.5)
+            ) {
+              const retryAudio = Buffer.concat([
+                previousAudio.subarray(
+                  retryStart - previousStart,
+                  start - previousStart,
+                ),
+                snapshot,
+              ]);
+              const retryStarted = performance.now();
+              metrics.retries++;
+              metrics.retryAudioSeconds.push(
+                retryAudio.length / AUDIO_BYTES_PER_SECOND,
+              );
+              try {
+                const retryWords = await this.decoder!.decodeWindow(retryAudio);
+                // Await may race cancellation/reload/deadline. No late commit.
+                if ((state as string) === "done") return;
+                retry = {
+                  words: retryWords,
+                  start: retryStart / AUDIO_BYTES_PER_SECOND,
+                };
+                if (
+                  retryWords.length &&
+                  stitch.retryRetainsReadings(
+                    words,
+                    windowStart,
+                    retryWords,
+                    retry.start,
+                  )
+                ) {
+                  try {
+                    stitch.add(retryWords, retry.start, windowEnd);
+                    resolved = true;
+                  } catch (retryError) {
+                    if (!(retryError instanceof AlignmentError))
+                      throw retryError;
+                  }
+                }
+              } finally {
+                metrics.retryDecodeMs.push(performance.now() - retryStarted);
+                retryAudio.fill(0);
+              }
+            } else metrics.retrySkipped++;
+            if (!resolved)
+              stitch.markUncertain(words, windowStart, windowEnd, retry);
+          }
+          if ((state as string) === "done") return;
           decodedEnd = start + size;
-          this.metrics.windows++;
-          this.metrics.decodeMs.push(performance.now() - started);
-          this.metrics.anchors = stitch.anchors;
-          this.metrics.gaps = stitch.gaps;
+          metrics.windows++;
+          metrics.decodeMs.push(decodeMs);
+          metrics.anchors = stitch.anchors;
+          metrics.gaps = stitch.gaps;
+          metrics.uncertaintyMarkers = stitch.uncertainties;
+          previousAudio.fill(0);
+          previousAudio = snapshot;
+          previousStart = start;
+          retained = true;
           // Keep overlap for the next decode, including audio arriving in flight.
           const consumed = advance;
           buffer.copyWithin(0, consumed, length);
@@ -143,7 +223,7 @@ export class Runtime {
           ),
         )
         .finally(() => {
-          snapshot.fill(0);
+          if (!retained) snapshot.fill(0);
           busy = false;
           pump();
         });
@@ -155,6 +235,7 @@ export class Runtime {
         return;
       }
       state = "closing";
+      finalDeadline = performance.now() + this.config.finalTimeoutMs;
       finalTimer = setTimeout(
         () =>
           fail(
@@ -186,6 +267,11 @@ export class Runtime {
           anchors: 0,
           gaps: 0,
           receivedSeconds: 0,
+          retries: 0,
+          retryDecodeMs: [],
+          retryAudioSeconds: [],
+          retrySkipped: 0,
+          uncertaintyMarkers: 0,
         };
         buffer = Buffer.alloc(QUEUE_SECONDS * AUDIO_BYTES_PER_SECOND);
         lifetime = setTimeout(

@@ -1,5 +1,6 @@
 import { MAX_TRANSCRIPT_CHARS, MAX_TRANSCRIPT_WORDS } from "./limits.js";
 export type Word = { text: string; start: number; end: number };
+export class AlignmentError extends Error {}
 const token = (s: string) =>
   s
     .normalize("NFC")
@@ -9,14 +10,20 @@ const token = (s: string) =>
 export class Stitcher {
   private words: Word[] = [];
   private end = 0;
+  private sealed = "";
+  private sealedUntil = -Infinity;
+  private sealedWords = 0;
+  uncertainties = 0;
   anchors = 0;
   gaps = 0;
   add(relative: Word[], start: number, end: number): void {
-    const next = relative.map((w) => ({
-      ...w,
-      start: w.start + start,
-      end: w.end + start,
-    }));
+    const next = relative
+      .map((w) => ({
+        ...w,
+        start: w.start + start,
+        end: w.end + start,
+      }))
+      .filter((w) => w.end > this.sealedUntil);
     let merged: Word[];
     if (!this.words.length || !next.length) {
       merged = [...this.words, ...next];
@@ -89,7 +96,7 @@ export class Stitcher {
               (w) => w.start >= start && next[0]!.start - w.end >= 0.2 - 1e-9,
             )
         )
-          throw new Error(
+          throw new AlignmentError(
             "Faster-Whisper could not align all words at a chunk boundary; no complete transcript is available",
           );
         merged = [...this.words.slice(0, anchor + 1), ...next.slice(1)];
@@ -98,14 +105,15 @@ export class Stitcher {
         merged = [...this.words, ...next];
         this.gaps++;
       } else {
-        throw new Error(
+        throw new AlignmentError(
           "Faster-Whisper could not align a chunk boundary; no complete transcript is available",
         );
       }
     }
     if (
-      merged.length > MAX_TRANSCRIPT_WORDS ||
-      merged.reduce((n, w) => n + w.text.length + 1, 0) > MAX_TRANSCRIPT_CHARS
+      this.sealedWords + merged.length > MAX_TRANSCRIPT_WORDS ||
+      this.sealed.length + merged.reduce((n, w) => n + w.text.length + 1, 0) >
+        MAX_TRANSCRIPT_CHARS
     )
       throw new Error(
         "Faster-Whisper transcript safety limit exceeded; no complete transcript is available",
@@ -114,12 +122,124 @@ export class Stitcher {
     this.end = end;
   }
   text(): string {
-    return this.words
-      .map((w) => w.text.trim())
+    return [
+      this.sealed,
+      this.words
+        .map((w) => w.text.trim())
+        .filter(Boolean)
+        .join(" "),
+    ]
       .filter(Boolean)
       .join(" ");
   }
+  markUncertain(
+    relative: Word[],
+    start: number,
+    end: number,
+    retry?: { words: Word[]; start: number },
+  ): void {
+    const absolute = relative.map((w) => ({
+      ...w,
+      start: w.start + start,
+      end: w.end + start,
+    }));
+    const seamEnd = this.end;
+    const uncertainStart = Math.max(start, this.sealedUntil);
+    const before = this.words.filter((w) => w.end <= uncertainStart);
+    const old = this.words.filter((w) => w.end > uncertainStart);
+    const fresh = absolute.filter(
+      (w) => w.end > this.sealedUntil && w.end <= seamEnd,
+    );
+    const tail = absolute.filter(
+      (w) => w.end > Math.max(seamEnd, this.sealedUntil),
+    );
+    const render = (words: Word[]) =>
+      words
+        .map((w) => w.text.trim())
+        .filter(Boolean)
+        .join(" ");
+    // Keep marker delimiters distinct even if ASR itself produces brackets.
+    const reading = (words: Word[]) =>
+      render(words).replaceAll("[", "(").replaceAll("]", ")") || "(no words)";
+    const alternatives = [
+      `earlier: ${reading(old)}`,
+      `later: ${reading(fresh)}`,
+    ];
+    if (retry)
+      alternatives.push(
+        `retry: ${reading(
+          retry.words
+            .map((w) => ({
+              ...w,
+              start: w.start + retry.start,
+              end: w.end + retry.start,
+            }))
+            .filter((w) => w.end > uncertainStart && w.start < seamEnd),
+        )}`,
+      );
+    const sealed = [
+      this.sealed,
+      render(before),
+      `[uncertain: ${alternatives.join(" | ")}]`,
+    ]
+      .filter(Boolean)
+      .join(" ");
+    const sealedWords = sealed.split(/\s+/).length;
+    if (
+      sealed.length + tail.reduce((n, w) => n + w.text.length + 1, 0) >
+        MAX_TRANSCRIPT_CHARS ||
+      sealedWords + tail.length > MAX_TRANSCRIPT_WORDS
+    )
+      throw new Error(
+        "Faster-Whisper transcript safety limit exceeded; no complete transcript is available",
+      );
+    this.sealed = sealed;
+    this.sealedWords = sealedWords;
+    this.sealedUntil = Math.max(this.sealedUntil, seamEnd);
+    this.words = tail;
+    this.end = end;
+    this.uncertainties++;
+  }
+  retryRetainsReadings(
+    fresh: Word[],
+    start: number,
+    retry: Word[],
+    retryStart: number,
+  ): boolean {
+    const candidate = retry.map((w) => ({
+      ...w,
+      start: w.start + retryStart,
+      end: w.end + retryStart,
+    }));
+    const contains = (reading: Word[]) => {
+      let from = 0;
+      for (const word of reading) {
+        const index = candidate.findIndex(
+          (w, i) =>
+            i >= from &&
+            token(w.text) === token(word.text) &&
+            Math.abs((w.start + w.end - word.start - word.end) / 2) <= 0.8,
+        );
+        if (index < 0) return false;
+        from = index + 1;
+      }
+      return true;
+    };
+    // More context is not proof that an omitted negation was spurious. Only
+    // accept an unmarked retry if both prior readings survive monotonically.
+    return (
+      contains(this.words.filter((w) => w.end > retryStart)) &&
+      contains(
+        fresh
+          .map((w) => ({ ...w, start: w.start + start, end: w.end + start }))
+          .filter((w) => w.end > this.sealedUntil),
+      )
+    );
+  }
   clear(): void {
     this.words = [];
+    this.sealed = "";
+    this.sealedWords = 0;
+    this.sealedUntil = -Infinity;
   }
 }

@@ -202,7 +202,7 @@ test("OOM/crash fails once and never emits late transcript", async (t) => {
   await tick();
   assert.deepEqual(f.events, [["error", "GPU out of memory"]]);
 });
-test("ambiguous overlap is an explicit failure rather than a guessed complete final", async (t) => {
+test("one bounded retry then marked alternatives preserve ambiguous overlap", async (t) => {
   const f = fixture(t);
   await f.session.connect();
   f.session.sendAudio(Buffer.alloc(128000));
@@ -211,7 +211,118 @@ test("ambiguous overlap is an explicit failure rather than a guessed complete fi
   f.session.sendAudio(Buffer.alloc(96000));
   f.jobs[1].resolve([word("unrelated", 3)]);
   await tick();
-  assert.match(f.events[0][1], /align a chunk/);
+  assert.equal(f.jobs.length, 3);
+  assert.equal(f.jobs[2].audio.length, 20 * 8000);
+  assert.deepEqual(f.events, []);
+  f.session.close();
+  f.jobs[2].resolve([word("unrelated", 7)]);
+  await tick();
+  assert.deepEqual(f.events, [
+    [
+      "final",
+      "[uncertain: earlier: old | later: unrelated | retry: unrelated]",
+    ],
+  ]);
+  assert.equal(f.runtime.metrics.retries, 1);
+  assert.equal(f.runtime.metrics.uncertaintyMarkers, 1);
+});
+test("wider-context retry can reconcile once without a marker", async (t) => {
+  const f = fixture(t);
+  await f.session.connect();
+  f.session.sendAudio(Buffer.alloc(128000, 1));
+  f.jobs[0].resolve([word("context", 10), word("old", 15)]);
+  await tick();
+  f.session.sendAudio(Buffer.alloc(96000, 2));
+  f.jobs[1].resolve([word("changed", 3), word("tail", 10)]);
+  await tick();
+  assert.equal(f.jobs.length, 3);
+  assert.ok(f.jobs[2].audio.subarray(0, 64000).every((b) => b === 1));
+  assert.ok(f.jobs[2].audio.subarray(64000).every((b) => b === 2));
+  f.session.close();
+  f.jobs[2].resolve([
+    word("context", 2),
+    word("old", 7),
+    word("changed", 7.3),
+    word("tail", 14),
+  ]);
+  await tick();
+  assert.deepEqual(f.events, [["final", "context old changed tail"]]);
+  assert.equal(f.runtime.metrics.retries, 1);
+  assert.equal(f.runtime.metrics.uncertaintyMarkers, 0);
+});
+test("disposal during retry suppresses late recovery and stops owned worker", async (t) => {
+  const f = fixture(t);
+  await f.session.connect();
+  f.session.sendAudio(Buffer.alloc(128000));
+  f.jobs[0].resolve([word("old", 15)]);
+  await tick();
+  f.session.sendAudio(Buffer.alloc(96000));
+  f.jobs[1].resolve([word("changed", 3)]);
+  await tick();
+  assert.equal(f.jobs.length, 3);
+  await f.runtime.dispose();
+  f.jobs[2].resolve([word("late", 7)]);
+  await tick();
+  assert.equal(f.events.length, 1);
+  assert.equal(f.events[0][0], "error");
+  assert.equal(f.stops, 1);
+});
+test("retry may not silently erase an old negation just because context is wider", async (t) => {
+  const f = fixture(t);
+  await f.session.connect();
+  f.session.sendAudio(Buffer.alloc(128000));
+  f.jobs[0].resolve([
+    word("context", 10),
+    word("not", 13),
+    word("approved", 15),
+  ]);
+  await tick();
+  f.session.sendAudio(Buffer.alloc(96000));
+  f.jobs[1].resolve([word("approved", 3)]);
+  await tick();
+  f.session.close();
+  f.jobs[2].resolve([word("context", 2), word("approved", 7)]);
+  await tick();
+  assert.deepEqual(f.events, [
+    [
+      "final",
+      "context [uncertain: earlier: not approved | later: approved | retry: approved]",
+    ],
+  ]);
+});
+test("short remaining final budget skips retry and preserves a marked final", async (t) => {
+  const f = fixture(t, { finalTimeoutMs: 100 });
+  await f.session.connect();
+  f.session.sendAudio(Buffer.alloc(128000));
+  f.jobs[0].resolve([word("old", 15)]);
+  await tick();
+  f.session.sendAudio(Buffer.alloc(96000));
+  f.session.close();
+  f.jobs[1].resolve([word("changed", 3)]);
+  await tick();
+  assert.equal(f.jobs.length, 2);
+  assert.equal(f.runtime.metrics.retrySkipped, 1);
+  assert.deepEqual(f.events, [
+    ["final", "[uncertain: earlier: old | later: changed]"],
+  ]);
+});
+test("final deadline also bounds an already running overlap retry", async (t) => {
+  t.mock.timers.enable({ apis: ["setTimeout"] });
+  const f = fixture(t, { finalTimeoutMs: 100 });
+  await f.session.connect();
+  f.session.sendAudio(Buffer.alloc(128000));
+  f.jobs[0].resolve([word("old", 15)]);
+  await tick();
+  f.session.sendAudio(Buffer.alloc(96000));
+  f.jobs[1].resolve([word("changed", 3)]);
+  await tick();
+  assert.equal(f.jobs.length, 3);
+  f.session.close();
+  t.mock.timers.tick(101);
+  f.jobs[2].resolve([word("late", 7)]);
+  await tick();
+  assert.equal(f.events.length, 1);
+  assert.match(f.events[0][1], /drain budget/);
 });
 test("recovered overlap negation reaches the only final without early prefix publication", async (t) => {
   const f = fixture(t);

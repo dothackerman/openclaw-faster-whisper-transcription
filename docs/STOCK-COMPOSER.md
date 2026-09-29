@@ -20,6 +20,14 @@ preview for correct final-tail insertion without modifying OpenClaw.
 The provider decodes bounded overlapping windows during capture. All transcript
 assembly remains internal until Stop. The stock activity meter still works.
 
+Unresolved seams can now produce an inline `[uncertain: earlier: ... | later: ...
+| retry: ...]` span after one bounded local re-decode. It is ordinary text in the
+official `onTranscript` callback, not a new provider event or UI extension.
+The exact stock relay/controller integration test confirms it reaches the editable
+composer unchanged, only after Stop, with no chat-send RPC. A marker is a visible
+request for review, not an assertion that any alternative is verified. Successful
+insertion must be reported separately from transcript-quality acceptance.
+
 With an empty snapshot, the controller uses `finish(true)`, installs its late-final
 listener before closing, and eventually inserts the complete final as editable
 composer text. It sends no chat message. The late-final listener waits for the

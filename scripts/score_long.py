@@ -4,6 +4,7 @@ No alignment is human ground truth. Failed finals are counted, never scored as
 successful empty transcripts. Tail check is exact normalized last-five-word match.
 """
 import json
+import re
 import sys
 from pathlib import Path
 from score import normalize, report, distance
@@ -45,10 +46,17 @@ def edits(reference, hypothesis):
     counts['repeatedPhraseInsertedWords']=repeated
     counts['tailLastTwentyWordErrors']=distance(a[-20:],b[-20:])
     counts['tailLastFiveExact']=bool(a and a[-5:]==b[-5:]) if a else not b
+    counts['uncertaintyMarkers']=len(re.findall(r'\[uncertain:', hypothesis))
+    counts['reviewRequired']=counts['uncertaintyMarkers']>0
     return counts
 
 if __name__=='__main__':
     run=json.loads(Path(sys.argv[1]).read_text())
     output=report(run)
     output['perFixture']=[dict(fixture=r['fixture'],repeat=r['repeat'],status=r['status'],**(edits(r['reference'],r['text']) if r['status']=='ok' else {})) for r in run['rows']]
+    output['uncertaintyMarkers']=sum(r.get('uncertaintyMarkers',0) for r in output['perFixture'])
+    output['markedFinals']=sum(bool(r.get('reviewRequired')) for r in output['perFixture'])
+    output['retryCount']=sum((r.get('metrics') or {}).get('retries',0) for r in run['rows'])
+    output['retryDecodeTotalMs']=sum(sum((r.get('metrics') or {}).get('retryDecodeMs',[])) for r in run['rows'])
+    output['scoringNote']='WER/CER score verbatim editable text including uncertainty labels and all alternatives; marked finals require review and are not verified transcripts.'
     print(json.dumps(output,indent=2))

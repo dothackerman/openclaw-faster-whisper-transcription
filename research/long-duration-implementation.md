@@ -2,6 +2,41 @@
 
 Independent architect notes; do not replace incoming researcher files.
 
+## Bounded retry and visible uncertainty experiment
+
+The official [provider callback contract](https://github.com/openclaw/openclaw/blob/d30287734dee7ab3d86b216777c11ea195a021b8/src/realtime-transcription/provider-types.ts)
+accepts ordinary text in `onTranscript`. Stock relay forwarding and composer
+editable insertion preserve a literal uncertainty span; the real-source smoke
+test verifies exact text and absence of chat-send RPCs. No new event, core/UI
+patch or automatic send is needed. A marked draft is not a verified final.
+
+On alignment ambiguity only, retain one preceding 16-second audio snapshot and
+construct one wider window up to 20 seconds from that context plus current
+audio. It uses the existing serial decoder. OOM/protocol/process errors are not
+treated as uncertain text. Stop never receives a longer deadline; when remaining
+budget is below max(500 ms, 1.5 times the current decode duration), skip retry and
+mark directly. The retry can still exceed that estimate and trigger the existing
+hard deadline, which remains an explicit failure rather than a claimed recovery.
+
+More context does not prove an old negation was hallucinated. An unmarked retry
+must retain both the previous words in its covered span and the fresh word
+sequence monotonically with token/time agreement, then pass ordinary stitching.
+Otherwise preserve the old stable prefix, seal an inline uncertainty span with
+earlier/later/retry readings of the seam, and continue with fresh tail words.
+Later windows cannot rewrite the sealed marker. A skipped retry has two readings.
+Markers and alternatives count toward existing transcript character/word bounds;
+all audio remains bounded in memory (672,000 bytes peak PCMU, excluding protocol
+copies, floating-point conversion and model memory). No recovery file is created.
+
+Tests cover retry size/serial order, successful retention, missing negation,
+marker persistence, bound overflow, deadline skipping, deadline/disposal races,
+stock editable insertion/no-send, and scoring that includes all marker text.
+Metrics include retry count/audio durations/decode times, marker count and a
+review-required flag. Verbatim WER/CER include labels and all alternatives; no
+best-alternative selection is allowed to hide edit burden. The clean rapid and
+five-minute runs will measure GPU/time cost and whether marked completion works;
+they cannot establish microphone, Swiss-German or hour-long acceptance.
+
 ## Isolated-old ambiguity candidate (`1a3f6fc`)
 
 The exact saved window #13 starts at 108.98. Old `a` occupies 109.32–109.56 and

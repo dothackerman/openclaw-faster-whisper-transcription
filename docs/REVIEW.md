@@ -16,11 +16,14 @@ All hypotheses stay internal until one final; stock composer inserts editable
 text and sends nothing. Final drain is one 4.5-second budget including in-flight
 work. Silence endpoints are engineering hypotheses, not mic-qualified VAD.
 
-Queue: 32 seconds / 256,000 PCMU bytes plus one at-most-128,000-byte snapshot.
+Queue: 32 seconds / 256,000 PCMU bytes, previous/current windows of at most
+128,000 bytes each, and one at-most-160,000-byte retry (672,000 bytes total PCMU).
 Worker request capacity: 30 seconds / 240,000 bytes, with derived base64 framing.
 Worker response: 64 KiB, 512 timed words, 16,000 text characters. Final transcript:
 160,000 characters / 24,000 words. Wall/audio ceiling: 60 minutes. All overflow,
-crash/OOM, alignment and timeout failures insert no successful truncated prefix.
+crash/OOM and timeout failures insert no successful truncated prefix. Ambiguous
+seams receive one bounded context retry, then visibly marked alternatives if
+unresolved. Marked insertion is reviewable completion, not quality acceptance.
 The fixed stock-host 30-minute TTL prevents actual 60-minute browser sessions;
 a host deviation needs Kappa approval before implementation.
 
@@ -35,7 +38,7 @@ See [source evidence](../research/long-duration-implementation.md),
 
 ## Verification
 
-- 52 Node and 13 Python deterministic tests pass, including maximum worker framing,
+- 59 Node and 14 Python deterministic tests pass, including maximum worker framing,
   independent audio/time ceilings at 60 minutes, serial overlap/tail draining,
   queue overload, pre-ready frames, cancellation, timeout, OOM/crash, disposal,
   invalid word timestamps, repeated-word seams, silence endpoints, and edit scoring.
@@ -52,8 +55,8 @@ See [source evidence](../research/long-duration-implementation.md),
 - Four tests through the unmodified stock composer pass: reproduce stale partial
   insertion, retain the asynchronous final tail, insert no prefix on overload,
   and suppress late insertion after composer disposal.
-- Actual host relay/manifest/SDK contract smoke passes. Two deterministic whole-path
-  tests cover nonempty insertion and silent no-insertion/no-send through the actual
+- Actual host relay/manifest/SDK contract smoke passes. Three deterministic whole-path
+  tests cover nonempty insertion, silence and exact uncertainty-marker text with no send through the actual
   relay and stock encoding/controller. The fake-clock TTL test proves the 30-minute
   host obstacle. Native loader/catalog/disposal passes on the extracted npm artifact.
   After `1a3f6fc`, package build/check and extracted-artifact loader were rerun

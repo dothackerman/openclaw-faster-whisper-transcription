@@ -19,7 +19,7 @@ record=dict(id=a.id,kind='long-duration-synthetic',utc=run['utc'],commit=run['co
  manifestSha256=run['manifestSha256'],modelSha256=run['modelSha256'],harnessSha256=run['harnessSha256'],workerSha256=run['workerSha256'],sourceHashes=run.get('sourceHashes'),
  config={k:v for k,v in run['config'].items() if k not in ('python','modelPath')},gpuIdentity=run['gpuIdentity'],versions=run['versions'].splitlines(),
  summary=summary,meanGpuUtilization=sum(telemetry)/len(telemetry) if telemetry else None,
- rows=[dict(fixture=r['fixture'],sha256=r['sha256'],seconds=r['seconds'],status=r['status'],error=r.get('error'),readyMs=r.get('readyMs'),finalMs=r.get('finalMs'),
+ rows=[dict(fixture=r['fixture'],sha256=r['sha256'],seconds=r['seconds'],status=r['status'],reviewRequired=r.get('reviewRequired',False),error=r.get('error'),readyMs=r.get('readyMs'),finalMs=r.get('finalMs'),
             metrics=r.get('metrics'),edits=edits(r['reference'],r['text']) if r['status']=='ok' else None) for r in rows],decision=a.decision)
 with ledger.open('a') as f:f.write(json.dumps(record,ensure_ascii=False,separators=(',',':'))+'\n')
 print(a.id)

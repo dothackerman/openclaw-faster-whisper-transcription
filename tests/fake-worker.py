@@ -13,6 +13,9 @@ for line in sys.stdin:
         print(json.dumps({'ok': True, 'text': '', 'words': []}), flush=True)
     elif mode == 'silence':
         print(json.dumps({'ok':True,'text':'','words':[]}),flush=True)
+    elif mode == 'uncertain':
+        text = '[uncertain: earlier: not approved | later: approved]'
+        print(json.dumps({'ok':True,'text':text,'words':[{'text':text,'start':0,'end':0}]}),flush=True)
     elif mode == 'crash':
         sys.exit(9)
     elif mode == 'oom':

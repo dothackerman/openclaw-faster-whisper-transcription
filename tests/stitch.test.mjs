@@ -2,6 +2,27 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { Stitcher } from "../dist/stitch.js";
 const w = (text, start, end = start + 0.3) => ({ text, start, end });
+test("uncertainty retains missing negation and phantom alternatives through later windows", () => {
+  const s = new Stitcher();
+  s.add([w("prefix", 1), w("not", 6), w("approved", 7)], 0, 8);
+  const fresh = [w("approved", 1), w("tail", 3)];
+  assert.throws(() => s.add(fresh, 6, 10), /align/);
+  s.markUncertain(fresh, 6, 10);
+  s.add([w("tail", 1), w("finish", 3)], 8, 12);
+  assert.equal(
+    s.text(),
+    "prefix [uncertain: earlier: not approved | later: approved] tail finish",
+  );
+  assert.equal(s.uncertainties, 1);
+});
+test("uncertainty alternatives remain inside the final transcript bound", () => {
+  const s = new Stitcher();
+  s.add([w("x".repeat(159980), 0), w("old", 7)], 0, 8);
+  const before = s.text();
+  assert.throws(() => s.markUncertain([w("new", 1)], 6, 10), /safety limit/);
+  assert.equal(s.text(), before);
+  assert.equal(s.uncertainties, 0);
+});
 test("exact review repro: tied single-word anchors must not delete recovered@5.5", () => {
   const s = new Stitcher();
   s.add([w("alpha", 5), w("anchor", 7)], 0, 8);

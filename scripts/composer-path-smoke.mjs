@@ -4,7 +4,7 @@ import assert from "node:assert/strict";
 import { resolve } from "node:path";
 import { parseConfig } from "../dist/config.js";
 import { ComposerPathRuntime } from "./composer-path.mjs";
-for (const model of ["medium", "silence"])
+for (const model of ["medium", "silence", "uncertain"])
   test(
     `stock relay path ${model} finishes without sending`,
     { timeout: 15000 },
@@ -31,7 +31,14 @@ for (const model of ["medium", "silence"])
       await session.connect();
       session.sendAudio(Buffer.alloc(800, 255));
       session.close();
-      assert.equal(await final, model === "silence" ? "" : "Synthetic result.");
+      assert.equal(
+        await final,
+        model === "silence"
+          ? ""
+          : model === "uncertain"
+            ? "[uncertain: earlier: not approved | later: approved]"
+            : "Synthetic result.",
+      );
       assert.equal(runtime.metrics.inputHash, runtime.metrics.relayHash);
       assert.equal(runtime.metrics.onlyTalkRpcs, true);
       if (model === "silence") {

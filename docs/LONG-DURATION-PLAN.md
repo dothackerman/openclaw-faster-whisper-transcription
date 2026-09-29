@@ -1,5 +1,28 @@
 # Long dictation implementation and experiment plan
 
+Current uncertainty experiment: retain the preceding 16-second audio window and
+attempt at most one wider-context decode (20-second cap) per ambiguous boundary
+on the same serial GPU lane. During Stop, retry only if the remaining original
+4.5-second budget exceeds max(500 ms, 1.5 × last decode time); this estimate never
+extends the deadline. A retry is unmarked only if both prior word sequences
+survive monotonically with timed matches, followed by successful reconciliation.
+Otherwise seal an inline `[uncertain: earlier: ... | later: ... | retry: ...]`
+span and continue. A skipped retry omits that alternative. Sealed markers cannot
+be rewritten by later windows; subsequent fresh tail words remain editable.
+
+Peak retained PCMU is bounded by the 32-second rolling queue, 16-second previous
+window, 16-second current snapshot and 20-second retry: 672,000 bytes, excluding
+JSON/float conversion and model memory. Text/word caps include markers and all
+alternatives. OOM/crash/overflow and deadline failures still fail explicitly.
+This change does not repair host TTL or plugin-ceiling data loss.
+
+Qualification: missing-negation/phantom and marker persistence tests; cancellation
+and final-deadline tests during retry; actual stock-composer editable marker with
+no chat-send; clean rapid and paced five-minute runs recording marker count,
+retry count/audio duration/decode time, queue lag and GPU use. Score the verbatim
+marked final, never choose a best alternative for an optimistic WER. Marked
+completion is a reviewable draft, not verified transcript quality acceptance.
+
 OG's requirement supersedes the provisional short cap: continuous capture, with
 an explicit 60-minute safety ceiling and no successful truncated result on failure.
 The stock 2026.9.6 composer/relay still require final-only callbacks and a total
