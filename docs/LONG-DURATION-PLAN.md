@@ -7,7 +7,12 @@ on the same serial GPU lane. During Stop, retry only if the remaining original
 extends the deadline. A retry is unmarked only if both prior word sequences
 survive monotonically with timed matches, followed by successful reconciliation.
 Otherwise seal an inline `[uncertain: earlier: ... | later: ... | retry: ...]`
-span and continue. A skipped retry omits that alternative. Sealed markers cannot
+span and continue. Presentation keeps one copy of lexically identical readings,
+then moves common prefix/suffix words outside the marker; punctuation/case follow
+the first reading. Empty alternatives stay explicit as `(no words)`. No interior
+alignment or preferred-reading selection is inferred. A sole deduplicated reading
+still carries a marker because timing may be ambiguous. A skipped retry omits
+that alternative. Sealed markers cannot
 be rewritten by later windows; subsequent fresh tail words remain editable.
 
 Peak retained PCMU is bounded by the 32-second rolling queue, 16-second previous

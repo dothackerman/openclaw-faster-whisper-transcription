@@ -181,29 +181,65 @@ export class Stitcher {
         .map((w) => w.text.trim())
         .filter(Boolean)
         .join(" ");
-    // Keep marker delimiters distinct even if ASR itself produces brackets.
-    const reading = (words: Word[]) =>
-      render(words).replaceAll("[", "(").replaceAll("]", ")") || "(no words)";
-    const alternatives = [
-      `earlier: ${reading(old)}`,
-      `later: ${reading(fresh)}`,
-    ];
+    // Compact presentation only: preserve each distinct lexical reading and
+    // its order. Case/punctuation follow the first reading, as in seam matching.
+    // Shared boundary words appear once outside the marker; empty alternatives
+    // stay explicit so a missing negation cannot look like confident omission.
+    const readings: { label: string; words: string[] }[] = [];
+    const keys = new Set<string>();
+    const addReading = (label: string, words: Word[]) => {
+      const text = render(words).replaceAll("[", "(").replaceAll("]", ")");
+      const parts = text ? text.split(/\s+/u) : [];
+      const key = JSON.stringify(parts.map(token));
+      if (!keys.has(key)) {
+        keys.add(key);
+        readings.push({ label, words: parts });
+      }
+    };
+    addReading("earlier", old);
+    addReading("later", fresh);
     if (retry)
-      alternatives.push(
-        `retry: ${reading(
-          retry.words
-            .map((w) => ({
-              ...w,
-              start: w.start + retry.start,
-              end: w.end + retry.start,
-            }))
-            .filter((w) => w.end > uncertainStart && w.start < seamEnd),
-        )}`,
+      addReading(
+        "retry",
+        retry.words
+          .map((w) => ({
+            ...w,
+            start: w.start + retry.start,
+            end: w.end + retry.start,
+          }))
+          .filter((w) => w.end > uncertainStart && w.start < seamEnd),
       );
+    const first = readings[0]!.words;
+    const shortest = Math.min(...readings.map((r) => r.words.length));
+    let prefix = 0,
+      suffix = 0;
+    // A sole identical reading can still have ambiguous timing: retain a marker.
+    if (readings.length > 1) {
+      while (
+        prefix < shortest &&
+        readings.every((r) => token(r.words[prefix]!) === token(first[prefix]!))
+      )
+        prefix++;
+      while (
+        suffix < shortest - prefix &&
+        readings.every(
+          (r) =>
+            token(r.words[r.words.length - 1 - suffix]!) ===
+            token(first[first.length - 1 - suffix]!),
+        )
+      )
+        suffix++;
+    }
+    const alternatives = readings.map(
+      (r) =>
+        `${r.label}: ${r.words.slice(prefix, r.words.length - suffix).join(" ") || "(no words)"}`,
+    );
     const sealed = [
       this.sealed,
       render(before),
+      first.slice(0, prefix).join(" "),
       `[uncertain: ${alternatives.join(" | ")}]`,
+      suffix ? first.slice(-suffix).join(" ") : "",
     ]
       .filter(Boolean)
       .join(" ");

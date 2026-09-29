@@ -45,7 +45,9 @@ ceiling or deadline failure return an error and **no successful truncated final*
 The total Stop drain remains **4.5 seconds**, including in-flight work.
 An ambiguous seam gets at most one bounded local overlap re-decode. If it remains
 ambiguous, final text includes `[uncertain: earlier: ... | later: ... | retry: ...]`
-with competing readings; review and edit it before Send. Markers are never sent
+with competing readings; review and edit it before Send. Lexically duplicate
+readings are omitted, and shared prefix/suffix words appear once outside the span.
+An absent reading remains explicit as `(no words)`; this never chooses a winner. Markers are never sent
 automatically and are not verified transcription. The retry shares the existing
 Stop deadline and may be skipped when too little time remains.
 
@@ -152,7 +154,7 @@ synthetic eSpeak NG audio from self-authored scripts. Hashes are in
 `fixtures/public/manifest.json` and `fixtures/public/long-manifest.json`.
 They do not establish real microphone or dialect quality.
 
-The current candidate (`a6911b9`) completes 5/5 rapid fixtures and a paced
+The previous candidate (`a6911b9`) completes 5/5 rapid fixtures and a paced
 five-minute stock-code integration replay, with old-only overlap words protected
 by retry/marked alternatives. **Usability and release acceptance are rejected:**
 the rapid set needs two markers, and the five-minute run needs eight markers and
@@ -163,6 +165,9 @@ The final five words are exact, but the final-20 metric has three errors. This
 high edit burden is not a quality improvement or a verified transcript. The test
 uses actual stock code with simulated capture/RPC, not a real browser, Gateway
 or microphone. Completion does not establish general five-minute reliability.
+
+Compact marker presentation is being remeasured; it does not change decoder
+quality, seam decisions or the existing correctness safeguards.
 
 After provisioning the dedicated runtime/model and a local profile, build and
 validate fixture manifests, then run the five approximately 20-second fixtures

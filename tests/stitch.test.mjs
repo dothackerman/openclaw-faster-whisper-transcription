@@ -11,7 +11,7 @@ test("uncertainty retains missing negation and phantom alternatives through late
   s.add([w("tail", 1), w("finish", 3)], 8, 12);
   assert.equal(
     s.text(),
-    "prefix [uncertain: earlier: not approved | later: approved] tail finish",
+    "prefix [uncertain: earlier: not | later: (no words)] approved tail finish",
   );
   assert.equal(s.uncertainties, 1);
 });
@@ -118,7 +118,7 @@ test("exact old-only negation repro must be marked, never silently deleted", () 
   s.markUncertain(fresh, 4, 10);
   assert.equal(
     s.text(),
-    "[uncertain: earlier: Do not send | later: Do send] tail",
+    "Do [uncertain: earlier: not | later: (no words)] send tail",
   );
 });
 test("old repeated lexical words each need a distinct fresh match", () => {
@@ -166,9 +166,9 @@ for (const common of [[w("anchor", 7)], [w("in", 6.6), w("the", 7)]]) {
     ].map((word) => ({ ...word, start: word.start - 4, end: word.end - 4 }));
     assert.throws(() => s.add(fresh, 4, 10), /competing overlap words/);
     s.markUncertain(fresh, 4, 10);
-    assert.match(s.text(), /earlier: alpha wrong/);
-    assert.match(s.text(), /later: alpha corrected/);
-    assert.match(s.text(), /\] tail$/);
+    assert.match(s.text(), /earlier: wrong/);
+    assert.match(s.text(), /later: corrected/);
+    assert.ok(s.text().endsWith(common.map((x) => x.text).join(" ") + " tail"));
     assert.equal(s.anchors, 0);
   });
 }
@@ -210,7 +210,7 @@ test("leading semantic substitution is ambiguous despite two exact timed words",
     s.markUncertain(next, 6, 10);
     assert.equal(
       s.text(),
-      `[uncertain: earlier: ${old} agree now | later: ${fresh} agree now] tail`,
+      `[uncertain: earlier: ${old} | later: ${fresh}] agree now tail`,
     );
   }
 });
@@ -360,7 +360,7 @@ test("a conflicting old phrase is marked rather than assumed hallucinated", () =
   s.markUncertain(fresh, 6, 10);
   assert.equal(
     s.text(),
-    `[uncertain: earlier: ${old.join(" ")} | later: ${next.join(" ")}]`,
+    `These are the final words [uncertain: earlier: ${old.slice(5).join(" ")} | later: ${next.slice(5).join(" ")}]`,
   );
 });
 
@@ -370,8 +370,57 @@ test("a suffix spelling extension cannot silently change can to cannot", () => {
   const fresh = [w("We", 1), w("cannot", 2), w("send", 5)];
   assert.throws(() => s.add(fresh, 4, 10), /competing overlap words/);
   s.markUncertain(fresh, 4, 10);
-  assert.equal(
-    s.text(),
-    "[uncertain: earlier: We can | later: We cannot] send",
-  );
+  assert.equal(s.text(), "We [uncertain: earlier: can | later: cannot] send");
+});
+
+test("exact reviewed marker omits the lexically duplicate retry", () => {
+  const earlier =
+    "beten die Etmas zu leiten und stellten den Monitor weiter von der Wand.";
+  const later = "und schmelzen den Monitor weiter von der";
+  const s = new Stitcher();
+  s.add([w(earlier, 5, 7)], 0, 8);
+  s.markUncertain([w(later, 1, 3)], 4, 10, {
+    words: [w(earlier.slice(0, -1), 1, 3)],
+    start: 4,
+  });
+  assert.equal(s.text(), `[uncertain: earlier: ${earlier} | later: ${later}]`);
+  assert.equal(s.uncertainties, 1);
+  assert.ok(s.text().length < 223);
+});
+test("factored shared context reconstructs every distinct reading in order", () => {
+  const cases = [
+    ["Do not send", "Do send", "Do not send"],
+    ["We may not send today", "We may send today", "We may never send today"],
+    ["very very clear", "very clear", "very very clear"],
+    ["Do send", "Do not send", "Do send"],
+  ];
+  for (const readings of cases) {
+    const s = new Stitcher();
+    s.add([w(readings[0], 5, 7)], 0, 8);
+    s.markUncertain([w(readings[1], 1, 3)], 4, 10, {
+      words: [w(readings[2], 1, 3)],
+      start: 4,
+    });
+    const [_, prefix, marker, suffix] = s
+      .text()
+      .match(/^(.*?)\[uncertain: (.*?)\](.*?)$/);
+    const restored = marker.split(" | ").map((part) => {
+      const middle = part.slice(part.indexOf(": ") + 2);
+      return [
+        prefix.trim(),
+        middle === "(no words)" ? "" : middle,
+        suffix.trim(),
+      ]
+        .filter(Boolean)
+        .join(" ");
+    });
+    assert.deepEqual(restored, [...new Set(readings)]);
+  }
+});
+test("deduplication never hides uncertainty when timing alone disagrees", () => {
+  const s = new Stitcher();
+  s.add([w("same words", 5, 7)], 0, 8);
+  s.markUncertain([w("same words", 1, 3)], 4, 10);
+  assert.equal(s.text(), "[uncertain: earlier: same words]");
+  assert.equal(s.uncertainties, 1);
 });

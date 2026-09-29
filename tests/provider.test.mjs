@@ -218,10 +218,7 @@ test("one bounded retry then marked alternatives preserve ambiguous overlap", as
   f.jobs[2].resolve([word("unrelated", 7)]);
   await tick();
   assert.deepEqual(f.events, [
-    [
-      "final",
-      "[uncertain: earlier: old | later: unrelated | retry: unrelated]",
-    ],
+    ["final", "[uncertain: earlier: old | later: unrelated]"],
   ]);
   assert.equal(f.runtime.metrics.retries, 1);
   assert.equal(f.runtime.metrics.uncertaintyMarkers, 1);
@@ -284,10 +281,7 @@ test("retry may not silently erase an old negation just because context is wider
   f.jobs[2].resolve([word("context", 2), word("approved", 7)]);
   await tick();
   assert.deepEqual(f.events, [
-    [
-      "final",
-      "context [uncertain: earlier: not approved | later: approved | retry: approved]",
-    ],
+    ["final", "context [uncertain: earlier: not | later: (no words)] approved"],
   ]);
 });
 test("short remaining final budget skips retry and preserves a marked final", async (t) => {
@@ -430,11 +424,8 @@ test("Do/Don't first-word disagreement reaches final as visible alternatives", a
   await tick();
   assert.equal(f.events.length, 1);
   assert.equal(f.events[0][0], "final");
-  assert.match(
-    f.events[0][1],
-    /earlier: Do agree now \| later: Don't agree now \| retry: Don't agree now/,
-  );
-  assert.match(f.events[0][1], /\] tail$/);
+  assert.match(f.events[0][1], /earlier: Do \| later: Don't/);
+  assert.match(f.events[0][1], /\] agree now tail$/);
   assert.equal(f.runtime.metrics.retries, 1);
   assert.equal(f.runtime.metrics.uncertaintyMarkers, 1);
 });
@@ -454,10 +445,7 @@ test("old-only overlap negation survives bounded retry as a marked final", async
   f.jobs[2].resolve([word("Do", 5), word("send", 7), word("tail", 14)]);
   await tick();
   assert.deepEqual(f.events, [
-    [
-      "final",
-      "[uncertain: earlier: Do not send | later: Do send | retry: Do send] tail",
-    ],
+    ["final", "Do [uncertain: earlier: not | later: (no words)] send tail"],
   ]);
   assert.equal(f.runtime.metrics.retries, 1);
   assert.equal(f.runtime.metrics.uncertaintyMarkers, 1);

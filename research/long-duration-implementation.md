@@ -2,6 +2,30 @@
 
 Independent architect notes; do not replace incoming researcher files.
 
+## Compact uncertainty presentation
+
+`Stitcher.markUncertain` now deduplicates readings using the same normalized
+word comparison as seam matching (case/punctuation ignored, ordered word counts
+preserved), keeps the first spelling, and factors only an equal initial/final
+word sequence shared by every distinct reading. This is deterministic factoring,
+not interior re-alignment or selection of an ASR winner. Shared words sit outside
+the marker and remain sealed with it. A missing middle is explicitly `(no words)`;
+for example `Do [uncertain: earlier: not | later: (no words)] send`. One unique
+reading still stays marked because timing may be the ambiguity. Tests reconstruct
+each distinct reading from prefix + alternative + suffix, including repeated
+words and third readings, so compaction cannot erase the conflicting negation.
+
+The exact reviewed 223-character marker becomes 143 characters by dropping its
+lexically duplicate retry; its differing beginnings/endings do not permit further
+prefix/suffix factoring. No generic “few words” truncation hides a larger conflict.
+This changes presentation only: the old-only-word, leading-substitution and
+worker text/word-coverage safeguards and bounded retry/Stop behavior remain.
+
+Plan: deterministic and stock no-send checks, then clean rapid and paced
+five-minute GPU reruns. Score the actual compact visible text with the unchanged
+lexical metric, adding marker-character counts. Compare edit burden to verbose
+`a6911b9`, not an ASR quality gain against older less-safe splice policies.
+
 ## Old-only overlap after a valid anchor
 
 The first-fresh-anchor splice formerly discarded the entire old suffix. Exact

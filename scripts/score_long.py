@@ -47,6 +47,7 @@ def edits(reference, hypothesis):
     counts['tailLastTwentyWordErrors']=distance(a[-20:],b[-20:])
     counts['tailLastFiveExact']=bool(a and a[-5:]==b[-5:]) if a else not b
     counts['uncertaintyMarkers']=len(re.findall(r'\[uncertain:', hypothesis))
+    counts['uncertaintyCharacters']=sum(len(m.group()) for m in re.finditer(r'\[uncertain:[^\]]*\]', hypothesis))
     counts['reviewRequired']=counts['uncertaintyMarkers']>0
     return counts
 
@@ -55,6 +56,7 @@ if __name__=='__main__':
     output=report(run)
     output['perFixture']=[dict(fixture=r['fixture'],repeat=r['repeat'],status=r['status'],**(edits(r['reference'],r['text']) if r['status']=='ok' else {})) for r in run['rows']]
     output['uncertaintyMarkers']=sum(r.get('uncertaintyMarkers',0) for r in output['perFixture'])
+    output['uncertaintyCharacters']=sum(r.get('uncertaintyCharacters',0) for r in output['perFixture'])
     output['markedFinals']=sum(bool(r.get('reviewRequired')) for r in output['perFixture'])
     output['retryCount']=sum((r.get('metrics') or {}).get('retries',0) for r in run['rows'])
     output['retryDecodeTotalMs']=sum(sum((r.get('metrics') or {}).get('retryDecodeMs',[])) for r in run['rows'])

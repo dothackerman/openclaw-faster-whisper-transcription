@@ -24,7 +24,9 @@ Worker response: 64 KiB, 512 timed words, 16,000 text characters. Final transcri
 160,000 characters / 24,000 words. Wall/audio ceiling: 60 minutes. All overflow,
 crash/OOM and timeout failures insert no successful truncated prefix. Ambiguous
 seams receive one bounded context retry, then visibly marked alternatives if
-unresolved. Marked insertion is reviewable completion, not quality acceptance.
+unresolved. Presentation removes lexically duplicate readings and factors shared
+prefix/suffix words outside the span, while empty alternatives remain explicit.
+Marked insertion is reviewable completion, not quality acceptance.
 The fixed stock-host 30-minute TTL prevents actual 60-minute browser sessions;
 a host deviation needs Kappa approval before implementation.
 
@@ -39,7 +41,7 @@ See [source evidence](../research/long-duration-implementation.md),
 
 ## Verification
 
-- 65 Node and 18 Python deterministic tests pass, including maximum worker framing,
+- 68 Node and 18 Python deterministic tests pass, including maximum worker framing,
   independent audio/time ceilings at 60 minutes, serial overlap/tail draining,
   queue overload, pre-ready frames, cancellation, timeout, OOM/crash, disposal,
   invalid word timestamps, repeated-word seams, silence endpoints, and edit scoring.
