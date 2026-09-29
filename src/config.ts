@@ -1,5 +1,4 @@
 import { isAbsolute } from "node:path";
-import { MAX_AUDIO_SECONDS } from "./limits.js";
 
 export const ID = "faster-whisper-transcription";
 export const PROVIDER = "faster-whisper";
@@ -10,8 +9,6 @@ export type Config = {
   device: "cuda" | "cpu";
   computeType: "float16" | "int8_float16" | "int8" | "float32";
   beamSize: number;
-  maxAudioSeconds: number;
-  snapshotIntervalSeconds: number;
   idleSeconds: number;
   loadTimeoutMs: number;
   decodeTimeoutMs: number;
@@ -22,8 +19,6 @@ export const defaults = {
   device: "cuda",
   computeType: "float16",
   beamSize: 5,
-  maxAudioSeconds: 15,
-  snapshotIntervalSeconds: 0,
   idleSeconds: 120,
   loadTimeoutMs: 90000,
   decodeTimeoutMs: 15000,
@@ -31,8 +26,6 @@ export const defaults = {
 } as const;
 const bounds: Record<string, [number, number]> = {
   beamSize: [1, 5],
-  maxAudioSeconds: [1, MAX_AUDIO_SECONDS],
-  snapshotIntervalSeconds: [0, 10],
   idleSeconds: [1, 3600],
   loadTimeoutMs: [1000, 120000],
   decodeTimeoutMs: [100, 30000],

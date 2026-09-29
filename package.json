@@ -1,6 +1,6 @@
 {
   "name": "openclaw-faster-whisper-transcription",
-  "version": "0.1.0-rc.1",
+  "version": "0.1.0-rc.2",
   "description": "Local Faster-Whisper provider for OpenClaw browser dictation",
   "license": "MIT",
   "type": "module",

@@ -1,0 +1,29 @@
+{
+  "rapid": [
+    {"id":"long-en20","language":"en","parts":[["en","Before we leave the workshop, please check the blue microphone beside the window. The recording should stay on this computer. I will review every sentence before sending the message, especially the final words: green bicycle."]]},
+    {"id":"long-de20","language":"de","parts":[["de","Bevor wir die Werkstatt verlassen, prüfe bitte das blaue Mikrofon neben dem Fenster. Die Aufnahme soll auf diesem Computer bleiben. Ich lese jeden Satz vor dem Senden noch einmal, besonders die letzten Wörter: grünes Fahrrad."]]},
+    {"id":"long-mixed20","language":"mixed","parts":[["de","Bitte öffne das Fenster und stelle das Mikrofon auf den Tisch."],["en","The recording stays on this computer, and I will check the final message before sending it."],["de","Am Ende steht das Wort Sonnenblume."]]},
+    {"id":"long-boundary20","language":"en","parts":[["en","Please write down the following instructions carefully. Put the yellow screwdriver beside the silver microphone, then carry the small cardboard box across the workshop. We need international cooperation, accurate measurements, and a clear final sentence about the mountain railway."]]},
+    {"id":"long-silence20","language":"none","parts":[]}
+  ],
+  "long": [
+    ["en","This morning I arrived at the workshop before the others. The room was quiet, and sunlight reached the wooden table near the entrance. I opened my notebook and wrote down the tasks for the day."],
+    ["en","First I checked the microphone cable. Its connector was firmly attached, but the cable crossed a walking path. I moved it behind the table so nobody would trip while carrying tools or materials."],
+    ["en","Next I placed three empty boxes on a shelf. The smallest box was intended for screws, the middle one for spare batteries, and the largest for folded instructions. Each box received a handwritten label."],
+    ["en","A colleague arrived with a damaged bicycle lamp. We examined its switch and found a loose contact. Instead of replacing the entire lamp, we cleaned the contact and tested it with a fresh battery."],
+    ["en","Outside, a delivery driver waited beside a white van. The parcel contained a replacement keyboard and two reusable water bottles. I compared the packing list with the contents before signing the receipt."],
+    ["en","At the next table someone was preparing a small exhibition. They arranged photographs in chronological order and left enough space for short descriptions. The oldest photograph showed the building before its windows were replaced."],
+    ["en","We stopped briefly to discuss the afternoon schedule. One visitor needed help setting up a printer, while another wanted advice about repairing a chair. We agreed to keep a separate work area for each task."],
+    ["en","During the break I walked to the nearby bakery. The shopkeeper recommended a loaf with sunflower seeds. I bought it with two apples and returned along the quieter street behind the railway station."],
+    ["de","Nach der Pause räumten wir den großen Tisch auf. Unter einer Zeitung lagen noch zwei kleine Schrauben. Ich legte sie in eine beschriftete Schachtel, damit sie später nicht mit anderen Teilen verwechselt werden."],
+    ["de","Eine Besucherin brachte einen alten Holzstuhl mit. Das linke hintere Bein war locker, aber das Holz hatte keine sichtbaren Risse. Wir erklärten ihr, welche Verbindung zuerst geprüft und anschließend neu verleimt werden sollte."],
+    ["de","Im Nebenraum stand der Drucker bereit. Das Papier lag gerade im Fach, und die Anzeige meldete keinen Fehler. Wir druckten eine kurze Testseite und verglichen die Farben mit dem Bild auf dem Bildschirm."],
+    ["de","Danach prüfte ich die Liste für den nächsten Einkauf. Wir brauchten Klebeband, einen weichen Pinsel und einige wiederverwendbare Tücher. Neue Werkzeuge waren heute nicht nötig, weil die vorhandenen Geräte zuverlässig funktionierten."],
+    ["de","Am Fenster diskutierten zwei Kollegen über die Beleuchtung. Die helle Lampe spiegelte sich im Bildschirm und erschwerte das Lesen. Wir drehten sie etwas zur Seite und stellten den Monitor weiter von der Wand weg."],
+    ["de","Für die Ausstellung fehlte noch eine Beschreibung des Eingangs. Ich schrieb einen kurzen Absatz über die breite Tür und die niedrige Stufe davor. Anschließend las eine Kollegin den Text und korrigierte eine unklare Formulierung."],
+    ["de","Später klingelte das Telefon. Ein Besucher wollte wissen, ob er am Donnerstag einen kaputten Wasserkocher vorbeibringen könne. Wir nannten ihm die Öffnungszeiten und baten ihn, auch das abnehmbare Kabel mitzubringen."],
+    ["de","Zum Abschluss kontrollierten wir die Regale und schlossen die Werkzeugschubladen. Die reparierte Fahrradlampe lag neben einem grünen Zettel. Darauf standen die ausgeführten Arbeiten und der Hinweis, die Batterie vor längerer Lagerung herauszunehmen."],
+    ["en","Before closing the workshop, I reviewed the notes from the whole day. Several small repairs had been completed, and the remaining questions were clearly listed. The next shift would be able to continue without guessing what had already been checked."],
+    ["en","The final task was to save the draft report. I checked the names, the order of events, and the last sentence. Nothing should be sent automatically. These are the final words of the recording: the orange umbrella remains beside the door."]
+  ]
+}

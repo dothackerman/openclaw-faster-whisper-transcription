@@ -35,29 +35,37 @@ Crashes, OOM, startup/decode timeouts, and finalization failures are visible.
 There is no automatic CPU fallback or private-audio retry. Linux parent-death
 signaling also terminates the worker if its Gateway parent exits unexpectedly.
 
-**Uninterrupted duration is not yet qualified.** The provisional audio cap is
-15 seconds. The schema's higher values are experimental buffer capacity only;
-**English 30/60/120-second synthetic stress cases fail the final deadline (3/3 each)**.
-At the cap, accepted
-audio is finalized and a duration notice stops capture. Longer limits do not
-imply reliable completion: the provider has only **4.5 seconds** to finalize within
-OpenClaw's five-second drain. See the [duration decision and exact stress failures](docs/DURATION-DECISION.md)
-before choosing settings. Longer dictation is not claimed as supported.
+Recording is processed continuously with pause-aware windows, a **16-second
+maximum and 4-second overlap** at forced boundaries, not a short recording cap. A single serial decoder joins timed
+words across overlaps. The rolling audio queue is limited to 32 seconds (256 KB),
+plus one 16-second snapshot; completed recording audio is not retained. Final text
+is bounded to 160,000 characters / 24,000 words. Queue overload, ambiguous seams,
+ceiling or deadline failure return an error and **no successful truncated final**.
+The total Stop drain remains **4.5 seconds**, including in-flight work.
 
-| Setting                   | Default   | Meaning                                                          |
-| ------------------------- | --------- | ---------------------------------------------------------------- |
-| `python`                  | required  | Absolute executable in the dedicated environment                 |
-| `modelPath`               | required  | Absolute provisioned local model directory                       |
-| `model`                   | `medium`  | Catalog label matching those model files                         |
-| `device`                  | `cuda`    | Explicit `cuda` or `cpu`                                         |
-| `computeType`             | `float16` | Also `int8_float16`, `int8`, `float32`; must be supported        |
-| `beamSize`                | 5         | 1–5; benchmark before changing                                   |
-| `maxAudioSeconds`         | 15        | 1–120 experimental buffer cap; not a supported-duration range    |
-| `snapshotIntervalSeconds` | 0         | Disabled; experimental internal precomputation, never UI preview |
-| `idleSeconds`             | 120       | 1–3600 before child/model eviction                               |
-| `loadTimeoutMs`           | 90000     | Cold startup budget, at most 120000                              |
-| `decodeTimeoutMs`         | 15000     | Individual speculative decode budget                             |
-| `finalTimeoutMs`          | 4500      | Total final drain budget, at most 4500                           |
+The plugin has a **60-minute wall/audio safety ceiling**. However, stock OpenClaw
+2026.9.6 expires transcription sessions after **30 minutes**; this plugin cannot
+extend that host limit. Neither 30 nor 60 minutes is qualified recording support.
+See [long-duration design and host limitations](docs/LONG-DURATION-PLAN.md) and
+[measured long-duration results](research/LONG-DURATION-RESULTS.md). Synthetic
+replay cannot qualify real microphones or Swiss German.
+
+Remove the obsolete `maxAudioSeconds` and `snapshotIntervalSeconds` keys when
+upgrading; they now fail config validation. Window/queue sizes are internal tested
+constants, not knobs that promise longer support merely by accepting more bytes.
+
+| Setting           | Default   | Meaning                                                   |
+| ----------------- | --------- | --------------------------------------------------------- |
+| `python`          | required  | Absolute executable in the dedicated environment          |
+| `modelPath`       | required  | Absolute provisioned local model directory                |
+| `model`           | `medium`  | Catalog label matching those model files                  |
+| `device`          | `cuda`    | Explicit `cuda` or `cpu`                                  |
+| `computeType`     | `float16` | Also `int8_float16`, `int8`, `float32`; must be supported |
+| `beamSize`        | 5         | 1–5; benchmark before changing                            |
+| `idleSeconds`     | 120       | 1–3600 before child/model eviction                        |
+| `loadTimeoutMs`   | 90000     | Cold startup budget, at most 120000                       |
+| `decodeTimeoutMs` | 15000     | Individual chunk decode budget                            |
+| `finalTimeoutMs`  | 4500      | Total final drain budget, at most 4500                    |
 
 ## Develop and verify
 

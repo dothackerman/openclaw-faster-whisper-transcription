@@ -1,10 +1,10 @@
-# Uninterrupted duration: decision pending
+# Historical full-utterance duration screen (superseded design)
 
-The user's required uninterrupted duration is pending. The implementation is a
-bounded short-dictation prototype, **not qualified for 30–120 second dictation**.
-`maxAudioSeconds` is a buffer/admission bound, not a supported-duration claim.
-The provisional 15-second default is a conservative engineering setting supported
-only by the limited synthetic timing screen below, not accepted microphone usability.
+OG has now chosen continuous dictation without a short recording cap. This
+historical screen explains why the full-utterance design was replaced with
+[bounded internal chunking](LONG-DURATION-PLAN.md). Bounds and settings below
+refer to commit 05004a1, not the current schema. Original measured failures remain
+valid evidence against full-utterance decoding at Stop.
 
 ## Technical capacity regression check
 
@@ -54,7 +54,7 @@ repetition is a hypothesis requiring instrumentation, not a measured explanation
 The beam-1 screen ran with a dirty tree, so its provenance is weaker and it cannot
 select a release profile. Neither profile justifies claiming long-dictation support.
 
-## Decision by duration requirement
+## Original decision before OG selected continuous dictation
 
 - If short utterances with a visible cap are acceptable, retain final-only decoding
   and qualify the chosen cap on real English/German microphone recordings. The
@@ -81,5 +81,5 @@ WER/CER, deletions/duplications, queue lag, GPU memory/load, end-tail correctnes
 and Stop-to-provider-final latency. Reject a faster chunker that loses meaning.
 Final-only output and the five-second stock insertion wait remain unchanged.
 
-No chunked mode is shipped or advertised in this tree. Kappa can use the pending
-user duration choice to select the next implementation/acceptance scope.
+The current tree implements the chunking branch; see the long-duration plan and
+results for its separate qualification status.

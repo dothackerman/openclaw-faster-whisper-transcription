@@ -1,4 +1,7 @@
-# Architecture and implementation plan
+# Original short-dictation plan (superseded)
+
+The current requirement and architecture are in [LONG-DURATION-PLAN.md](LONG-DURATION-PLAN.md).
+The short cap and optional snapshots below describe the original milestone only.
 
 Target: OpenClaw v2026.9.6, verified against prepared source commit
 `d30287734dee7ab3d86b216777c11ea195a021b8` plus its local patch. Core is read-only.

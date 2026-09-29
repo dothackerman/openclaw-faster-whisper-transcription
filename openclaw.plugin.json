@@ -35,13 +35,6 @@
         "maximum": 5,
         "default": 5
       },
-      "maxAudioSeconds": {
-        "description": "Experimental audio buffer cap only; longer dictation is not qualified. English 30/60/120-second synthetic stress cases fail the final deadline. Provisional default: 15 seconds.",
-        "type": "number",
-        "minimum": 1,
-        "maximum": 120,
-        "default": 15
-      },
       "idleSeconds": {
         "type": "number",
         "minimum": 1,
@@ -65,12 +58,6 @@
         "minimum": 100,
         "maximum": 4500,
         "default": 4500
-      },
-      "snapshotIntervalSeconds": {
-        "type": "number",
-        "minimum": 0,
-        "maximum": 10,
-        "default": 0
       }
     }
   }

@@ -12,7 +12,7 @@ from pathlib import Path
 logging.disable(logging.CRITICAL)
 # Transport capacity, not a qualified dictation duration. Mirrored in src/limits.ts.
 AUDIO_BYTES_PER_SECOND = 8000
-MAX_AUDIO_SECONDS = 120
+MAX_AUDIO_SECONDS = 30
 MAX_AUDIO = MAX_AUDIO_SECONDS * AUDIO_BYTES_PER_SECOND
 MAX_LINE = 4 * ((MAX_AUDIO + 2) // 3) + 4096
 
@@ -26,8 +26,8 @@ def decode_mulaw(data):
     return resample_poly(pcm.astype(np.float32) / 32768, 2, 1).astype(np.float32)
 
 
-def reply(text="", error=None):
-    result = {"ok": error is None, "text": text} if error is None else {"ok": False, "error": error}
+def reply(text="", error=None, words=None):
+    result = {"ok": error is None, "text": text, "words": words or []} if error is None else {"ok": False, "error": error}
     sys.stdout.write(json.dumps(result, ensure_ascii=True) + "\n")
     sys.stdout.flush()
 
@@ -64,17 +64,26 @@ def main():
                 if not audio.any():
                     reply()
                     continue
+                timestamps = request.get("timestamps", False)
                 segments, _ = model.transcribe(audio, language=None, task="transcribe",
                     beam_size=config["beamSize"], vad_filter=False,
-                    condition_on_previous_text=True, word_timestamps=False)
+                    condition_on_previous_text=True, word_timestamps=timestamps)
                 parts = []
+                words = []
                 size = 0
                 for segment in segments:
                     size += len(segment.text)
                     if size > 16000:
                         raise ValueError()
                     parts.append(segment.text)
-                reply("".join(parts).strip())
+                    if timestamps:
+                        for word in segment.words or []:
+                            words.append({"text": word.word, "start": word.start, "end": word.end})
+                            if len(words) > 512:
+                                raise ValueError()
+                if timestamps and "".join(parts).strip() and not words:
+                    raise ValueError()
+                reply("".join(parts).strip(), words=words)
             else:
                 raise ValueError()
         except Exception as exc:

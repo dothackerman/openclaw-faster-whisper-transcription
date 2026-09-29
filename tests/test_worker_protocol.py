@@ -27,12 +27,11 @@ class ProtocolTests(unittest.TestCase):
             worker.main()
         return [json.loads(line) for line in stdout.getvalue().splitlines()], decode_audio
 
-    def test_python_accepts_manifest_maximum(self):
-        manifest = json.loads((Path(__file__).resolve().parents[1] / 'openclaw.plugin.json').read_text())
-        seconds = manifest['configSchema']['properties']['maxAudioSeconds']['maximum']
+    def test_python_accepts_protocol_maximum(self):
+        seconds = 30
         self.assertEqual(worker.MAX_AUDIO, seconds * 8000)
         replies, decode = self.decode_request(seconds * 8000)
-        self.assertEqual(replies, [{'ok': True, 'text': ''}] * 2)
+        self.assertEqual(replies, [{'ok': True, 'text': '', 'words': []}] * 2)
         self.assertEqual(len(decode.call_args.args[0]), worker.MAX_AUDIO)
 
     def test_python_rejects_one_byte_over_capacity_before_audio_decode(self):

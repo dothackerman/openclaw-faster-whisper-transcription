@@ -27,7 +27,7 @@ class Model:
 
     def transcribe(self, audio, **kwargs):
         text = f'{len(audio)}:{hashlib.sha256(audio).hexdigest()}'
-        return [SimpleNamespace(text=text)], None
+        return [SimpleNamespace(text=text, words=[SimpleNamespace(word=text,start=0,end=len(audio)/8000)])], None
 
 
 sys.modules['faster_whisper'] = SimpleNamespace(WhisperModel=Model)

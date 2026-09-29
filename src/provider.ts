@@ -2,13 +2,30 @@ import { existsSync } from "node:fs";
 import type { RealtimeTranscriptionProviderPlugin } from "openclaw/plugin-sdk/plugin-entry";
 import { PROVIDER, type Config } from "./config.js";
 import { Worker, type Decoder } from "./worker.js";
-import { AUDIO_BYTES_PER_SECOND } from "./limits.js";
+import {
+  AUDIO_BYTES_PER_SECOND,
+  WINDOW_SECONDS,
+  OVERLAP_SECONDS,
+  QUEUE_SECONDS,
+  SESSION_SECONDS,
+} from "./limits.js";
+import { endpoint } from "./endpoint.js";
+import { Stitcher } from "./stitch.js";
 
 type Request = Parameters<
   RealtimeTranscriptionProviderPlugin["createSession"]
 >[0];
 type Session = ReturnType<RealtimeTranscriptionProviderPlugin["createSession"]>;
 export class Runtime {
+  metrics = {
+    windows: 0,
+    maxQueuedSeconds: 0,
+    maxLagSeconds: 0,
+    decodeMs: [] as number[],
+    anchors: 0,
+    gaps: 0,
+    receivedSeconds: 0,
+  };
   private decoder?: Decoder;
   private active?: { abort: (e: Error) => void };
   private idle?: NodeJS.Timeout;
@@ -46,15 +63,17 @@ export class Runtime {
         "Configure Faster-Whisper options and provisioned model in the plugin config",
       );
     let state: "new" | "connecting" | "open" | "closing" | "done" = "new";
-    let buffer = Buffer.alloc(0);
-    let length = 0,
-      decodedLength = 0,
-      lastScheduled = 0;
-    let lastText = "",
-      busy = false,
-      speech = false;
-    let limitReached = false;
-    let loaded = false;
+    let buffer = Buffer.alloc(0),
+      length = 0,
+      offset = 0,
+      total = 0,
+      decodedEnd = 0;
+    let busy = false,
+      loaded = false;
+    const stitch = new Stitcher();
+    const windowBytes = WINDOW_SECONDS * AUDIO_BYTES_PER_SECOND;
+    const strideBytes =
+      (WINDOW_SECONDS - OVERLAP_SECONDS) * AUDIO_BYTES_PER_SECOND;
     let finalTimer: NodeJS.Timeout | undefined,
       lifetime: NodeJS.Timeout | undefined;
     let connectPromise: Promise<void> | undefined;
@@ -65,6 +84,7 @@ export class Runtime {
       clearTimeout(lifetime);
       buffer.fill(0);
       buffer = Buffer.alloc(0);
+      stitch.clear();
       if (this.active === owner) {
         this.active = undefined;
         this.scheduleIdle();
@@ -78,46 +98,44 @@ export class Runtime {
       request.onError?.(error);
     };
     const publishFinal = () => {
-      const text = lastText;
+      const text = stitch.text();
       finish();
       request.onTranscript?.(text);
-      if (limitReached)
-        request.onError?.(
-          new Error(
-            "Faster-Whisper duration limit reached; text up to the limit was retained. Start a new dictation.",
-          ),
-        );
     };
     const pump = () => {
       if (!loaded || busy || (state !== "open" && state !== "closing")) return;
-      if (state === "closing" && length === decodedLength) {
+      if (state === "closing" && decodedEnd === total) {
         publishFinal();
         return;
       }
-      if (
-        state === "open" &&
-        (this.config.snapshotIntervalSeconds === 0 ||
-          length - lastScheduled < this.config.snapshotIntervalSeconds * 8000)
-      )
-        return;
+      const cut = endpoint(buffer, length);
+      if (state === "open" && !cut) return;
       busy = true;
-      const size = length;
-      lastScheduled = size;
+      const size = cut?.size ?? Math.min(length, windowBytes),
+        start = offset;
+      const advance = cut?.advance ?? Math.min(strideBytes, size);
       const snapshot = Buffer.from(buffer.subarray(0, size));
-      void this.decoder!.decode(snapshot)
-        .then((text) => {
+      const started = performance.now();
+      void this.decoder!.decodeWindow(snapshot)
+        .then((words) => {
           if (state === "done") return;
-          decodedLength = size;
-          lastText = text;
-          if (state === "open") {
-            if (text && !speech) {
-              speech = true;
-              request.onSpeechStart?.();
-            }
-            // Never emit a partial to the stock composer: Stop commits its
-            // snapshot immediately and then ignores our asynchronous final.
-            // Optional speculative snapshots remain entirely internal.
-          }
+          stitch.add(
+            words,
+            start / AUDIO_BYTES_PER_SECOND,
+            (start + size) / AUDIO_BYTES_PER_SECOND,
+          );
+          decodedEnd = start + size;
+          this.metrics.windows++;
+          this.metrics.decodeMs.push(performance.now() - started);
+          this.metrics.anchors = stitch.anchors;
+          this.metrics.gaps = stitch.gaps;
+          // Keep overlap for the next decode, including audio arriving in flight.
+          const consumed = advance;
+          buffer.copyWithin(0, consumed, length);
+          buffer.fill(0, length - consumed, length);
+          length -= consumed;
+          offset += consumed;
+          // No onPartial: stock Stop would commit a stale prefix immediately.
         })
         .catch((e: unknown) =>
           fail(
@@ -141,7 +159,7 @@ export class Runtime {
         () =>
           fail(
             new Error(
-              "Faster-Whisper finalization exceeded the OpenClaw drain budget; final text is unavailable",
+              "Faster-Whisper finalization exceeded the OpenClaw drain budget; no complete transcript is available",
             ),
           ),
         this.config.finalTimeoutMs,
@@ -160,8 +178,24 @@ export class Runtime {
         state = "connecting";
         this.active = owner;
         clearTimeout(this.idle);
-        buffer = Buffer.alloc(
-          Math.ceil(this.config.maxAudioSeconds * AUDIO_BYTES_PER_SECOND),
+        this.metrics = {
+          windows: 0,
+          maxQueuedSeconds: 0,
+          maxLagSeconds: 0,
+          decodeMs: [],
+          anchors: 0,
+          gaps: 0,
+          receivedSeconds: 0,
+        };
+        buffer = Buffer.alloc(QUEUE_SECONDS * AUDIO_BYTES_PER_SECOND);
+        lifetime = setTimeout(
+          () =>
+            fail(
+              new Error(
+                "Faster-Whisper reached the 60-minute safety ceiling; no complete transcript is available",
+              ),
+            ),
+          SESSION_SECONDS * 1000,
         );
         connectPromise = (async () => {
           try {
@@ -177,16 +211,6 @@ export class Runtime {
               throw new Error("Faster-Whisper session cancelled");
             loaded = true;
             if (state === "connecting") state = "open";
-            if (state === "open")
-              lifetime = setTimeout(
-                () =>
-                  fail(
-                    new Error(
-                      "Faster-Whisper dictation exceeded its wall-time limit; start a new dictation",
-                    ),
-                  ),
-                (this.config.maxAudioSeconds + 30) * 1000,
-              );
             pump();
           } catch (e) {
             const error =
@@ -205,13 +229,35 @@ export class Runtime {
           fail(new Error("Invalid Faster-Whisper audio frame"));
           return;
         }
-        const accepted = Math.min(audio.length, buffer.length - length);
-        audio.copy(buffer, length, 0, accepted);
-        length += accepted;
-        if (length === buffer.length) {
-          limitReached = true;
-          beginClose();
-        } else pump();
+        if (total + audio.length >= SESSION_SECONDS * AUDIO_BYTES_PER_SECOND) {
+          fail(
+            new Error(
+              "Faster-Whisper reached the 60-minute safety ceiling; no complete transcript is available",
+            ),
+          );
+          return;
+        }
+        if (length + audio.length > buffer.length) {
+          fail(
+            new Error(
+              "Faster-Whisper cannot keep up with incoming audio; no complete transcript is available",
+            ),
+          );
+          return;
+        }
+        audio.copy(buffer, length);
+        length += audio.length;
+        total += audio.length;
+        this.metrics.receivedSeconds = total / AUDIO_BYTES_PER_SECOND;
+        this.metrics.maxQueuedSeconds = Math.max(
+          this.metrics.maxQueuedSeconds,
+          length / AUDIO_BYTES_PER_SECOND,
+        );
+        this.metrics.maxLagSeconds = Math.max(
+          this.metrics.maxLagSeconds,
+          (total - decodedEnd) / AUDIO_BYTES_PER_SECOND,
+        );
+        pump();
       },
       close: beginClose,
       isConnected: () => state === "open",

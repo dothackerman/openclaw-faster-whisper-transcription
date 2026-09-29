@@ -98,9 +98,9 @@ try {
         new Promise((resolve) => {
           loaded = resolve;
         }),
-      async decode(audio) {
+      async decodeWindow(audio) {
         received = Buffer.from(audio);
-        return "Early cold speech";
+        return [{ text: "Early cold speech", start: 0, end: 0 }];
       },
       async stop() {},
     }),

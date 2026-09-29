@@ -23,6 +23,8 @@ for (const [model, pattern] of [
   ["oom", /out of memory/],
   ["oversize", /exceeded/],
   ["hang", /timed out/],
+  ["bad-time", /protocol failed/],
+  ["missing-words", /protocol failed/],
 ]) {
   test(`worker ${model} is bounded and reported without raw diagnostics`, async (t) => {
     const errors = [];

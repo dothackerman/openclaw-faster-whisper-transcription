@@ -1,0 +1,78 @@
+{
+  "version": 1,
+  "provenance": {
+    "kind": "synthetic",
+    "engine": "eSpeak NG",
+    "version": "1.51",
+    "speed": 170,
+    "note": "Self-authored non-looped scripts. Sentence/paragraph voices en/de. Silence padding and synthetic articulation are not microphone or Swiss-German acceptance."
+  },
+  "fixtures": [
+    {
+      "id": "long-en20",
+      "language": "en",
+      "file": "long-en20.ulaw",
+      "sha256": "8c9ae3c971a44e2b0260c295c1963b66c1d5a7b0d6476bab22ed5508afe70b7f",
+      "seconds": 20.0,
+      "speechSeconds": 12.705125,
+      "reference": "Before we leave the workshop, please check the blue microphone beside the window. The recording should stay on this computer. I will review every sentence before sending the message, especially the final words: green bicycle.",
+      "mic": "synthetic",
+      "split": "development"
+    },
+    {
+      "id": "long-de20",
+      "language": "de",
+      "file": "long-de20.ulaw",
+      "sha256": "1723c10835045c1ce7af3860330f5d26576d41be2914a8ee28bd0981210bb565",
+      "seconds": 20.0,
+      "speechSeconds": 12.793375,
+      "reference": "Bevor wir die Werkstatt verlassen, prüfe bitte das blaue Mikrofon neben dem Fenster. Die Aufnahme soll auf diesem Computer bleiben. Ich lese jeden Satz vor dem Senden noch einmal, besonders die letzten Wörter: grünes Fahrrad.",
+      "mic": "synthetic",
+      "split": "development"
+    },
+    {
+      "id": "long-mixed20",
+      "language": "mixed",
+      "file": "long-mixed20.ulaw",
+      "sha256": "176b30e209f36a29952322b6c134236484d00590fe6785c084ee35f82cc71499",
+      "seconds": 20.0,
+      "speechSeconds": 9.865625,
+      "reference": "Bitte öffne das Fenster und stelle das Mikrofon auf den Tisch. The recording stays on this computer, and I will check the final message before sending it. Am Ende steht das Wort Sonnenblume.",
+      "mic": "synthetic",
+      "split": "development"
+    },
+    {
+      "id": "long-boundary20",
+      "language": "en",
+      "file": "long-boundary20.ulaw",
+      "sha256": "096a89d3083b529f5ce657c61d82ab28035b8cb8fc05d6c8d3bbc72f3c7d7d89",
+      "seconds": 20.0,
+      "speechSeconds": 15.620125,
+      "reference": "Please write down the following instructions carefully. Put the yellow screwdriver beside the silver microphone, then carry the small cardboard box across the workshop. We need international cooperation, accurate measurements, and a clear final sentence about the mountain railway.",
+      "mic": "synthetic",
+      "split": "development"
+    },
+    {
+      "id": "long-silence20",
+      "language": "none",
+      "file": "long-silence20.ulaw",
+      "sha256": "cdbf6c0880cfbeebfa8480444fef83685e70091bf1f23a5e8a71564d1f8be33a",
+      "seconds": 20.0,
+      "speechSeconds": 0.0,
+      "reference": "",
+      "mic": "synthetic",
+      "split": "development"
+    },
+    {
+      "id": "long-five-minute",
+      "language": "mixed",
+      "file": "long-five-minute.ulaw",
+      "sha256": "e5e30c6d5c59062dcbc52ee7fddf0335e9111fab425ec17fa381db2299da5255",
+      "seconds": 300.0,
+      "speechSeconds": 218.332,
+      "reference": "This morning I arrived at the workshop before the others. The room was quiet, and sunlight reached the wooden table near the entrance. I opened my notebook and wrote down the tasks for the day. First I checked the microphone cable. Its connector was firmly attached, but the cable crossed a walking path. I moved it behind the table so nobody would trip while carrying tools or materials. Next I placed three empty boxes on a shelf. The smallest box was intended for screws, the middle one for spare batteries, and the largest for folded instructions. Each box received a handwritten label. A colleague arrived with a damaged bicycle lamp. We examined its switch and found a loose contact. Instead of replacing the entire lamp, we cleaned the contact and tested it with a fresh battery. Outside, a delivery driver waited beside a white van. The parcel contained a replacement keyboard and two reusable water bottles. I compared the packing list with the contents before signing the receipt. At the next table someone was preparing a small exhibition. They arranged photographs in chronological order and left enough space for short descriptions. The oldest photograph showed the building before its windows were replaced. We stopped briefly to discuss the afternoon schedule. One visitor needed help setting up a printer, while another wanted advice about repairing a chair. We agreed to keep a separate work area for each task. During the break I walked to the nearby bakery. The shopkeeper recommended a loaf with sunflower seeds. I bought it with two apples and returned along the quieter street behind the railway station. Nach der Pause räumten wir den großen Tisch auf. Unter einer Zeitung lagen noch zwei kleine Schrauben. Ich legte sie in eine beschriftete Schachtel, damit sie später nicht mit anderen Teilen verwechselt werden. Eine Besucherin brachte einen alten Holzstuhl mit. Das linke hintere Bein war locker, aber das Holz hatte keine sichtbaren Risse. Wir erklärten ihr, welche Verbindung zuerst geprüft und anschließend neu verleimt werden sollte. Im Nebenraum stand der Drucker bereit. Das Papier lag gerade im Fach, und die Anzeige meldete keinen Fehler. Wir druckten eine kurze Testseite und verglichen die Farben mit dem Bild auf dem Bildschirm. Danach prüfte ich die Liste für den nächsten Einkauf. Wir brauchten Klebeband, einen weichen Pinsel und einige wiederverwendbare Tücher. Neue Werkzeuge waren heute nicht nötig, weil die vorhandenen Geräte zuverlässig funktionierten. Am Fenster diskutierten zwei Kollegen über die Beleuchtung. Die helle Lampe spiegelte sich im Bildschirm und erschwerte das Lesen. Wir drehten sie etwas zur Seite und stellten den Monitor weiter von der Wand weg. Für die Ausstellung fehlte noch eine Beschreibung des Eingangs. Ich schrieb einen kurzen Absatz über die breite Tür und die niedrige Stufe davor. Anschließend las eine Kollegin den Text und korrigierte eine unklare Formulierung. Später klingelte das Telefon. Ein Besucher wollte wissen, ob er am Donnerstag einen kaputten Wasserkocher vorbeibringen könne. Wir nannten ihm die Öffnungszeiten und baten ihn, auch das abnehmbare Kabel mitzubringen. Zum Abschluss kontrollierten wir die Regale und schlossen die Werkzeugschubladen. Die reparierte Fahrradlampe lag neben einem grünen Zettel. Darauf standen die ausgeführten Arbeiten und der Hinweis, die Batterie vor längerer Lagerung herauszunehmen. Before closing the workshop, I reviewed the notes from the whole day. Several small repairs had been completed, and the remaining questions were clearly listed. The next shift would be able to continue without guessing what had already been checked. The final task was to save the draft report. I checked the names, the order of events, and the last sentence. Nothing should be sent automatically. These are the final words of the recording: the orange umbrella remains beside the door.",
+      "mic": "synthetic",
+      "split": "development"
+    }
+  ]
+}

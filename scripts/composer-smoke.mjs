@@ -95,13 +95,12 @@ function harness(t, injectLegacyPartial = false, overrides = {}) {
     parseConfig({
       python: "/usr/bin/python3",
       modelPath: "/tmp",
-      snapshotIntervalSeconds: 2,
       ...overrides,
     }),
     () => ({
       async start() {},
       async stop() {},
-      decode(audio) {
+      decodeWindow(audio) {
         return new Promise((resolve) =>
           jobs.push({ audio: Buffer.from(audio), resolve }),
         );
@@ -174,8 +173,8 @@ function harness(t, injectLegacyPartial = false, overrides = {}) {
       await created;
       await tick();
       assert.ok(session, errors.join("; "));
-      session.sendAudio(Buffer.alloc(16000, 255));
-      jobs[0].resolve("The prefix");
+      session.sendAudio(Buffer.alloc(128000, 255));
+      jobs[0].resolve([{ text: "The prefix", start: 15, end: 15.2 }]);
       await tick();
       if (injectLegacyPartial) emit({ type: "partial", text: "The prefix" });
       session.sendAudio(Buffer.from([1, 2, 3]));
@@ -191,7 +190,10 @@ test(
     assert.equal(await h.controller.finishActive(), true);
     assert.deepEqual(h.commits, [{ text: "The prefix", late: undefined }]);
     await tick();
-    h.jobs[1].resolve("The prefix and final tail");
+    h.jobs[1].resolve([
+      { text: "The prefix", start: 3, end: 3.2 },
+      { text: "and final tail", start: 3.5, end: 4 },
+    ]);
     await tick();
     h.emit({ type: "close", reason: "completed" });
     await tick();
@@ -207,8 +209,11 @@ test(
     const finished = h.controller.finishActive();
     assert.deepEqual(h.commits, []);
     await tick();
-    assert.equal(h.jobs[1].audio.length, 16003);
-    h.jobs[1].resolve("The prefix and final tail");
+    assert.equal(h.jobs[1].audio.length, 32003);
+    h.jobs[1].resolve([
+      { text: "The prefix", start: 3, end: 3.2 },
+      { text: "and final tail", start: 3.5, end: 4 },
+    ]);
     await tick();
     // The real relay closes at five seconds; its final callback does not close it.
     assert.deepEqual(h.commits, []);
@@ -225,23 +230,16 @@ test(
 );
 
 test(
-  "duration cap retains accepted text through the actual stock error-stop path",
+  "overload inserts no partial success through stock error-stop",
   { timeout: 4000 },
   async (t) => {
-    const h = harness(t, false, {
-      maxAudioSeconds: 2,
-      snapshotIntervalSeconds: 0,
-    });
-    assert.equal(h.controller.startDirect(), true);
-    await h.created;
+    const h = harness(t);
+    await h.prefix();
+    h.sendAudio(Buffer.alloc(32 * 8000));
     await tick();
-    h.sendAudio(Buffer.alloc(16001));
-    assert.equal(h.jobs[0].audio.length, 16000);
-    h.jobs[0].resolve("Accepted prefix");
-    await tick();
-    assert.deepEqual(h.commits, [{ text: "Accepted prefix", late: undefined }]);
+    assert.deepEqual(h.commits, []);
     assert.equal(h.errors.length, 1);
-    assert.match(h.errors[0], /duration limit/);
+    assert.match(h.errors[0], /cannot keep up/);
     assert.ok(h.requests.every((method) => method.startsWith("talk.")));
   },
 );

@@ -58,7 +58,7 @@ running Gateway, installation and configuration can apply immediately; no routin
 restart is needed. Review the native source/capability consent prompts.
 
 ```sh
-openclaw plugins install npm-pack:/absolute/releases/openclaw-faster-whisper-transcription-0.1.0-rc.1.tgz
+openclaw plugins install npm-pack:/absolute/releases/openclaw-faster-whisper-transcription-0.1.0-rc.2.tgz
 openclaw config set plugins.entries.faster-whisper-transcription.config '{"python":"/absolute/dedicated/fw-runtime-rc1/venv/bin/python","modelPath":"/absolute/dedicated/fw-runtime-rc1/model"}' --strict-json
 openclaw config validate
 openclaw plugins enable faster-whisper-transcription
@@ -117,9 +117,20 @@ no process uses it. Never delete shared caches or another Python environment.
 - GPU OOM: the current session fails and the worker exits. Free VRAM or explicitly
   provision a smaller/quantized model. Start a new session; audio is not retried.
 - Final timeout: do not raise the budget above 4.5 seconds. OpenClaw drops results
-  after five. Use shorter dictation or a measured faster configuration. No
+  after five. Inspect measured queue lag and GPU throughput before changing a profile. No
   speculative text is inserted as a successful final.
-- Duration notice: accepted audio is finalized before the notice stops capture.
-  Any speech after the limit is outside that dictation; start another session.
+- Cannot keep up / alignment failure: the whole dictation fails explicitly. No
+  partial is inserted as success. These are quality/throughput qualification failures.
+- Ceiling: the plugin fails closed at 60 minutes; the stock host expires sessions
+  at 30 minutes first. There is no provider-only renewal setting.
 - Slow insertion after a quick decode: the stock late-final listener waits for
   relay close. This is separate from GPU inference latency.
+
+## Migration from the short-dictation prototype
+
+Remove `maxAudioSeconds` and `snapshotIntervalSeconds` from the reviewed plugin
+configuration before replacing the instance. They are rejected by the new schema;
+there is no automatic config migration or host write. Chunking is always enabled,
+with bounded internal windows/queue independent of total recording duration.
+Errors no longer finalize a truncated accepted prefix. Install/reload only when
+separately approved for the target host; this development session performs neither.

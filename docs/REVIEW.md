@@ -1,116 +1,75 @@
-# Kappa review handoff
+# Kappa review handoff: long dictation
 
-Status: experimental prototype, not production-qualified. No push or production
-mutation. The user's uninterrupted-duration requirement remains pending; the
-[duration decision](DURATION-DECISION.md) explains when internal chunking is needed.
-All three incoming research notes were read and checked against primary source.
-The [research correction](../research/openclaw-plugin-contract.md#implementation-verification-correction-p1-review)
-records the initially missed stock Stop behavior and verified selection route.
+Current branch implements OG's continuous-dictation choice. No short recording
+cap remains. No core/UI patch, live install, host config edit, Gateway restart,
+credential use, or push was performed. This remains an experimental prototype.
 
-## Implemented
+## Architecture and source constraints
 
-Native manifest/SDK provider; isolated explicit Python provisioning; local medium
-model; correct mu-law/8 kHz decoding and 16 kHz resampling; automatic language
-selection; one session/inference lane; bounded audio, request/response sizes and
-wall time; final drain; pre-ready frame buffering; lazy load and idle process
-exit; OOM/crash/timeout classification; managed disposal and host cleanup;
-Linux parent-death termination; packaging allowlist; docs and CI definition.
+One instance-owned Python worker, one admitted session, one inference lane.
+Pause-aware endpoints use 20 ms RMS frames, threshold 0.005 full scale and 600 ms
+quiet after activity, with a four-second minimum window. Audio is never removed
+by this detector: both sides include 250 ms padding around the pause centre.
+Continuous speech forces a 16-second window with four-second overlap. Timed
+word/token anchors reconcile overlap; ambiguous active overlap fails explicitly.
+All hypotheses stay internal until one final; stock composer inserts editable
+text and sends nothing. Final drain is one 4.5-second budget including in-flight
+work. Silence endpoints are engineering hypotheses, not mic-qualified VAD.
 
-P1 is corrected with **final-only callbacks**. The stock UI has no contract-safe
-preview-only path and commits any nonempty partial before awaiting the final.
-No early text callback is shipped, even when experimental internal snapshots are
-enabled. The stock late-final path still waits about five seconds for relay close.
-A duration cap finalizes accepted audio before reporting a visible limit notice.
+Queue: 32 seconds / 256,000 PCMU bytes plus one at-most-128,000-byte snapshot.
+Worker request capacity: 30 seconds / 240,000 bytes, with derived base64 framing.
+Worker response: 64 KiB, 512 timed words, 16,000 text characters. Final transcript:
+160,000 characters / 24,000 words. Wall/audio ceiling: 60 minutes. All overflow,
+crash/OOM, alignment and timeout failures insert no successful truncated prefix.
+The fixed stock-host 30-minute TTL prevents actual 60-minute browser sessions;
+a host deviation needs Kappa approval before implementation.
 
-## Exact checks performed
+`maxAudioSeconds` and `snapshotIntervalSeconds` were removed; stale configurations
+fail validation. Dedicated provisioning, lazy model load, idle process eviction,
+managed disposal, safe logs, and rollback/install instructions remain.
 
-- `npm test`: **24 Node tests pass** and **10 Python tests pass**,
-  plus strict TypeScript compilation. Tests cover final-tail bytes,
-  coalescing internal snapshots, repeated close, concurrent admission, duration cap,
-  final timeout, warm reuse/idle eviction, disposal, crash/OOM, cancelled connect,
-  model/config validation, cold pre-ready audio/Stop, cold drain deadline,
-  real subprocess IPC/backpressure/oversized response/load timeout/missing executable,
-  all 256 mu-law codewords against an independent decoder, silence/sample count,
-  a 1 kHz tone, scorer normalization/edit distance, and safe Python error responses.
-  Maximum-capacity tests cross the actual provider/Node/Python protocol with all
-  960,000 bytes, verify the payload digest, retain the exact capped prefix on
-  overflow, and reject excessive audio/framing. Inference is substituted; this
-  proves technical acceptance only and does not qualify longer dictation.
-- Clean published-SDK build: a fresh install outside this repository with Node
-  24.19.0, npm 11.17.0, Python 3.12, the committed npm lock and Python CPU lock
-  passed all tests, formatting and packaging checks. `openclaw@2026.9.6` resolves
-  from that install's own directory, with no source symlink. The built entry
-  imports the public SDK and registers in a deterministic test. The original CI
-  failure was reproduced: an ad-hoc install left the optional host peer absent.
-  See [SDK development](SDK-DEVELOPMENT.md) for the dependency contract and fix.
-- `scripts/composer-smoke.mjs`: **3 tests pass using unmodified stock controller and
-  session code** with mocked microphone/RPC. Reproduces pre-P1 stale partial insertion;
-  proves full late-tail insertion/no send after the fix; proves accepted-prefix
-  insertion on the duration-limit error-stop path.
-- `scripts/contract-smoke.mjs`: actual host manifest parsing and SDK entry;
-  actual relay create/append/Stop/final; pre-ready frames and Stop during cold load.
-- `scripts/loader-smoke.mjs`: actual native loader, `talk.catalog` provider/model,
-  `agents.defaults.voiceModel` selection without a voice-call entry, and managed
-  instance disposal with no cleanup failures. Also passed against an extracted npm
-  tarball, not only the source checkout. This is not a live Gateway reload RPC test.
-- `npm run format:check`, `git diff --check`, and package allowlist check pass.
-  The tarball excludes Python bytecode, fixtures/audio, research, node_modules,
-  virtualenvs, models, and local result directories.
-- Actual isolated GPU idle test: the owned process exited; host memory returned
-  from 2587 MiB loaded to its 551 MiB initial level.
+Both incoming long-duration notes were read and checked against the prepared
+source and pinned Faster-Whisper implementation; their files were not overwritten.
+See [source evidence](../research/long-duration-implementation.md),
+[plan](LONG-DURATION-PLAN.md), and [results](../research/LONG-DURATION-RESULTS.md).
 
-## Exact experiment failures and decisions
+## Verification
 
-[Full sanitized ledger and results](../research/RESULTS.md).
+- 33 Node and 12 Python deterministic tests pass, including maximum worker framing,
+  independent audio/time ceilings at 60 minutes, serial overlap/tail draining,
+  queue overload, pre-ready frames, cancellation, timeout, OOM/crash, disposal,
+  invalid word timestamps, repeated-word seams, silence endpoints, and edit scoring.
+- Three tests through the unmodified stock composer pass: reproduce stale partial
+  insertion, retain the asynchronous final tail, and insert no prefix on overload.
+- Actual host relay/manifest/SDK contract smoke passes. Source was read-only.
+- Published SDK remains an exact locked development dependency; no stub or vendored
+  declaration. Public CI of this new chunked milestone is pending review/push.
+- A 20-second synthetic replay through stock capture encoding/controller, actual
+  relay, and real GPU worker passed exact audio hashes and editable late insertion
+  with no chat-send RPC. Five-minute results will be appended after execution.
 
-- Duration baseline and beam 1: **15/24 callback completions, 9/24 timeouts each**.
-  English 30/60/120-second targets failed **3/3 at each length** around 4500 ms.
-  Near-15-second EN/DE targets completed 3/3 each. German longer-loop output lengths
-  raise omission concerns; completion is not quality acceptance. Synthetic repeated
-  speech is a stress test. Beam-1 duration provenance includes a dirty-tree flag.
-- Fixed short corpus: **18/18 finals for each profile**; baseline WER **37.14%**,
-  CER **16.28%**, versus beam-1 WER **38.10%**, CER **16.37%**. Baseline short-German
-  WER **122.2%** and mixed WER **54.5%** are unacceptable synthetic quality results.
-  Beam 1 worsens mixed WER to **72.7%** and is rejected. No quality gain is claimed.
-- Baseline warm provider-final median **520 ms**, exploratory p95 **1765 ms**;
-  candidate **495/1874 ms**. Only 17 warm observations, including silence, per
-  profile. These are neither robust tail estimates nor browser insertion latency.
-- Two interrupted experiments are retained as inconclusive, not silently counted
-  as successful runs. Checkpointed completed comparisons used clean source `4af8dec`.
+## Experiment and public-data boundary
 
-## Public-data boundary
+Append-only decisions, including rejected profiles, are in
+[experiments.jsonl](../research/experiments.jsonl). Historical full-utterance
+screens remain attributed to their old commits, not the current implementation.
+Early long-duration screens are dirty-tree development runs; final milestone runs
+must capture a clean commit and source hashes. No quality gain is inferred from
+callback completion. Mixed-language tail errors remain a qualification concern.
 
-Public audio consists only of six generated eSpeak NG fixtures from self-authored
-scripts, each checked against the manifest SHA-256. No OG recordings or private transcripts were used. No live config, credentials,
-environment contents, or model weights are tracked or included in the artifact. Detailed local runs and the
-runtime/model copy remain under ignored `.local/`, `.venv/`, and `.runtime/`.
-Tracked textual content and synthetic provenance were inspected, and secret-pattern
-checks found no matches. The public ledger contains aggregate measurements and
-opaque artifact hashes, not transcript text or private absolute paths.
+All twelve public audio files are generated eSpeak NG from self-authored scripts,
+with hash manifests. The new five-minute script is non-looped, with paragraph
+pauses; it is not five minutes of continuous speech. No OG private audio/transcript
+is used or tracked. Local detailed hypotheses, telemetry and runtime/model files
+stay ignored. The package excludes fixtures, research, tests, local results,
+environments, model weights and the SDK dependency tree. Project code is MIT;
+separately provisioned dependencies keep their own licenses.
 
-The project code is MIT licensed. Upstream [Faster-Whisper](https://github.com/SYSTRAN/faster-whisper/blob/v1.2.1/LICENSE)
-and the [medium model card](https://huggingface.co/Systran/faster-whisper-medium)
-also identify MIT licensing. CUDA/cuDNN and other dependencies retain their own
-licenses and are provisioned separately, never bundled here.
+## Remaining acceptance limits
 
-## Host source fingerprint
-
-Prepared OpenClaw source commit `d30287734dee7ab3d86b216777c11ea195a021b8`;
-source checkout was read-only and remained clean. SHA-256:
-
-| File                                           | SHA-256                                                            |
-| ---------------------------------------------- | ------------------------------------------------------------------ |
-| `src/realtime-transcription/provider-types.ts` | `b1bc5adb93016fb966d99218883d1bbb4948924814052cc1eb1978d2c1a6a1be` |
-| `src/gateway/talk/transcription-relay.ts`      | `46d00d577c24e6c1f45f7adf2bd00bebb7466600b034c3b0b96f4b1599307c4d` |
-| `src/gateway/talk/session-config.ts`           | `5f192d557b4f9755f6afb2af19796572b5777d03817357bcffbb4f81a89fa361` |
-| `ui/src/pages/chat/composer-dictation.ts`      | `b149c4f552bf0bc7660bdf9d9e4b89f94595943fd02afbff040c2a56b0deef5e` |
-
-## Unrun / pending
-
-Real browser/microphone acceptance, private/held-out quality, reliable longer
-uninterrupted duration, full hot-reload RPC in an isolated running Gateway, public
-CI execution of the SDK fix, publication, and any production installation. The
-first public CI run failed SDK resolution; the replacement workflow has only
-been verified locally. Kappa must review the
-exact final tree and evidence before pushing. No installation, live config edit,
-Gateway restart, or production credential use was performed.
+No real browser/network/microphone or Swiss-German acceptance, no hour-long soak,
+no production deployment, and no claim that 30/60-minute stock-browser recording
+works. The in-process composer harness simulates microphone input and RPC transport;
+it exercises stock UI/relay code but cannot test device/browser/network behavior.
+The browser itself has a 10-second pre-creation buffer and no bounded post-creation
+RPC queue. These host-owned behaviors are outside a provider-only implementation.

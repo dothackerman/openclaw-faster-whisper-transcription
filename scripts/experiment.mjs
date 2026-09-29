@@ -5,6 +5,7 @@ import { resolve, dirname } from "node:path";
 import { createHash } from "node:crypto";
 import { spawn, execFileSync } from "node:child_process";
 import { setTimeout as sleep } from "node:timers/promises";
+import { WholeBaseline } from "./whole-baseline.mjs";
 import { Runtime } from "../dist/provider.js";
 import { parseConfig } from "../dist/config.js";
 const [
@@ -12,11 +13,14 @@ const [
   manifestPath = "fixtures/public/manifest.json",
   output = ".local/run.json",
   repeatsArg = "3",
+  mode = "chunked",
 ] = process.argv.slice(2);
 if (!profilePath)
   throw new Error(
     "Usage: node scripts/experiment.mjs PROFILE MANIFEST OUTPUT REPEATS",
   );
+if (!["chunked", "whole", "composer"].includes(mode))
+  throw Error("Unknown mode");
 const repeats = Number(repeatsArg);
 if (!Number.isInteger(repeats) || repeats < 1 || repeats > 20)
   throw new Error("repeats must be 1..20");
@@ -31,7 +35,8 @@ async function hashFile(path) {
 }
 await mkdir(dirname(resolve(output)), { recursive: true, mode: 0o700 });
 const metadata = {
-  version: 1,
+  version: 2,
+  mode,
   utc: new Date().toISOString(),
   commit: execFileSync("git", ["rev-parse", "HEAD"], {
     encoding: "utf8",
@@ -40,6 +45,19 @@ const metadata = {
     encoding: "utf8",
   }).trim(),
   harnessSha256: await hashFile(new URL(import.meta.url)),
+  sourceHashes: Object.fromEntries(
+    await Promise.all(
+      [
+        "src/provider.ts",
+        "src/limits.ts",
+        "src/stitch.ts",
+        "src/endpoint.ts",
+        "src/worker.ts",
+        "scripts/composer-path.mjs",
+        "scripts/whole-baseline.mjs",
+      ].map(async (path) => [path, await hashFile(path)]),
+    ),
+  ),
   workerSha256: await hashFile(new URL("../python/worker.py", import.meta.url)),
   manifestSha256: hash(manifestBytes),
   modelSha256: await hashFile(resolve(config.modelPath, "model.bin")),
@@ -90,8 +108,14 @@ gpu.stdout.on("data", (chunk) => {
       });
   }
 });
-const runtime = new Runtime(config);
+const runtime =
+  mode === "composer"
+    ? new (await import("./composer-path.mjs")).ComposerPathRuntime(config)
+    : mode === "whole"
+      ? new WholeBaseline(config)
+      : new Runtime(config);
 const rows = [];
+let active = null;
 await mkdir(dirname(resolve(output)), { recursive: true, mode: 0o700 });
 const started = performance.now();
 let baselineEnd;
@@ -108,6 +132,7 @@ async function checkpoint(incomplete) {
     peakMemoryMiB: mem.length ? Math.max(...mem) : null,
     elapsedMs: performance.now() - started,
     rows,
+    active,
     telemetry,
   };
   await writeFile(output + ".tmp", JSON.stringify(artifact, null, 2) + "\n", {
@@ -184,13 +209,30 @@ try {
         await session.connect();
         row.readyMs = performance.now() - start;
         firstAudio = performance.now();
-        for (let i = 0; i < audio.length; i += 800) {
-          session.sendAudio(audio.subarray(i, i + 800));
+        const frameBytes = mode === "composer" ? 4096 : 800;
+        let progressAt = performance.now();
+        for (let i = 0; i < audio.length; i += frameBytes) {
+          session.sendAudio(audio.subarray(i, i + frameBytes));
           const wait =
             firstAudio +
-            Math.min(i + 800, audio.length) / 8 -
+            Math.min(i + frameBytes, audio.length) / 8 -
             performance.now();
           if (wait > 0) await sleep(wait);
+          if (performance.now() - progressAt >= 10000) {
+            active = {
+              fixture: fixture.id,
+              sentSeconds: Math.min(i + frameBytes, audio.length) / 8000,
+              metrics: runtime.metrics ?? null,
+            };
+            await checkpoint(true);
+            console.log(
+              JSON.stringify({
+                progress: active.fixture,
+                seconds: active.sentSeconds,
+              }),
+            );
+            progressAt = performance.now();
+          }
           if (!session.isConnected()) break;
         }
         stoppedAt = performance.now();
@@ -215,6 +257,8 @@ try {
           end: performance.now(),
         };
       }
+      active = null;
+      row.metrics = runtime.metrics ?? null;
       rows.push(row);
       await checkpoint(true);
       console.log(

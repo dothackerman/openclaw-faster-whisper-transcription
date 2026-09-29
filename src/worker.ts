@@ -3,16 +3,19 @@ import { fileURLToPath } from "node:url";
 import type { Config } from "./config.js";
 import { MAX_AUDIO_BYTES, MAX_REQUEST_BYTES } from "./limits.js";
 
+import type { Word } from "./stitch.js";
+type Result = { text: string; words: Word[] };
 export interface Decoder {
   start(): Promise<void>;
-  decode(audio: Buffer): Promise<string>;
+  decodeWindow(audio: Buffer): Promise<Word[]>;
   stop(): Promise<void>;
 }
 // One request in flight; no unbounded readline accumulator or writable queue.
 export class Worker implements Decoder {
   private child?: ChildProcessWithoutNullStreams;
   private pending?: {
-    resolve: (v: string) => void;
+    resolve: (v: Result) => void;
+    duration: number;
     reject: (e: Error) => void;
     timer: NodeJS.Timeout;
   };
@@ -94,9 +97,26 @@ export class Worker implements Decoder {
         )
           throw new Error();
         const pending = this.pending;
+        const words = "words" in data ? data.words : undefined;
+        if (!Array.isArray(words) || words.length > 512) throw new Error();
+        let previous = 0;
+        for (const w of words) {
+          if (
+            !w ||
+            typeof w.text !== "string" ||
+            w.text.length > 1000 ||
+            !Number.isFinite(w.start) ||
+            !Number.isFinite(w.end) ||
+            w.start < previous ||
+            w.end < w.start ||
+            w.end > pending.duration + 0.1
+          )
+            throw new Error();
+          previous = w.start;
+        }
         this.pending = undefined;
         clearTimeout(pending.timer);
-        pending.resolve(data.text);
+        pending.resolve({ text: data.text, words });
       } catch {
         this.fail("Faster-Whisper worker protocol failed");
       }
@@ -106,17 +126,28 @@ export class Worker implements Decoder {
       this.config.loadTimeoutMs,
     );
   }
-  decode(audio: Buffer): Promise<string> {
+  async decode(audio: Buffer): Promise<string> {
+    return (await this.decodeResult(audio, false)).text;
+  }
+  async decodeWindow(audio: Buffer): Promise<Word[]> {
+    return (await this.decodeResult(audio, true)).words;
+  }
+  private decodeResult(audio: Buffer, timestamps: boolean): Promise<Result> {
     if (!audio.length || audio.length > MAX_AUDIO_BYTES)
       return Promise.reject(
         new Error("Faster-Whisper audio exceeded limit or was empty"),
       );
     return this.request(
-      { op: "decode", audio: audio.toString("base64") },
+      { op: "decode", audio: audio.toString("base64"), timestamps },
       this.config.decodeTimeoutMs,
+      audio.length / 8000,
     );
   }
-  private request(payload: unknown, timeout: number): Promise<string> {
+  private request(
+    payload: unknown,
+    timeout: number,
+    duration = 0,
+  ): Promise<Result> {
     if (!this.child || this.stopping || this.pending)
       return Promise.reject(
         new Error("Faster-Whisper worker unavailable or busy"),
@@ -129,7 +160,7 @@ export class Worker implements Decoder {
         () => this.fail("Faster-Whisper operation timed out"),
         timeout,
       );
-      this.pending = { resolve, reject, timer };
+      this.pending = { resolve, reject, timer, duration };
       this.child!.stdin.write(line);
     });
   }
