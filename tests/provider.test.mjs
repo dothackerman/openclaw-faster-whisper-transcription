@@ -213,7 +213,7 @@ test("ambiguous overlap is an explicit failure rather than a guessed complete fi
   await tick();
   assert.match(f.events[0][1], /align a chunk/);
 });
-test("new overlap words before an anchor fail without publishing the old prefix", async (t) => {
+test("recovered overlap negation reaches the only final without early prefix publication", async (t) => {
   const f = fixture(t);
   await f.session.connect();
   f.session.sendAudio(Buffer.alloc(128000, 1));
@@ -229,8 +229,7 @@ test("new overlap words before an anchor fail without publishing the old prefix"
   ]);
   await tick();
   assert.equal(f.events.length, 1);
-  assert.equal(f.events[0][0], "error");
-  assert.match(f.events[0][1], /align all words/);
+  assert.deepEqual(f.events, [["final", "Do not send this"]]);
   assert.equal(f.session.isConnected(), false);
 });
 test("assembled final exceeds worker per-window text limit without truncation", async (t) => {
