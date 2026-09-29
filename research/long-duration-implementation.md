@@ -32,3 +32,28 @@ per-request audio separately, final text separately, and session wall/audio time
 at 60 minutes. These are memory/overload controls, not supported-duration claims.
 Automatic language detection occurs per window, allowing language changes but
 also risking wrong-language choices on short or synthetic speech. Evaluate this.
+
+## Verified follow-up
+
+Read the incoming `long-duration-host-contract.md`, `long-duration-quality.md`,
+and `host-ttl-change.md` without modifying them. Their source-level constraints
+match the active checkout. `scripts/ttl-smoke.mjs` executes the unmodified relay
+with a fake clock: audio is accepted just before 30 minutes; expiry closes the
+provider, labels the relay completed, rejects later appends, and ignores a late
+final. This verifies the host obstacle without a live Gateway or core patch.
+
+The 8/2 candidate failed a synthetic German seam after the first window chose
+English. A 12-second diagnostic window also chose English. A 16-second window
+recognized German in that case, motivating the measured 16/4 candidate. No claim
+is made that longer context always solves language selection. Pause-aware endpoint
+selection subsequently reduced omissions on the mixed development fixture; it
+uses 20 ms decoded-PCMU RMS, threshold 0.005, 600 ms quiet after activity, and a
+four-second minimum. It does not filter or discard audio. Pause overlaps are
+500 ms; forced 16-second boundaries retain four seconds. This is a separately
+measured heuristic, not Silero VAD or a reproduction of Whisper-Streaming.
+
+Host cancellation and normal Stop both call provider `close()` with no reason.
+The plugin cannot distinguish them; it drains briefly under its existing deadline.
+The removed relay/browser accumulator suppresses cancelled-session insertion.
+Plugin disposal/reload is distinct and immediately fails the owner and stops its
+worker. These boundaries are tested without production state.
