@@ -520,7 +520,11 @@ test("disabled overlap retry preserves negation and provenance without another G
   ]);
 });
 
-test("overlapRetry accepts only an explicit boolean", () => {
+test("overlapRetry defaults off and accepts only an explicit boolean", () => {
+  assert.equal(
+    parseConfig({ python: "/usr/bin/python3", modelPath: "/tmp" }).overlapRetry,
+    false,
+  );
   for (const overlapRetry of ["false", 0, 1, null])
     assert.throws(() => parseConfig({ ...config, overlapRetry }), /boolean/);
   for (const overlapRetry of [true, false])

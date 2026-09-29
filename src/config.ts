@@ -20,7 +20,7 @@ export const defaults = {
   device: "cuda",
   computeType: "float16",
   beamSize: 5,
-  overlapRetry: true,
+  overlapRetry: false,
   idleSeconds: 120,
   loadTimeoutMs: 90000,
   decodeTimeoutMs: 15000,

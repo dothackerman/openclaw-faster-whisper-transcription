@@ -61,7 +61,7 @@
       },
       "overlapRetry": {
         "type": "boolean",
-        "default": true,
+        "default": false,
         "description": "One bounded wider-context decode for ambiguous overlaps; false preserves two labeled readings without extra inference."
       }
     }
