@@ -51,11 +51,11 @@ Stop deadline and may be skipped when too little time remains.
 
 Only the initial fresh prefix can anchor an unmarked splice; its full suffix remains fresh,
 preserving recovered words. A wholly contained old-only word before that anchor
-causes explicit failure if it ends at least 200 ms before the first fresh token.
+rejects an automatic splice if it ends at least 200 ms before the first fresh token.
 Overlapping/nearby timestamps and left-clipped context may remain; this can also
-retain spurious words and is not a calibrated confidence guarantee. A leading substitution
-requires acoustic overlap and two following exact timed words, and retains the
-old first spelling. The fresh suffix can still replace correct old words with
+retain spurious words and is not a calibrated confidence guarantee. A leading
+substitution enters retry/marking even with acoustic overlap and two following
+exact timed words; timing cannot decide between `Do` and `Don't`. The fresh suffix can still replace correct old words with
 incorrect ones. This heuristic can reject ordinary speech and is not qualified
 for complete dictation; timestamps do not prove that no speech was missed.
 
@@ -150,7 +150,7 @@ synthetic eSpeak NG audio from self-authored scripts. Hashes are in
 `fixtures/public/manifest.json` and `fixtures/public/long-manifest.json`.
 They do not establish real microphone or dialect quality.
 
-The current candidate (`036514b`) completes 5/5 rapid fixtures and a paced
+The previous candidate (`036514b`) completes 5/5 rapid fixtures and a paced
 five-minute stock-code integration replay. One bounded retry took 865 ms and
 left one visible uncertainty span requiring review. Provider finalization took
 581 ms; stock editable insertion took 5008 ms, with no auto-send. Verbatim marked
@@ -158,6 +158,9 @@ text scores 10.64% WER / 6.44% CER, including labels and competing alternatives;
 this is not verified transcript quality. The replay uses simulated capture/RPC,
 not a real browser, Gateway or microphone. These commands reproduce evaluation,
 not general five-minute reliability or real-microphone acceptance.
+
+The text/word-coverage and leading-substitution fixes require fresh measurements;
+the result above does not qualify those changes.
 
 After provisioning the dedicated runtime/model and a local profile, build and
 validate fixture manifests, then run the five approximately 20-second fixtures

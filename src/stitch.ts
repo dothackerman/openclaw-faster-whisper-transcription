@@ -85,6 +85,13 @@ export class Stitcher {
         }
       }
       if (anchor !== undefined) {
+        // Timed corroboration identifies the seam, not the correct reading.
+        // A changed first word may invert meaning (Do / Don't); retain both
+        // through the provider's bounded retry/uncertainty path.
+        if (!bestExact)
+          throw new AlignmentError(
+            "Faster-Whisper chunk boundary has competing first words",
+          );
         // Whisper may stretch the first fresh token across earlier words.
         // Reject an isolated old-only word fully in the new audio, separated
         // from that first token by at least 200 ms. Overlapping/near-boundary

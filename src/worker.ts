@@ -16,6 +16,7 @@ export class Worker implements Decoder {
   private pending?: {
     resolve: (v: Result) => void;
     duration: number;
+    timestamps: boolean;
     reject: (e: Error) => void;
     timer: NodeJS.Timeout;
   };
@@ -114,6 +115,17 @@ export class Worker implements Decoder {
             throw new Error();
           previous = w.start;
         }
+        if (pending.timestamps) {
+          const coverage = (text: string) =>
+            text
+              .normalize("NFKC")
+              .toLowerCase()
+              .replace(/[^\p{L}\p{N}\p{M}]/gu, "");
+          if (
+            coverage(data.text) !== coverage(words.map((w) => w.text).join(""))
+          )
+            throw new Error();
+        }
         this.pending = undefined;
         clearTimeout(pending.timer);
         pending.resolve({ text: data.text, words });
@@ -141,12 +153,14 @@ export class Worker implements Decoder {
       { op: "decode", audio: audio.toString("base64"), timestamps },
       this.config.decodeTimeoutMs,
       audio.length / 8000,
+      timestamps,
     );
   }
   private request(
     payload: unknown,
     timeout: number,
     duration = 0,
+    timestamps = false,
   ): Promise<Result> {
     if (!this.child || this.stopping || this.pending)
       return Promise.reject(
@@ -160,7 +174,7 @@ export class Worker implements Decoder {
         () => this.fail("Faster-Whisper operation timed out"),
         timeout,
       );
-      this.pending = { resolve, reject, timer, duration };
+      this.pending = { resolve, reject, timer, duration, timestamps };
       this.child!.stdin.write(line);
     });
   }

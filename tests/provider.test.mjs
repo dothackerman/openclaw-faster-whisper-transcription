@@ -403,3 +403,38 @@ test("obsolete short-cap/snapshot config and wrong model are rejected", (t) => {
     /Configure/,
   );
 });
+
+test("Do/Don't first-word disagreement reaches final as visible alternatives", async (t) => {
+  const f = fixture(t);
+  await f.session.connect();
+  f.session.sendAudio(Buffer.alloc(128000));
+  f.jobs[0].resolve([word("Do", 15), word("agree", 15.3), word("now", 15.6)]);
+  await tick();
+  f.session.sendAudio(Buffer.alloc(96000));
+  f.jobs[1].resolve([
+    word("Don't", 3),
+    word("agree", 3.3),
+    word("now", 3.6),
+    word("tail", 10),
+  ]);
+  await tick();
+  assert.equal(f.jobs.length, 3);
+  assert.deepEqual(f.events, []);
+  f.session.close();
+  f.jobs[2].resolve([
+    word("Don't", 7),
+    word("agree", 7.3),
+    word("now", 7.6),
+    word("tail", 14),
+  ]);
+  await tick();
+  assert.equal(f.events.length, 1);
+  assert.equal(f.events[0][0], "final");
+  assert.match(
+    f.events[0][1],
+    /earlier: Do agree now \| later: Don't agree now \| retry: Don't agree now/,
+  );
+  assert.match(f.events[0][1], /\] tail$/);
+  assert.equal(f.runtime.metrics.retries, 1);
+  assert.equal(f.runtime.metrics.uncertaintyMarkers, 1);
+});

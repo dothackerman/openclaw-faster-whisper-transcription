@@ -26,6 +26,10 @@ for line in sys.stdin:
         print(json.dumps({'ok':True,'text':'Synthetic','words':[{'text':'Synthetic','start':0,'end':1000}]}),flush=True)
     elif mode == 'missing-words':
         print(json.dumps({'ok':True,'text':'Synthetic'}),flush=True)
+    elif mode == 'partial-coverage':
+        print(json.dumps({'ok':True,'text':'alpha beta','words':[{'text':'alpha','start':0,'end':0.3}]}),flush=True)
+    elif mode == 'coverage-formatting':
+        print(json.dumps({'ok':True,'text':"ÄLPHA, don't! ２",'words':[{'text':"älpha DONT 2",'start':0,'end':0.3}]}),flush=True)
     elif mode == 'hang':
         time.sleep(60)
     else:

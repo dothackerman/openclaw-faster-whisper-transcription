@@ -56,3 +56,23 @@ test("missing executable fails without an unhandled pipe error", async (t) => {
   t.after(() => w.stop());
   await assert.rejects(w.start(), /could not start|stopped/);
 });
+
+test("timestamp protocol rejects partial text coverage without leaking text", async (t) => {
+  const errors = [];
+  const w = new Worker({ ...config, model: "partial-coverage" }, (e) =>
+    errors.push(e.message),
+  );
+  t.after(() => w.stop());
+  await w.start();
+  await assert.rejects(w.decodeWindow(Buffer.alloc(8000)), /protocol failed/);
+  assert.ok(errors.every((e) => !e.includes("alpha")));
+});
+test("timestamp coverage tolerates case, punctuation, Unicode and word-piece spacing", async (t) => {
+  const w = new Worker({ ...config, model: "coverage-formatting" }, () => {});
+  t.after(() => w.stop());
+  await w.start();
+  assert.equal(
+    (await w.decodeWindow(Buffer.alloc(8000)))[0].text,
+    "älpha DONT 2",
+  );
+});

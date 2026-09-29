@@ -2,6 +2,32 @@
 
 Independent architect notes; do not replace incoming researcher files.
 
+## Text coverage and leading semantic disagreement review
+
+The runtime assembles only timed words. Reviewing `python/worker.py` against
+Faster-Whisper's segment/word objects showed that checking merely a nonempty
+aggregate array could lose an entire later segment. `collect_segments` now
+requires every timestamped segment's lexical content to equal its words; mixed
+complete/missing-word segments fail before any successful reply. Node's worker
+also independently checks total coverage on timestamped requests (the evaluation
+whole-utterance comparator intentionally has no timed words). Both use NFKC,
+lowercase, and retained Unicode letters/marks/numbers, ignoring punctuation and
+spacing. This checks representation coverage, not ASR truth or token boundaries.
+No approximate timestamp fallback invents words/times. Error logs contain no text.
+
+The leading-substitution branch in `src/stitch.ts` previously kept the old first
+word even when fresh differed. Two exact following words establish location, not
+which reading is right: `Do`/`Don't` can invert meaning. Such a seam now raises
+alignment ambiguity into the existing bounded retry/marker path. It cannot
+silently choose old `Wir` over fresh `Wie`. Exact timed trace and provider tests
+verify both alternatives, one retry, one final and no early publication.
+
+Plan: run deterministic protocol/stitch/provider tests and unchanged stock
+no-send tests, commit a clean candidate, then rerun the rapid set and paced
+five-minute stock-code replay. Record additional markers/retries, GPU/decode cost,
+verbatim WER/CER and repeated-tail/tail completeness. Prior `036514b` completion
+is historical evidence, not qualification of these changed semantics.
+
 ## Bounded retry and visible uncertainty experiment
 
 The official [provider callback contract](https://github.com/openclaw/openclaw/blob/d30287734dee7ab3d86b216777c11ea195a021b8/src/realtime-transcription/provider-types.ts)

@@ -183,25 +183,23 @@ test("timestamp anchors join boundary words and retain final punctuation", () =>
   assert.equal(s.text(), "Hello international cooperation. Finish.");
   assert.equal(s.anchors, 1);
 });
-test("leading substitution requires two subsequent exact timed words", () => {
-  const s = new Stitcher();
-  s.add([w("Wir", 6), w("erklärten", 6.3), w("ihr", 6.7)], 0, 8);
-  s.add(
-    [w("Wie", 0), w("erklärten", 0.3), w("ihr", 0.7), w("weiter.", 2)],
-    6,
-    10,
-  );
-  assert.equal(s.text(), "Wir erklärten ihr weiter.");
-  for (const fresh of [
-    [w("Wie", 0), w("erklärten", 0.3)],
-    [w("Wie", 0.35), w("erklärten", 0.65), w("ihr", 0.95)],
+test("leading semantic substitution is ambiguous despite two exact timed words", () => {
+  for (const [old, fresh] of [
+    ["Do", "Don't"],
+    ["Wir", "Wie"],
   ]) {
-    const rejected = new Stitcher();
-    rejected.add([w("Wir", 6), w("erklärten", 6.3), w("ihr", 6.7)], 0, 8);
-    assert.throws(() => rejected.add(fresh, 6, 10), /align/);
+    const s = new Stitcher();
+    s.add([w(old, 6), w("agree", 6.3), w("now", 6.7)], 0, 8);
+    const next = [w(fresh, 0), w("agree", 0.3), w("now", 0.7), w("tail", 3)];
+    assert.throws(() => s.add(next, 6, 10), /competing first words/);
+    s.markUncertain(next, 6, 10);
+    assert.equal(
+      s.text(),
+      `[uncertain: earlier: ${old} agree now | later: ${fresh} agree now] tail`,
+    );
   }
 });
-test("exact German trace boundary permits leading Wir/Wie with timed corroboration", () => {
+test("exact German trace boundary marks leading Wir/Wie despite timed corroboration", () => {
   const s = new Stitcher();
   s.add(
     [
@@ -212,17 +210,18 @@ test("exact German trace boundary permits leading Wir/Wie with timed corroborati
     0,
     160.28,
   );
-  s.add(
-    [
-      w("Wie", 0, 0.2),
-      w("erklärten", 0.2, 0.68),
-      w("ihr,", 0.68, 0.92),
-      w("weiter", 1.16, 1.36),
-    ],
-    156.28,
-    162.1,
+  const next = [
+    w("Wie", 0, 0.2),
+    w("erklärten", 0.2, 0.68),
+    w("ihr,", 0.68, 0.92),
+    w("weiter", 1.16, 1.36),
+  ];
+  assert.throws(() => s.add(next, 156.28, 162.1), /competing first words/);
+  s.markUncertain(next, 156.28, 162.1);
+  assert.match(
+    s.text(),
+    /earlier: Wir erklärten ihr, \| later: Wie erklärten ihr, weiter/,
   );
-  assert.equal(s.text(), "Wir erklärten ihr, weiter");
 });
 test("saved synthetic trace permits for/four substitution and corrected letter/label tail", () => {
   const s = new Stitcher();

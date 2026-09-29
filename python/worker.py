@@ -7,6 +7,7 @@ import logging
 import os
 import sys
 import sysconfig
+import unicodedata
 from pathlib import Path
 
 logging.disable(logging.CRITICAL)
@@ -30,6 +31,32 @@ def reply(text="", error=None, words=None):
     result = {"ok": error is None, "text": text, "words": words or []} if error is None else {"ok": False, "error": error}
     sys.stdout.write(json.dumps(result, ensure_ascii=True) + "\n")
     sys.stdout.flush()
+
+
+def coverage(text):
+    # Match lexical content, tolerating case, punctuation and word-piece spacing.
+    # Keep letters, combining marks and numbers; never accept missing speech.
+    return ''.join(c for c in unicodedata.normalize('NFKC', text).lower()
+                   if unicodedata.category(c)[0] in 'LNM')
+
+
+def collect_segments(segments, timestamps):
+    parts, words = [], []
+    size = 0
+    for segment in segments:
+        size += len(segment.text)
+        if size > 16000:
+            raise ValueError()
+        parts.append(segment.text)
+        if timestamps:
+            timed = segment.words or []
+            if coverage(segment.text) != coverage(''.join(w.word for w in timed)):
+                raise ValueError('incomplete word coverage')
+            for word in timed:
+                words.append({'text': word.word, 'start': word.start, 'end': word.end})
+                if len(words) > 512:
+                    raise ValueError()
+    return ''.join(parts).strip(), words
 
 
 def main():
@@ -68,22 +95,8 @@ def main():
                 segments, _ = model.transcribe(audio, language=None, task="transcribe",
                     beam_size=config["beamSize"], vad_filter=False,
                     condition_on_previous_text=True, word_timestamps=timestamps)
-                parts = []
-                words = []
-                size = 0
-                for segment in segments:
-                    size += len(segment.text)
-                    if size > 16000:
-                        raise ValueError()
-                    parts.append(segment.text)
-                    if timestamps:
-                        for word in segment.words or []:
-                            words.append({"text": word.word, "start": word.start, "end": word.end})
-                            if len(words) > 512:
-                                raise ValueError()
-                if timestamps and "".join(parts).strip() and not words:
-                    raise ValueError()
-                reply("".join(parts).strip(), words=words)
+                text, words = collect_segments(segments, timestamps)
+                reply(text, words=words)
             else:
                 raise ValueError()
         except Exception as exc:
