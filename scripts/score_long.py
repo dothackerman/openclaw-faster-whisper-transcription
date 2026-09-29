@@ -6,7 +6,7 @@ successful empty transcripts. Tail check is exact normalized last-five-word matc
 import json
 import sys
 from pathlib import Path
-from score import normalize, report
+from score import normalize, report, distance
 
 def edits(reference, hypothesis):
     a,b=normalize(reference).split(),normalize(hypothesis).split()
@@ -17,6 +17,7 @@ def edits(reference, hypothesis):
         for j,y in enumerate(b,1):
             d[i][j]=min(d[i-1][j-1]+(x!=y),d[i-1][j]+1,d[i][j-1]+1)
     counts=dict(substitutions=0,deletions=0,insertions=0,adjacentDuplicateInsertions=0)
+    inserted=[]
     i,j=len(a),len(b)
     while i or j:
         if i and j and d[i][j]==d[i-1][j-1]+(a[i-1]!=b[j-1]):
@@ -25,8 +26,24 @@ def edits(reference, hypothesis):
             counts['deletions']+=1;i-=1
         else:
             counts['insertions']+=1
+            inserted.append(j-1)
             counts['adjacentDuplicateInsertions']+=bool((j>1 and b[j-1]==b[j-2]) or (j<len(b) and b[j-1]==b[j]))
             j-=1
+    groups=[]
+    for index in sorted(inserted):
+        if groups and index==groups[-1][-1]+1: groups[-1].append(index)
+        else: groups.append([index])
+    repeated=0
+    for group in groups:
+        covered=set()
+        for width in range(3,len(group)+1):
+            references={tuple(a[k:k+width]) for k in range(len(a)-width+1)}
+            for k in range(len(group)-width+1):
+                if tuple(b[index] for index in group[k:k+width]) in references:
+                    covered.update(group[k:k+width])
+        repeated+=len(covered)
+    counts['repeatedPhraseInsertedWords']=repeated
+    counts['tailLastTwentyWordErrors']=distance(a[-20:],b[-20:])
     counts['tailLastFiveExact']=bool(a and a[-5:]==b[-5:]) if a else not b
     return counts
 

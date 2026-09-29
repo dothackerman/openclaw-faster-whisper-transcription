@@ -25,7 +25,7 @@ Registration and reload never download dependencies or models.
 
 One active dictation, one worker, one inference request in flight. No ports or
 shared daemons. Audio is G.711 mu-law/8 kHz from the stock browser, decoded and
-resampled once to 16 kHz. This cannot restore the bandwidth lost at capture;
+resampled to 16 kHz within each inference window. This cannot restore the bandwidth lost at capture;
 model tuning is not a substitute for microphone/path evaluation.
 
 Audio and transcripts stay in memory and private subprocess pipes, never ordinary
@@ -79,6 +79,7 @@ python3 -m venv .venv
 .venv/bin/python -m pip install -r python/requirements.lock
 npm test
 npm run format:check
+npm run fixtures:check
 npm run package:check
 ```
 

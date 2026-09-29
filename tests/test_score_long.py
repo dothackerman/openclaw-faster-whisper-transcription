@@ -17,3 +17,8 @@ class LongScoreTests(unittest.TestCase):
         self.assertEqual(edits('one two three','one three')['deletions'],1)
         self.assertTrue(edits('','')['tailLastFiveExact'])
         self.assertFalse(edits('','hallucination')['tailLastFiveExact'])
+    def test_nonadjacent_phrase_duplication_and_tail_region(self):
+        result=edits('the final task was to save the report and close the door',
+                     'the final task was to save the report the final task was to save and close the door')
+        self.assertEqual(result['repeatedPhraseInsertedWords'],6)
+        self.assertGreater(result['tailLastTwentyWordErrors'],0)

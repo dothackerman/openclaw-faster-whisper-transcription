@@ -10,8 +10,8 @@ One instance-owned Python worker, one admitted session, one inference lane.
 Pause-aware endpoints use 20 ms RMS frames, threshold 0.005 full scale and 600 ms
 quiet after activity, with a four-second minimum window. Audio is never removed
 by this detector: both sides include 250 ms padding around the pause centre.
-Continuous speech forces a 16-second window with four-second overlap. Timed
-word/token anchors reconcile overlap; ambiguous active overlap fails explicitly.
+Continuous speech forces a 16-second window with four-second overlap. Contiguous timed
+word/token sequences reconcile overlap; ambiguous active overlap fails explicitly.
 All hypotheses stay internal until one final; stock composer inserts editable
 text and sends nothing. Final drain is one 4.5-second budget including in-flight
 work. Silence endpoints are engineering hypotheses, not mic-qualified VAD.
@@ -35,7 +35,7 @@ See [source evidence](../research/long-duration-implementation.md),
 
 ## Verification
 
-- 33 Node and 12 Python deterministic tests pass, including maximum worker framing,
+- 34 Node and 13 Python deterministic tests pass, including maximum worker framing,
   independent audio/time ceilings at 60 minutes, serial overlap/tail draining,
   queue overload, pre-ready frames, cancellation, timeout, OOM/crash, disposal,
   invalid word timestamps, repeated-word seams, silence endpoints, and edit scoring.
@@ -46,7 +46,9 @@ See [source evidence](../research/long-duration-implementation.md),
   declaration. Public CI of this new chunked milestone is pending review/push.
 - A 20-second synthetic replay through stock capture encoding/controller, actual
   relay, and real GPU worker passed exact audio hashes and editable late insertion
-  with no chat-send RPC. Five-minute results will be appended after execution.
+  with no chat-send RPC. The first five-minute run completed transport/insertion but exposed a
+  repeated-tail stitching bug, now covered by a regression and fixed. A corrected
+  five-minute run follows; see the append-only results.
 
 ## Experiment and public-data boundary
 

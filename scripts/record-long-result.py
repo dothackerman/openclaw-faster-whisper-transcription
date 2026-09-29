@@ -15,7 +15,7 @@ if any(row.get('id')==a.id for row in existing): raise SystemExit('Record alread
 rows=run['rows'];summary=report(run)
 telemetry=[v['values'][1] for v in run.get('telemetry',[]) if len(v['values'])>1]
 record=dict(id=a.id,kind='long-duration-synthetic',utc=run['utc'],commit=run['commit'],dirty=run['dirty'],
- profile=a.profile,mode=run.get('mode'),incomplete=run['incomplete'],artifactSha256=hashlib.sha256(raw).hexdigest(),
+ longScorerSha256=hashlib.sha256(Path('scripts/score_long.py').read_bytes()).hexdigest(),profile=a.profile,mode=run.get('mode'),incomplete=run['incomplete'],artifactSha256=hashlib.sha256(raw).hexdigest(),
  manifestSha256=run['manifestSha256'],modelSha256=run['modelSha256'],harnessSha256=run['harnessSha256'],workerSha256=run['workerSha256'],sourceHashes=run.get('sourceHashes'),
  config={k:v for k,v in run['config'].items() if k not in ('python','modelPath')},gpuIdentity=run['gpuIdentity'],versions=run['versions'].splitlines(),
  summary=summary,meanGpuUtilization=sum(telemetry)/len(telemetry) if telemetry else None,

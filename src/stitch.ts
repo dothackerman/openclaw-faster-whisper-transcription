@@ -23,14 +23,18 @@ export class Stitcher {
     } else {
       const overlap = this.words.findIndex((w) => w.end >= start - 0.25);
       let anchor: [number, number] | undefined;
-      let best = Infinity;
-      // Prefer the latest matching old word; use time to disambiguate repeats.
+      let best = Infinity,
+        bestRun = 0;
+      let previous = new Uint16Array(next.length + 1);
+      // Prefer a contiguous time-consistent word sequence over a late common
+      // token. A lone "the" must not retain an already-corrected hallucinated tail.
       for (
         let i = Math.max(0, overlap < 0 ? this.words.length : overlap);
         i < this.words.length;
         i++
       ) {
         const old = this.words[i]!;
+        const current = new Uint16Array(next.length + 1);
         for (let j = 0; j < next.length && next[j]!.start <= this.end; j++) {
           const fresh = next[j]!;
           const delta = Math.abs(
@@ -39,13 +43,22 @@ export class Stitcher {
           if (
             token(old.text) &&
             token(old.text) === token(fresh.text) &&
-            delta <= 0.8 &&
-            (!anchor || i > anchor[0] || (i === anchor[0] && delta < best))
+            delta <= 0.8
           ) {
-            anchor = [i, j];
-            best = delta;
+            const run = previous[j]! + 1;
+            current[j + 1] = run;
+            if (
+              run > bestRun ||
+              (run === bestRun &&
+                (!anchor || i > anchor[0] || (i === anchor[0] && delta < best)))
+            ) {
+              anchor = [i, j];
+              best = delta;
+              bestRun = run;
+            }
           }
         }
+        previous = current;
       }
       if (anchor) {
         merged = [

@@ -47,3 +47,52 @@ test("conflicting active overlap fails closed and transcript bound is explicit",
     /safety limit/,
   );
 });
+test("contiguous overlap agreement removes a hallucinated phrase despite later common tokens", () => {
+  const s = new Stitcher();
+  const old = [
+    "These",
+    "are",
+    "the",
+    "final",
+    "words",
+    "on",
+    "the",
+    "recording.",
+    "The",
+    "final",
+    "task",
+    "was",
+    "to",
+    "save",
+    "the",
+    "draft",
+    "report.",
+  ];
+  s.add(
+    old.map((text, i) => w(text, 6 + i * 0.05, 6 + i * 0.05 + 0.04)),
+    0,
+    8,
+  );
+  const next = [
+    "These",
+    "are",
+    "the",
+    "final",
+    "words",
+    "of",
+    "the",
+    "recording.",
+    "The",
+    "orange",
+    "umbrella.",
+  ];
+  s.add(
+    next.map((text, i) => w(text, i * 0.05, i * 0.05 + 0.04)),
+    6,
+    10,
+  );
+  assert.equal(
+    s.text(),
+    "These are the final words of the recording. The orange umbrella.",
+  );
+});

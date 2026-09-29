@@ -42,8 +42,8 @@ with a fake clock: audio is accepted just before 30 minutes; expiry closes the
 provider, labels the relay completed, rejects later appends, and ignores a late
 final. This verifies the host obstacle without a live Gateway or core patch.
 
-The 8/2 candidate failed a synthetic German seam after the first window chose
-English. A 12-second diagnostic window also chose English. A 16-second window
+The 8/2 candidate failed a synthetic German seam after the first window returned
+English text. A 12-second diagnostic window also returned English. A 16-second window
 recognized German in that case, motivating the measured 16/4 candidate. No claim
 is made that longer context always solves language selection. Pause-aware endpoint
 selection subsequently reduced omissions on the mixed development fixture; it
