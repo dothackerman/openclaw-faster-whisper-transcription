@@ -137,7 +137,8 @@ smokes additionally require a prepared host checkout. The first public CI run
 failed because an ad-hoc npm install omitted the optional host peer. The locked
 development dependency fixed that failure; Kappa confirmed public CI passed for
 rc1. **rc2 has not been pushed and has no public CI result yet.** Its deterministic
-checks pass locally, but current GPU qualification fails (details below).
+checks pass locally; the current GPU run completes a marked draft, not quality
+acceptance (details below).
 Kappa reviews before publication. See [SDK development](docs/SDK-DEVELOPMENT.md).
 
 ## Evaluate
@@ -149,10 +150,14 @@ synthetic eSpeak NG audio from self-authored scripts. Hashes are in
 `fixtures/public/manifest.json` and `fixtures/public/long-manifest.json`.
 They do not establish real microphone or dialect quality.
 
-The previous unmarked candidate completed 5/5 rapid fixtures but failed the
-five-minute fixture after 212.480 seconds. The new uncertainty/retry candidate
-requires fresh GPU qualification. These
-commands reproduce evaluation, not a claim of supported five-minute dictation.
+The current candidate (`036514b`) completes 5/5 rapid fixtures and a paced
+five-minute stock-code integration replay. One bounded retry took 865 ms and
+left one visible uncertainty span requiring review. Provider finalization took
+581 ms; stock editable insertion took 5008 ms, with no auto-send. Verbatim marked
+text scores 10.64% WER / 6.44% CER, including labels and competing alternatives;
+this is not verified transcript quality. The replay uses simulated capture/RPC,
+not a real browser, Gateway or microphone. These commands reproduce evaluation,
+not general five-minute reliability or real-microphone acceptance.
 
 After provisioning the dedicated runtime/model and a local profile, build and
 validate fixture manifests, then run the five approximately 20-second fixtures

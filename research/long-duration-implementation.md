@@ -33,9 +33,12 @@ marker persistence, bound overflow, deadline skipping, deadline/disposal races,
 stock editable insertion/no-send, and scoring that includes all marker text.
 Metrics include retry count/audio durations/decode times, marker count and a
 review-required flag. Verbatim WER/CER include labels and all alternatives; no
-best-alternative selection is allowed to hide edit burden. The clean rapid and
-five-minute runs will measure GPU/time cost and whether marked completion works;
-they cannot establish microphone, Swiss-German or hour-long acceptance.
+best-alternative selection is allowed to hide edit burden. Clean `036514b` rapid and five-minute runs now complete: rapid 5/5 without retries
+or markers; paced five-minute 34 windows with one 16.94-second retry (865 ms) and
+one review-required marker. Provider finalization is 581 ms; stock editable
+insertion is 5008 ms with no send. See [measured results](LONG-DURATION-RESULTS.md)
+for verbatim scoring and limitations. These do not establish microphone,
+Swiss-German or hour-long acceptance.
 
 ## Isolated-old ambiguity candidate (`1a3f6fc`)
 

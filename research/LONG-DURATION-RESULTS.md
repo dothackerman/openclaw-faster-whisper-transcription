@@ -6,7 +6,51 @@ All speech here is self-authored, non-looped eSpeak NG synthesis transported as
 paragraph audio and padding to 300 seconds. Public manifests record every hash.
 No private OG recordings, real microphone, or Swiss-German acceptance is claimed.
 
-## Latest qualification: isolated-old ambiguity (`1a3f6fc`)
+## Latest evidence: bounded retry and marked draft (`036514b`)
+
+Clean `036514beb5a86e26ef3b1d102c36f039e528b028`, medium/float16/beam5 on
+RTX 3060 Laptop 6 GB, completes the rapid and paced five-minute reruns. Decisions
+and source/fixture/artifact hashes are appended as `long-uncertainty-rapid` and
+`long-uncertainty-five` in [the ledger](experiments.jsonl).
+
+- Rapid: **5/5 finals**, zero retries/markers, WER 15/142 (10.56%), CER 32/899
+  (3.56%), unchanged from the previous candidate. German has eight substitutions
+  and one insertion; English one substitution; mixed five substitutions and an
+  inexact final five; boundary and silence pass without errors. This is not
+  general German/mixed-language quality acceptance.
+- Five-minute: **all 300 seconds / 2,400,000 PCMU bytes** delivered through stock
+  encoding/controller/relay, with identical fixture/input/relay hashes. **34 normal
+  windows**, 15 anchor joins and 17 gaps. One **16.94-second retry costs 865 ms**
+  decode wall time and leaves **one visible uncertainty marker**. Later windows
+  continue and the complete draft reaches the editable composer with no send.
+- Provider finalization **581 ms**, within the 4500 ms deadline; stock composer
+  insertion **5008 ms**. Queue peak **17.480 s**; maximum unprocessed coverage
+  **17.408 s** includes lookahead, not solely time waiting for the GPU.
+- GPU memory baseline **551 MiB**, peak **2888 MiB**, post-disposal **551 MiB**;
+  mean sampled host GPU utilization **7.28%**. Retry duration is extra decode wall
+  time, not isolated kernel time; host-wide telemetry and one run do not establish
+  an efficiency improvement.
+- **Review required:** verbatim marked WER **65/611 (10.64%)**, CER **246/3819
+  (6.44%)**; 29 substitutions, eight deletions, 28 insertions. Scores include
+  marker labels and every competing reading, with no best-alternative selection.
+  One adjacent duplicate and 13 repeated-phrase inserted words are counted across
+  this verbatim text. Final 20 words have zero edits; final five are exact.
+  These scores measure the marked draft's edit burden and cannot be presented as
+  an ASR quality improvement over older unmarked results.
+
+**Keep** bounded recovery and marked editable-draft completion. **Reject** verified
+transcript quality, general reliability, real-microphone, Swiss-German or hour-long
+acceptance. This is paced stock-source integration with simulated DOM, capture and
+RPC plus the real local GPU worker, not a real browser/network/Gateway/mic session.
+The fixture has 218.332 seconds of synthesized speech padded to 300 seconds.
+Worker/OOM/queue/deadline/cap failures still abort; markers recover alignment
+ambiguity only. Stock host expiry at 30 minutes still risks losing final-only text.
+
+Offline saved-hypothesis replay (`long-uncertainty-saved-trace`) also completes all
+34 windows with one marker and no retry. It checks assembly/persistence only and
+is not fresh inference, quality or paced evidence.
+
+## Previous qualification: isolated-old ambiguity (`1a3f6fc`)
 
 **Five-minute acceptance remains rejected.** Clean
 `1a3f6fc272e5bf740772941aa9b71762e61821ad` replaces the blanket old-prefix guard

@@ -11,7 +11,8 @@ Pause-aware endpoints use 20 ms RMS frames, threshold 0.005 full scale and 600 m
 quiet after activity, with a four-second minimum window. Audio is never removed
 by this detector: both sides include 250 ms padding around the pause centre.
 Continuous speech forces a 16-second window with four-second overlap. Contiguous timed
-word/token sequences reconcile overlap; ambiguous active overlap fails explicitly.
+word/token sequences reconcile overlap; ambiguous active overlap rejects the
+automatic merge and enters bounded retry/marking.
 All hypotheses stay internal until one final; stock composer inserts editable
 text and sends nothing. Final drain is one 4.5-second budget including in-flight
 work. Silence endpoints are engineering hypotheses, not mic-qualified VAD.
@@ -59,7 +60,7 @@ See [source evidence](../research/long-duration-implementation.md),
   tests cover nonempty insertion, silence and exact uncertainty-marker text with no send through the actual
   relay and stock encoding/controller. The fake-clock TTL test proves the 30-minute
   host obstacle. Native loader/catalog/disposal passes on the extracted npm artifact.
-  After `1a3f6fc`, package build/check and extracted-artifact loader were rerun
+  After the retry/marker candidate `036514b`, package build/check and extracted-artifact loader were rerun
   sequentially and passed; no concurrent `dist` rebuild occurred during loading.
   Source was read-only.
 - Published SDK remains an exact locked development dependency; no stub or vendored
@@ -77,12 +78,17 @@ See [source evidence](../research/long-duration-implementation.md),
   recognition still has 26 substitutions, eight deletions and one insertion;
   this is not complete-transcript quality acceptance.
   These completion metrics predate the stricter fresh-prefix proof at `94bda99`
-  and do not qualify the current implementation; see the latest failure evidence.
-  The latest isolated-old-ambiguity clean reruns at `1a3f6fc` produce 5/5 rapid finals
-  (10.56% WER / 3.56% CER, unchanged from `c0e6b83`)
-  and fail the five-minute fixture at window #24 after 212.480 seconds
-  accepted audio. No final is emitted
-  on these seam errors. Current long-dictation release qualification is rejected.
+  and do not qualify the current implementation. The stricter unmarked `1a3f6fc`
+  failed at window #24 after 212.480 seconds. Current clean `036514b` reruns
+  complete 5/5 rapid fixtures (10.56% WER / 3.56% CER, no retries/markers) and
+  the full paced 300-second stock-code replay: all 2,400,000 audio bytes match,
+  34 normal windows, one 16.94-second retry costing 865 ms, one uncertainty marker.
+  Provider final is 581 ms; stock insertion is 5008 ms with no auto-send.
+  Verbatim marked WER is 65/611 (10.64%), CER 246/3819 (6.44%): 29 substitutions,
+  eight deletions and 28 insertions including labels/alternatives. Final 20 words
+  are exact. Keep marked editable-draft completion; reject verified quality or
+  general reliability claims. This uses actual stock code with simulated capture,
+  DOM and RPC, not a live browser/Gateway/microphone test.
 
 ## Experiment and public-data boundary
 
