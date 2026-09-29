@@ -39,8 +39,9 @@ See [source evidence](../research/long-duration-implementation.md),
   independent audio/time ceilings at 60 minutes, serial overlap/tail draining,
   queue overload, pre-ready frames, cancellation, timeout, OOM/crash, disposal,
   invalid word timestamps, repeated-word seams, silence endpoints, and edit scoring.
-- Three tests through the unmodified stock composer pass: reproduce stale partial
-  insertion, retain the asynchronous final tail, and insert no prefix on overload.
+- Four tests through the unmodified stock composer pass: reproduce stale partial
+  insertion, retain the asynchronous final tail, insert no prefix on overload,
+  and suppress late insertion after composer disposal.
 - Actual host relay/manifest/SDK contract smoke passes. Source was read-only.
 - Published SDK remains an exact locked development dependency; no stub or vendored
   declaration. Public CI of this new chunked milestone is pending review/push.

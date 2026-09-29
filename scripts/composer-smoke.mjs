@@ -243,3 +243,24 @@ test(
     assert.ok(h.requests.every((method) => method.startsWith("talk.")));
   },
 );
+
+test(
+  "disposing stock composer during pending final suppresses late insertion",
+  { timeout: 4000 },
+  async (t) => {
+    const h = harness(t);
+    await h.prefix();
+    const finished = h.controller.finishActive();
+    await tick();
+    h.controller.dispose();
+    h.jobs[1].resolve([
+      { text: "The prefix", start: 3, end: 3.2 },
+      { text: "and final tail", start: 3.5, end: 4 },
+    ]);
+    await tick();
+    h.emit({ type: "close", reason: "completed" });
+    assert.equal(await finished, false);
+    assert.deepEqual(h.commits, []);
+    assert.ok(h.requests.every((method) => method.startsWith("talk.")));
+  },
+);

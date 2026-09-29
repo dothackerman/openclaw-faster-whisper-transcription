@@ -57,3 +57,35 @@ The plugin cannot distinguish them; it drains briefly under its existing deadlin
 The removed relay/browser accumulator suppresses cancelled-session insertion.
 Plugin disposal/reload is distinct and immediately fails the owner and stops its
 worker. These boundaries are tested without production state.
+
+## Microphone-path limits and test scope
+
+The stock composer requests `AudioContext({sampleRate: 8000})` and refuses a
+context whose actual sample rate differs (`composer-dictation.ts:150–159`). Its
+input pump requests 4096-sample blocks (`talk/audio.ts:75–96`); the paced composer
+harness now uses that block size, while provider-only rapid screens use 800-byte
+frames. The in-process harness decodes synthetic PCMU to floats and executes stock
+encoding; exact fixture/provider hashes prove this round trip for these samples.
+It does not measure the browser/device resampler, acoustic echo cancellation,
+noise suppression, gain control, clipping, room noise, or permission/device changes.
+
+The 8 kHz signal cannot carry original frequencies above 4 kHz. Conversion to the
+model's 16 kHz input does not reconstruct those missing frequencies. The independent
+mu-law codeword and tone tests validate conversion, not microphone quality. The
+new fixtures were synthesized at 22050 Hz and resampled to 8 kHz before companding;
+this is a controlled transport input, not a recording of OG's laptop. Standard
+German synthetic substitutions and code-switch errors require separate real-mic
+and Swiss-German evaluation; neither passing callbacks nor a lower synthetic WER
+resolves those questions.
+
+## Alignment correction after the first five-minute replay
+
+Offline traces showed a model-generated repeated suffix in one window followed
+by a corrected hypothesis in the next. The original latest-token rule anchored
+on a later common article and retained six unwanted words. Contiguous token-run
+agreement, with the same timestamp tolerance, removes that failure in a fixed
+regression and recorded-hypothesis reassembly. Time tolerance and tie-breaking
+remain heuristics; this is not proof against every repeated-name/boundary case.
+The missing German sentence was absent from the window hypothesis before assembly,
+so fixing alignment cannot recover it. No decoder setting was changed to conceal
+that failure. The second paced five-minute run tests the actual corrected pipeline.
