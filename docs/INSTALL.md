@@ -59,10 +59,10 @@ restart is needed. Review the native source/capability consent prompts.
 
 ```sh
 openclaw plugins install npm-pack:/absolute/releases/openclaw-faster-whisper-transcription-0.1.0-rc.1.tgz
-openclaw config set plugins.entries.faster-whisper-transcription.config '{"python":"/absolute/dedicated/fw-runtime-rc1/venv/bin/python","modelPath":"/absolute/dedicated/fw-runtime-rc1/model"}' --json
+openclaw config set plugins.entries.faster-whisper-transcription.config '{"python":"/absolute/dedicated/fw-runtime-rc1/venv/bin/python","modelPath":"/absolute/dedicated/fw-runtime-rc1/model"}' --strict-json
 openclaw config validate
 openclaw plugins enable faster-whisper-transcription
-openclaw config set agents.defaults.voiceModel '"faster-whisper/medium"' --json
+openclaw config set agents.defaults.voiceModel '"faster-whisper/medium"' --strict-json
 ```
 
 When required configuration is absent, the installer should retain the package

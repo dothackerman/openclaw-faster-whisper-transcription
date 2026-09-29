@@ -35,10 +35,12 @@ Crashes, OOM, startup/decode timeouts, and finalization failures are visible.
 There is no automatic CPU fallback or private-audio retry. Linux parent-death
 signaling also terminates the worker if its Gateway parent exits unexpectedly.
 
-The default audio cap is 15 seconds, configurable up to 120. At the cap, accepted
+**Uninterrupted duration is not yet qualified.** The provisional audio cap is
+15 seconds, with an experimental buffer bound configurable up to 120. At the cap, accepted
 audio is finalized and a duration notice stops capture. Longer limits do not
 imply reliable completion: the provider has only **4.5 seconds** to finalize within
-OpenClaw's five-second drain. See the experiment evidence before choosing settings.
+OpenClaw's five-second drain. See the [duration decision and exact stress failures](docs/DURATION-DECISION.md)
+before choosing settings. Longer dictation is not claimed as supported.
 
 | Setting                   | Default   | Meaning                                                          |
 | ------------------------- | --------- | ---------------------------------------------------------------- |
@@ -92,8 +94,7 @@ smokes additionally require a prepared host checkout. CI itself has not run yet.
 
 ## Evaluate
 
-See [experiment protocol](research/experiment-design.md) and the upcoming measured
-ledger. Fixed public fixtures are synthetic eSpeak NG audio generated from
+See [experiment protocol](research/experiment-design.md) and the measured [duration decision](docs/DURATION-DECISION.md). Fixed public fixtures are synthetic eSpeak NG audio generated from
 self-authored scripts; their hashes are in `fixtures/public/manifest.json`. They
 prove transport/benchmark reproducibility, not real microphone or dialect quality.
 

@@ -1,5 +1,6 @@
 // Provider-path evaluation; results are LOCAL by default. No Gateway or credentials.
-import { readFile, writeFile, mkdir, appendFile } from "node:fs/promises";
+import { readFile, writeFile, mkdir, rename } from "node:fs/promises";
+import { createReadStream } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { createHash } from "node:crypto";
 import { spawn, execFileSync } from "node:child_process";
@@ -23,6 +24,44 @@ const hash = (value) => createHash("sha256").update(value).digest("hex");
 const manifestBytes = await readFile(manifestPath),
   manifest = JSON.parse(manifestBytes);
 const config = parseConfig(JSON.parse(await readFile(profilePath, "utf8")));
+async function hashFile(path) {
+  const digest = createHash("sha256");
+  for await (const chunk of createReadStream(path)) digest.update(chunk);
+  return digest.digest("hex");
+}
+await mkdir(dirname(resolve(output)), { recursive: true, mode: 0o700 });
+const metadata = {
+  version: 1,
+  utc: new Date().toISOString(),
+  commit: execFileSync("git", ["rev-parse", "HEAD"], {
+    encoding: "utf8",
+  }).trim(),
+  dirty: !!execFileSync("git", ["status", "--porcelain"], {
+    encoding: "utf8",
+  }).trim(),
+  harnessSha256: await hashFile(new URL(import.meta.url)),
+  workerSha256: await hashFile(new URL("../python/worker.py", import.meta.url)),
+  manifestSha256: hash(manifestBytes),
+  modelSha256: await hashFile(resolve(config.modelPath, "model.bin")),
+  gpuIdentity: execFileSync(
+    "nvidia-smi",
+    ["--query-gpu=name,driver_version,memory.total", "--format=csv,noheader"],
+    { encoding: "utf8" },
+  ).trim(),
+  versions: execFileSync(config.python, ["-m", "pip", "freeze"], {
+    encoding: "utf8",
+    env: { PATH: "/usr/bin:/bin", PIP_DISABLE_PIP_VERSION_CHECK: "1" },
+  }),
+  config,
+  seed: 7419,
+  baselineSeconds: 5,
+  plannedRows: manifest.fixtures.length * repeats,
+};
+await writeFile(
+  output,
+  JSON.stringify({ ...metadata, incomplete: true, rows: [] }) + "\n",
+  { flag: "wx", mode: 0o600 },
+);
 const telemetry = [];
 let pending = "";
 const gpu = spawn(
@@ -56,6 +95,26 @@ const rows = [];
 await mkdir(dirname(resolve(output)), { recursive: true, mode: 0o700 });
 const started = performance.now();
 let baselineEnd;
+async function checkpoint(incomplete) {
+  const baseline = telemetry.filter((x) => x.ms < baselineEnd);
+  const mem = telemetry.map((x) => x.values[0]).filter(Number.isFinite);
+  const artifact = {
+    ...metadata,
+    incomplete,
+    telemetryAvailable: telemetryAvailable && telemetry.length > 0,
+    baselineMemoryMiB: baseline.length
+      ? baseline.reduce((sum, x) => sum + x.values[0], 0) / baseline.length
+      : null,
+    peakMemoryMiB: mem.length ? Math.max(...mem) : null,
+    elapsedMs: performance.now() - started,
+    rows,
+    telemetry,
+  };
+  await writeFile(output + ".tmp", JSON.stringify(artifact, null, 2) + "\n", {
+    mode: 0o600,
+  });
+  await rename(output + ".tmp", output);
+}
 try {
   await sleep(5000);
   baselineEnd = performance.now();
@@ -157,9 +216,7 @@ try {
         };
       }
       rows.push(row);
-      await appendFile(output + ".rows.jsonl", JSON.stringify(row) + "\n", {
-        mode: 0o600,
-      });
+      await checkpoint(true);
       console.log(
         JSON.stringify({
           fixture: fixture.id,
@@ -176,47 +233,5 @@ try {
   await runtime.dispose();
   await sleep(2000);
   gpu.kill();
-  await mkdir(dirname(resolve(output)), { recursive: true, mode: 0o700 });
-  const baseline = telemetry.filter((x) => x.ms < baselineEnd);
-  const mem = telemetry.map((x) => x.values[0]).filter(Number.isFinite);
-  const versions = execFileSync(config.python, ["-m", "pip", "freeze"], {
-    encoding: "utf8",
-    env: { PATH: "/usr/bin:/bin", PIP_DISABLE_PIP_VERSION_CHECK: "1" },
-  });
-  const artifacts = {
-    version: 1,
-    utc: new Date().toISOString(),
-    commit: execFileSync("git", ["rev-parse", "HEAD"], {
-      encoding: "utf8",
-    }).trim(),
-    dirty: !!execFileSync("git", ["status", "--porcelain"], {
-      encoding: "utf8",
-    }).trim(),
-    harnessSha256: hash(await readFile(new URL(import.meta.url))),
-    manifestSha256: hash(manifestBytes),
-    workerSha256: hash(
-      await readFile(new URL("../python/worker.py", import.meta.url)),
-    ),
-    modelSha256: hash(await readFile(resolve(config.modelPath, "model.bin"))),
-    gpuIdentity: execFileSync(
-      "nvidia-smi",
-      ["--query-gpu=name,driver_version,memory.total", "--format=csv,noheader"],
-      { encoding: "utf8" },
-    ).trim(),
-    config,
-    versions,
-    seed: 7419,
-    baselineSeconds: 5,
-    telemetryAvailable: telemetryAvailable && telemetry.length > 0,
-    baselineMemoryMiB: baseline.length
-      ? baseline.reduce((a, x) => a + x.values[0], 0) / baseline.length
-      : null,
-    peakMemoryMiB: mem.length ? Math.max(...mem) : null,
-    elapsedMs: performance.now() - started,
-    rows,
-    telemetry,
-  };
-  await writeFile(output, JSON.stringify(artifacts, null, 2) + "\n", {
-    mode: 0o600,
-  });
+  await checkpoint(rows.length !== metadata.plannedRows);
 }

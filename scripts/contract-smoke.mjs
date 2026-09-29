@@ -4,6 +4,8 @@ import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
+import { Runtime } from "../dist/provider.js";
+import { parseConfig } from "../dist/config.js";
 const source = process.env.OPENCLAW_SOURCE;
 assert.ok(source, "Set OPENCLAW_SOURCE to the exact read-only host checkout");
 const isolated = await mkdtemp(resolve(tmpdir(), "fw-contract-"));
@@ -85,8 +87,56 @@ try {
   assert.equal(result.final, true);
   assert.ok(performance.now() - stop < 4500);
   assert.ok(events.some((e) => e.talkEvent?.type === "transcript.done"));
+  let loaded, received, late;
+  const lateFinal = new Promise((resolve) => {
+    late = resolve;
+  });
+  const coldRuntime = new Runtime(
+    parseConfig({ python: "/usr/bin/python3", modelPath: isolated }),
+    () => ({
+      start: () =>
+        new Promise((resolve) => {
+          loaded = resolve;
+        }),
+      async decode(audio) {
+        received = Buffer.from(audio);
+        return "Early cold speech";
+      },
+      async stop() {},
+    }),
+  );
+  try {
+    const coldContext = {
+      ...context,
+      broadcastToConnIds: (_event, payload) => {
+        if (payload.type === "transcript" && payload.text) late(payload.text);
+      },
+    };
+    const cold = relay.createTalkTranscriptionRelaySession({
+      context: coldContext,
+      connId: "isolated-cold",
+      provider: coldRuntime.provider(),
+      providerConfig: {},
+    });
+    relay.sendTalkTranscriptionRelayAudio({
+      transcriptionSessionId: cold.transcriptionSessionId,
+      connId: "isolated-cold",
+      audioBase64: Buffer.from([1, 2, 3]).toString("base64"),
+    });
+    relay.stopTalkTranscriptionRelaySession({
+      transcriptionSessionId: cold.transcriptionSessionId,
+      connId: "isolated-cold",
+    });
+    await new Promise((resolve) => setImmediate(resolve));
+    loaded();
+    assert.equal(await lateFinal, "Early cold speech");
+    assert.deepEqual(received, Buffer.from([1, 2, 3]));
+  } finally {
+    cleanupTalkConnection("isolated-cold");
+    await coldRuntime.dispose();
+  }
   console.log(
-    "PASS: native manifest, SDK entry/lifecycle, actual relay create/audio/close/final contract",
+    "PASS: native manifest, SDK entry/lifecycle, actual relay create/audio/close/final contract including frames and Stop before model ready",
   );
 } finally {
   cleanupTalkConnection("isolated-contract");

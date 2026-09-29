@@ -1,6 +1,7 @@
 import { readFile, writeFile, mkdir } from "node:fs/promises";
 import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
+import { createReadStream } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { Runtime } from "../dist/provider.js";
 import { parseConfig } from "../dist/config.js";
@@ -14,6 +15,11 @@ const runtime = new Runtime(config);
 const rows = [];
 const manifestBytes = await readFile("fixtures/public/manifest.json");
 const hash = (b) => createHash("sha256").update(b).digest("hex");
+async function hashFile(path) {
+  const digest = createHash("sha256");
+  for await (const chunk of createReadStream(path)) digest.update(chunk);
+  return digest.digest("hex");
+}
 const meta = {
   utc: new Date().toISOString(),
   commit: execFileSync("git", ["rev-parse", "HEAD"], {
@@ -25,7 +31,7 @@ const meta = {
   config,
   manifestSha256: hash(manifestBytes),
   harnessSha256: hash(await readFile(new URL(import.meta.url))),
-  modelSha256: hash(await readFile(resolve(config.modelPath, "model.bin"))),
+  modelSha256: await hashFile(resolve(config.modelPath, "model.bin")),
   kind: "offline-duration-screen-not-browser-latency",
 };
 await mkdir(dirname(output), { recursive: true });

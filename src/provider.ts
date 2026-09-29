@@ -53,6 +53,7 @@ export class Runtime {
       busy = false,
       speech = false;
     let limitReached = false;
+    let loaded = false;
     let finalTimer: NodeJS.Timeout | undefined,
       lifetime: NodeJS.Timeout | undefined;
     let connectPromise: Promise<void> | undefined;
@@ -87,7 +88,7 @@ export class Runtime {
         );
     };
     const pump = () => {
-      if (busy || (state !== "open" && state !== "closing")) return;
+      if (!loaded || busy || (state !== "open" && state !== "closing")) return;
       if (state === "closing" && length === decodedLength) {
         publishFinal();
         return;
@@ -130,7 +131,7 @@ export class Runtime {
     };
     const beginClose = () => {
       if (state === "done" || state === "closing") return;
-      if (state !== "open") {
+      if (state !== "open" && !(state === "connecting" && length > 0)) {
         fail(new Error("Faster-Whisper session closed before ready"));
         return;
       }
@@ -162,22 +163,28 @@ export class Runtime {
         connectPromise = (async () => {
           try {
             await this.stopping;
-            if (state !== "connecting" || this.disposed)
+            if (
+              (state !== "connecting" && state !== "closing") ||
+              this.disposed
+            )
               throw new Error("Faster-Whisper session cancelled");
             this.decoder ??= this.factory((e) => this.active?.abort(e));
             await this.decoder.start();
-            if (state !== "connecting")
+            if (state !== "connecting" && state !== "closing")
               throw new Error("Faster-Whisper session cancelled");
-            state = "open";
-            lifetime = setTimeout(
-              () =>
-                fail(
-                  new Error(
-                    "Faster-Whisper dictation exceeded its wall-time limit; start a new dictation",
+            loaded = true;
+            if (state === "connecting") state = "open";
+            if (state === "open")
+              lifetime = setTimeout(
+                () =>
+                  fail(
+                    new Error(
+                      "Faster-Whisper dictation exceeded its wall-time limit; start a new dictation",
+                    ),
                   ),
-                ),
-              (this.config.maxAudioSeconds + 30) * 1000,
-            );
+                (this.config.maxAudioSeconds + 30) * 1000,
+              );
+            pump();
           } catch (e) {
             const error =
               e instanceof Error
@@ -190,7 +197,7 @@ export class Runtime {
         return connectPromise;
       },
       sendAudio: (audio) => {
-        if (state !== "open") return;
+        if (state !== "open" && state !== "connecting") return;
         if (!Buffer.isBuffer(audio)) {
           fail(new Error("Invalid Faster-Whisper audio frame"));
           return;

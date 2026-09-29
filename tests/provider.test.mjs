@@ -193,3 +193,44 @@ test("config and request model validation prevent silent model substitution", (t
   );
   assert.deepEqual(f.runtime.provider().models, ["medium"]);
 });
+
+test("buffers early relay frames and drains Stop during cold load without losing samples", async (t) => {
+  const f = fixture(t);
+  let loaded;
+  f.decoder.start = () =>
+    new Promise((r) => {
+      loaded = r;
+    });
+  const connecting = f.session.connect();
+  f.session.sendAudio(Buffer.from([1, 2, 3]));
+  await tick();
+  f.session.close();
+  assert.equal(f.jobs.length, 0);
+  loaded();
+  await connecting;
+  assert.equal(f.jobs.length, 1);
+  assert.deepEqual(f.jobs[0].audio, Buffer.from([1, 2, 3]));
+  f.jobs[0].resolve("Early speech");
+  await tick();
+  assert.deepEqual(f.events, [["final", "Early speech"]]);
+});
+test("cold-load final deadline includes loading and suppresses later ready/final callbacks", async (t) => {
+  t.mock.timers.enable({ apis: ["setTimeout"] });
+  const f = fixture(t);
+  let loaded;
+  f.decoder.start = () =>
+    new Promise((r) => {
+      loaded = r;
+    });
+  const connecting = f.session.connect();
+  f.session.sendAudio(Buffer.from([1]));
+  await tick();
+  f.session.close();
+  t.mock.timers.tick(4500);
+  assert.equal(f.stops, 1);
+  loaded();
+  await assert.rejects(connecting, /cancelled/);
+  assert.equal(f.events.length, 1);
+  assert.match(f.events[0][1], /drain budget/);
+  assert.equal(f.jobs.length, 0);
+});

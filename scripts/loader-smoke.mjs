@@ -59,14 +59,32 @@ try {
   });
   assert.equal(selected.provider.id, "faster-whisper");
   assert.equal(selected.providerConfig.model, "medium");
+  const { talkHandlers } = await host("src/gateway/talk/handlers/index.ts");
+  let catalog;
+  await talkHandlers["talk.catalog"]({
+    params: {},
+    context: { getRuntimeConfig: () => cfg },
+    respond: (ok, result, error) => {
+      assert.equal(ok, true, JSON.stringify(error));
+      catalog = result;
+    },
+  });
+  assert.equal(catalog.transcription.activeProvider, "faster-whisper");
+  assert.equal(catalog.transcription.ready, true);
+  assert.deepEqual(
+    catalog.transcription.providers.find((p) => p.id === "faster-whisper")
+      .models,
+    ["medium"],
+  );
   const session = selected.provider.createSession({
     providerConfig: selected.providerConfig,
   });
   await session.connect();
-  await disposePluginRegistryInstances(registry);
+  const retirement = await disposePluginRegistryInstances(registry);
+  assert.deepEqual(retirement.failures, []);
   assert.equal(session.isConnected(), false);
   console.log(
-    "PASS: actual plugin loader, agents.defaults.voiceModel selection without voice-call, managed instance disposal",
+    "PASS: actual plugin loader, talk.catalog, agents.defaults.voiceModel selection without voice-call, managed instance disposal",
   );
 } finally {
   if (registry) await disposePluginRegistryInstances(registry);
