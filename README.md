@@ -47,7 +47,11 @@ An ambiguous seam produces localized labeled spans such as
 `[uncertain: earlier: not | later: (no words)]`. Follow a consistent source label
 across linked spans to reconstruct that candidate. Identical exact NFC choices
 merge their labels; unique monotone time-compatible common words appear once.
-Atomic Word surfaces retain punctuation, case and internal whitespace. No reading
+Atomic Word surfaces retain punctuation, case and internal whitespace.
+Words inside a previously sealed interval are suppressed only with an exact
+timed match in one retained reading. New/conflicting evidence there aborts
+explicitly; it is not silently dropped. This conservative failure can lose the
+session draft and remains a release limitation. No reading
 is selected as verified. Review and edit these spans before Send; nothing is sent
 automatically.
 
@@ -169,7 +173,7 @@ from211 to178 characters, CER from19.24% to17.02%, and retry decode from4231ms
 tozero. Host peak VRAM was2829/2797MiB (on/off). Latency favored off, but normal
 decode also ran faster; this single pair does not isolate a stable speedup.
 
-Default no-retry candidate `fddd592` then completed300 seconds/34 windows through
+Previous no-retry candidate `fddd592` then completed300 seconds/34 windows through
 the paced stock-code harness: provider final924ms, composer insertion5037ms,
 no Send, exact audio hashes. Eight joins/25 spans contain1280 marker characters.
 Visible WER/CER are28.64%/24.85%, including labels/alternatives; five repeated-phrase
@@ -180,6 +184,8 @@ Keep the lower-work default; **quality/usability acceptance remains rejected**.
 No real browser/Gateway/microphone or Swiss-German qualification is claimed.
 See the [paired experiment](research/overlap-retry-comparison.md) and historical
 [results](research/LONG-DURATION-RESULTS.md). All drafts still need review.
+The subsequent sealed-overlap proof guard has deterministic coverage but these
+five-minute results predate it and do not qualify its completion rate.
 
 After provisioning the dedicated runtime/model and a local profile, build and
 validate fixture manifests, then run the five approximately 20-second fixtures

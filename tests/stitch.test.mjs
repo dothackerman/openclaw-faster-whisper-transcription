@@ -820,3 +820,58 @@ test("identical or empty disputed readings retain all source labels", () => {
       assert.ok(reconstructs(result.text, reading, source));
   }
 });
+
+test("expanded crossing seal cannot silently discard newly recovered words or negation", () => {
+  for (const text of ["recovered", "not"]) {
+    const s = new Stitcher();
+    s.add([w("old", 7.6, 7.9)], 0, 8);
+    s.markUncertain([w("broad", 1.6, 6)], 6, 12);
+    const before = s.text();
+    const next = [w(text, 0.1, 0.3), w("future", 1, 1.2)];
+    assert.throws(
+      () => s.add(next, 11.5, 15),
+      /conflicting words inside a sealed overlap/,
+    );
+    assert.equal(s.text(), before);
+    assert.throws(
+      () => s.markUncertain(next, 11.5, 15),
+      /conflicting words inside a sealed overlap/,
+    );
+    assert.equal(s.text(), before);
+    assert.equal(s.uncertainJoins, 1);
+  }
+});
+
+test("long retry crossing seal cannot discard later recovered overlap", () => {
+  const s = new Stitcher();
+  s.add([w("old", 7.6, 7.9)], 0, 8);
+  s.markUncertain([w("new", 1.6, 1.9)], 6, 12, {
+    start: 4,
+    words: [w("broad", 3.6, 8)],
+  });
+  const before = s.text();
+  assert.throws(
+    () => s.add([w("not", 0.1, 0.3), w("future", 1, 1.2)], 11.5, 15),
+    /sealed overlap/,
+  );
+  assert.equal(s.text(), before);
+});
+
+test("sealed replay proof preserves surface, repetition and single-source provenance", () => {
+  for (const fresh of [
+    [w("Stop?", 0, 0.3)],
+    [w("Stop.", 0, 0.3), w("Stop.", 0.1, 0.4)],
+  ]) {
+    const s = new Stitcher();
+    s.add([w("Stop.", 7.6, 7.9)], 0, 8);
+    s.markUncertain([w("go", 1.6, 1.9)], 6, 10);
+    assert.throws(() => s.add(fresh, 7.6, 12), /sealed overlap/);
+  }
+  const s = new Stitcher();
+  s.add([w("do", 6), w("not", 7)], 0, 8);
+  s.markUncertain([w("never", 0), w("send", 1)], 6, 10);
+  assert.throws(
+    () => s.add([w("do", 0), w("send", 1)], 6, 12),
+    /sealed overlap/,
+  );
+});

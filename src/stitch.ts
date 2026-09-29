@@ -109,18 +109,50 @@ export class Stitcher {
   private sealed = "";
   private sealedUntil = -Infinity;
   private sealedWords = 0;
+  private sealedReadings: Word[][] = [];
   uncertainties = 0;
   uncertainJoins = 0;
   anchors = 0;
   gaps = 0;
+  // Time coverage alone is never proof that a fresh word was already rendered.
+  // Keep bounded witnesses for the last seal. Suppression must reconstruct the
+  // covered prefix from ONE labeled reading with exact surfaces and timed order.
+  // Missing proof is a fatal conflict, not an AlignmentError eligible for marking
+  // over immutable text (which would otherwise discard the fresh evidence again).
+  private unsealed(words: Word[]): Word[] {
+    const covered = words.filter((word) => word.end <= this.sealedUntil);
+    if (
+      covered.length &&
+      !this.sealedReadings.some((reading) => {
+        let from = 0;
+        for (const word of covered) {
+          const matches = reading.flatMap((known, index) =>
+            index >= from &&
+            known.text.normalize("NFC") === word.text.normalize("NFC") &&
+            Math.abs((known.start + known.end - word.start - word.end) / 2) <=
+              0.8
+              ? [index]
+              : [],
+          );
+          if (matches.length !== 1) return false;
+          from = matches[0]! + 1;
+        }
+        return true;
+      })
+    )
+      throw new Error(
+        "Faster-Whisper received conflicting words inside a sealed overlap; no complete transcript is available",
+      );
+    return words.filter((word) => word.end > this.sealedUntil);
+  }
   add(relative: Word[], start: number, end: number): void {
-    const next = relative
-      .map((w) => ({
+    const next = this.unsealed(
+      relative.map((w) => ({
         ...w,
         start: w.start + start,
         end: w.end + start,
-      }))
-      .filter((w) => w.end > this.sealedUntil);
+      })),
+    );
     let merged: Word[];
     if (!this.words.length || !next.length) {
       merged = [...this.words, ...next];
@@ -266,14 +298,15 @@ export class Stitcher {
     const uncertainStart = Math.max(start, this.sealedUntil);
     const before = this.words.filter((w) => w.end <= uncertainStart);
     const old = this.words.filter((w) => w.end > uncertainStart);
-    const active = absolute.filter((w) => w.end > this.sealedUntil);
-    const retryAbsolute = retry?.words
-      .map((w) => ({
-        ...w,
-        start: w.start + retry.start,
-        end: w.end + retry.start,
-      }))
-      .filter((w) => w.end > uncertainStart);
+    const active = this.unsealed(absolute);
+    const retryAll = retry?.words.map((w) => ({
+      ...w,
+      start: w.start + retry.start,
+      end: w.end + retry.start,
+    }));
+    const retryAbsolute = retryAll
+      ? this.unsealed(retryAll).filter((w) => w.end > uncertainStart)
+      : undefined;
     // Crossing words belong to the alternative, never to a definite suffix.
     // Extend the sealed region through the connected overlap (including retry)
     // so later windows cannot reinsert a word already committed in that marker.
@@ -314,6 +347,13 @@ export class Stitcher {
       throw new Error(
         "Faster-Whisper transcript safety limit exceeded; no complete transcript is available",
       );
+    // At most three × 512 Word witnesses. Older unsupported evidence fails
+    // explicitly rather than trusting a timestamp-only suppression frontier.
+    this.sealedReadings = [
+      [...before, ...old],
+      absolute,
+      ...(retryAll ? [retryAll] : []),
+    ].map((reading) => reading.filter((w) => w.start < seamEnd).slice(-512));
     this.sealed = sealed;
     this.sealedWords = sealedWords;
     this.sealedUntil = Math.max(this.sealedUntil, seamEnd);
@@ -352,9 +392,13 @@ export class Stitcher {
     return (
       contains(this.words.filter((w) => w.end > retryStart)) &&
       contains(
-        fresh
-          .map((w) => ({ ...w, start: w.start + start, end: w.end + start }))
-          .filter((w) => w.end > this.sealedUntil),
+        this.unsealed(
+          fresh.map((w) => ({
+            ...w,
+            start: w.start + start,
+            end: w.end + start,
+          })),
+        ),
       )
     );
   }
@@ -363,5 +407,6 @@ export class Stitcher {
     this.sealed = "";
     this.sealedWords = 0;
     this.sealedUntil = -Infinity;
+    this.sealedReadings = [];
   }
 }

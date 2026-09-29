@@ -45,7 +45,7 @@ See [source evidence](../research/long-duration-implementation.md),
 
 ## Verification
 
-- 91 Node and 18 Python deterministic tests pass, including maximum worker framing,
+- 95 Node and 18 Python deterministic tests pass, including maximum worker framing,
   independent audio/time ceilings at 60 minutes, serial overlap/tail draining,
   queue overload, pre-ready frames, cancellation, timeout, OOM/crash, disposal,
   invalid word timestamps, repeated-word seams, silence endpoints, and edit scoring.
@@ -124,7 +124,7 @@ This is extra editorial overhead, not a quality gain. Keep semantic safeguard,
 reject quality acceptance; no new paced five-minute run after rapid regression.
 The five-minute numbers above are historical and do not qualify this format.
 
-Current default `fddd592` disables overlap retry after the clean paired rapid
+Previous default candidate `fddd592` disables overlap retry after the clean paired rapid
 comparison at `72ca434`: both5/5, WER34/142, marker characters211/178 (on/off),
 CER173/899 versus153/899, extra decode4231/0ms. Retain true as explicit opt-in.
 A no-retry semantic regression proves old negation remains labeled without a
@@ -171,3 +171,8 @@ Ceiling follow-up: [exact audit](../research/ceiling-lifecycle-audit.md) retains
 the abort/data-loss behavior as a release limitation. Six stock-controller tests
 now include final/completed-close and final-then-error counterexamples; neither
 is a safe automatic completion protocol. No runtime or host change is made.
+
+P1 follow-up: [sealed-overlap audit](../research/sealed-overlap-audit.md) replaces
+timestamp-only filtering with bounded single-reading evidence. Unknown recovered
+words fail explicitly before mutation; existing final-only failure can discard
+the draft. Prior five-minute completion is not qualification of this new guard.

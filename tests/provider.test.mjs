@@ -533,3 +533,23 @@ test("overlapRetry defaults off and accepts only an explicit boolean", () => {
       overlapRetry,
     );
 });
+
+test("new negation inside an expanded seal fails explicitly without a truncated successful final", async (t) => {
+  const f = fixture(t, { overlapRetry: false });
+  await f.session.connect();
+  f.session.sendAudio(Buffer.alloc(128000));
+  f.jobs[0].resolve([word("old", 15.6, 15.9)]);
+  await tick();
+  f.session.sendAudio(Buffer.alloc(96000));
+  f.jobs[1].resolve([word("broad", 3.6, 16)]);
+  await tick();
+  assert.equal(f.runtime.metrics.uncertainJoins, 1);
+  f.session.sendAudio(Buffer.alloc(96000));
+  f.session.close();
+  f.jobs[2].resolve([word("not", 1, 1.2), word("future", 5, 5.2)]);
+  await tick();
+  assert.equal(f.events.length, 1);
+  assert.equal(f.events[0][0], "error");
+  assert.match(f.events[0][1], /conflicting words inside a sealed overlap/);
+  assert.equal(f.stops, 1);
+});
