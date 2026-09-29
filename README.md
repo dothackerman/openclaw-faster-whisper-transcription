@@ -184,8 +184,9 @@ Keep the lower-work default; **quality/usability acceptance remains rejected**.
 No real browser/Gateway/microphone or Swiss-German qualification is claimed.
 See the [paired experiment](research/overlap-retry-comparison.md) and historical
 [results](research/LONG-DURATION-RESULTS.md). All drafts still need review.
-The subsequent sealed-overlap proof guard has deterministic coverage but these
-five-minute results predate it and do not qualify its completion rate.
+The subsequent sealed-overlap proof guard (`293c521`) passes95 Node/18 Python
+tests and5/5 rapid finals with identical text/scores to no-retry above. Those
+five-minute results predate the guard and do not qualify its completion rate.
 
 After provisioning the dedicated runtime/model and a local profile, build and
 validate fixture manifests, then run the five approximately 20-second fixtures

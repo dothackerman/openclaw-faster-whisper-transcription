@@ -1,5 +1,18 @@
 # Long dictation: preliminary measured results
 
+## Sealed-overlap evidence guard — clean `293c521`
+
+The exact recovered-word P1 now fails explicitly instead of dropping evidence
+inside an expanded seal. [Audit and bounded policy](sealed-overlap-audit.md).
+95 Node/18 Python tests pass, including exact/negation/long-retry variants and
+provider error-only behavior. The short default-no-retry screen completes5/5,
+text-identical to the preceding no-retry rapid run: WER34/142 (23.94%),
+CER153/899 (17.02%),four spans/178chars,zero retries,max final799ms.
+Nine stock checks and package/loader checks pass. Keep the guard, reject quality
+acceptance. No five-minute rerun; prior five-minute results do not qualify the
+new conservative failure behavior. Ledger entry: seal-proof-rapid.
+
+
 ## No-retry policy — paired rapid `72ca434`, paced default `fddd592`
 
 [Full paired evidence and limits](overlap-retry-comparison.md). Default now

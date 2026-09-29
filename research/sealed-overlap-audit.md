@@ -35,3 +35,13 @@ known-repeat crossing/tail regressions still pass.95 Node/18 Python pass.
 Plan: commit and run the short default-no-retry screen; no five-minute run or push
 is needed to establish the deterministic fix. Previous five-minute metrics do
 not qualify this stricter sealed-overlap handling.
+
+## Short validation — clean `293c521`
+
+5/5 rapid finals, exactly the same five texts as the previous no-retry rapid
+profile. Visible WER34/142 (23.94%), CER153/899 (17.02%), four spans/178 marker
+characters, zero retries, maximum final799ms. Keep the explicit conflict guard;
+reject quality/usability acceptance. This short screen is not proof that legitimate
+long overlaps will avoid fail-closed rejection. No five-minute run was performed.
+Nine stock controller/relay checks and format/fixture/package/extracted native-
+loader checks pass. Raw run remains local; ledger ID seal-proof-rapid.

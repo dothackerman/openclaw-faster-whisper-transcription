@@ -72,7 +72,7 @@ See [source evidence](../research/long-duration-implementation.md),
   tests cover nonempty insertion, silence and exact uncertainty-marker text with no send through the actual
   relay and stock encoding/controller. The fake-clock TTL test proves the 30-minute
   host obstacle. Native loader/catalog/disposal passes on the extracted npm artifact.
-  After the default no-retry candidate `fddd592`, package build/check and extracted-artifact loader were rerun
+  After the sealed-overlap guard candidate `293c521`, package build/check and extracted-artifact loader were rerun
   sequentially and passed; no concurrent `dist` rebuild occurred during loading.
   Source was read-only.
 - Published SDK remains an exact locked development dependency; no stub or vendored
@@ -176,3 +176,9 @@ P1 follow-up: [sealed-overlap audit](../research/sealed-overlap-audit.md) replac
 timestamp-only filtering with bounded single-reading evidence. Unknown recovered
 words fail explicitly before mutation; existing final-only failure can discard
 the draft. Prior five-minute completion is not qualification of this new guard.
+
+Fresh short validation at clean `293c521`:5/5 finals, exact text equality with
+the preceding no-retry rapid run; WER34/142,CER153/899,four spans/178chars,
+zero retries,max final799ms. Nine stock checks and package/native loader pass.
+No five-minute rerun; the conservative guard remains a possible completion
+failure and quality acceptance remains rejected.
