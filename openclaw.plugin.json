@@ -1,0 +1,76 @@
+{
+  "id": "faster-whisper-transcription",
+  "name": "Faster-Whisper Transcription",
+  "contracts": {
+    "realtimeTranscriptionProviders": ["faster-whisper"]
+  },
+  "configSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["python", "modelPath"],
+    "properties": {
+      "python": {
+        "type": "string",
+        "minLength": 1
+      },
+      "modelPath": {
+        "type": "string",
+        "minLength": 1
+      },
+      "model": {
+        "type": "string",
+        "default": "medium"
+      },
+      "device": {
+        "enum": ["cuda", "cpu"],
+        "default": "cuda"
+      },
+      "computeType": {
+        "enum": ["float16", "int8_float16", "int8", "float32"],
+        "default": "float16"
+      },
+      "beamSize": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 5,
+        "default": 5
+      },
+      "maxAudioSeconds": {
+        "type": "number",
+        "minimum": 1,
+        "maximum": 30,
+        "default": 30
+      },
+      "partialIntervalSeconds": {
+        "type": "number",
+        "minimum": 0.25,
+        "maximum": 10,
+        "default": 2
+      },
+      "idleSeconds": {
+        "type": "number",
+        "minimum": 1,
+        "maximum": 3600,
+        "default": 120
+      },
+      "loadTimeoutMs": {
+        "type": "number",
+        "minimum": 1000,
+        "maximum": 120000,
+        "default": 90000
+      },
+      "decodeTimeoutMs": {
+        "type": "number",
+        "minimum": 100,
+        "maximum": 30000,
+        "default": 15000
+      },
+      "finalTimeoutMs": {
+        "type": "number",
+        "minimum": 100,
+        "maximum": 4500,
+        "default": 4500
+      }
+    }
+  }
+}

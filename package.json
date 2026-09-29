@@ -1,0 +1,46 @@
+{
+  "name": "openclaw-faster-whisper-transcription",
+  "version": "0.1.0-rc.1",
+  "description": "Local Faster-Whisper provider for OpenClaw browser dictation",
+  "license": "MIT",
+  "type": "module",
+  "files": [
+    "dist",
+    "python",
+    "scripts/bootstrap.py",
+    "openclaw.plugin.json",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=22.16.0"
+  },
+  "openclaw": {
+    "extensions": [
+      "./dist/index.js"
+    ],
+    "compat": {
+      "pluginApi": ">=2026.9.6"
+    }
+  },
+  "peerDependencies": {
+    "openclaw": ">=2026.9.6"
+  },
+  "peerDependenciesMeta": {
+    "openclaw": {
+      "optional": true
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "npm run build && node --test --test-isolation=none tests/*.test.mjs && .venv/bin/python -m unittest discover -s tests -p \"test_*.py\"",
+    "format": "prettier --write src tests/*.mjs *.json docs/*.md README.md",
+    "format:check": "prettier --check src tests/*.mjs *.json docs/*.md README.md",
+    "prepack": "npm run build"
+  },
+  "devDependencies": {
+    "@types/node": "24.0.0",
+    "typescript": "5.9.3",
+    "prettier": "3.6.2"
+  }
+}

@@ -1,0 +1,16 @@
+node_modules/
+dist/
+.venv*/
+.runtime/
+.local/
+private/
+experiments/runs/
+__pycache__/
+*.pyc
+*.tgz
+*.wav
+*.mp3
+*.ogg
+*.flac
+*.ulaw
+!fixtures/public/*.ulaw
