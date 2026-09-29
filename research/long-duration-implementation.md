@@ -21,6 +21,17 @@ words, literal surfaces, negation, crossing words and following tail. All 79 Nod
 and 18 Python tests pass. Plan: clean rapid screen; prior five-minute results remain
 historical and do not qualify this representation change.
 
+Completed clean `3eabf11`: rapid 5/5 finals, two joins/four spans/123 marker
+characters, WER26/142 and CER98/899. Paced five-minute recording completes all
+300 seconds/34 windows with exact audio hashes and no Send: provider final2238ms,
+stock insertion5010ms. Eight joins/25 spans/947 characters, WER131/611 and
+CER626/3819, five repeated-phrase inserted words, final20 errors14/final5 exact.
+All six drafts match `5b3c399` after whitespace normalization; scores are unchanged,
+not improved ASR. No retry resolves (rapid0/2, five0/8); five-minute retries cost
+9209ms versus30964ms normal decode. Keep the atomic-surface safeguard, reject
+quality/usability acceptance. Seven stock checks, formatting, fixture/package
+checks and extracted-package native loader pass. No live deployment performed.
+
 ## Crossing-word sealing and exact-surface anchors
 
 The old `end <= seamEnd` alternative partition wrongly made a fresh word crossing

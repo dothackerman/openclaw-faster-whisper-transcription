@@ -1,5 +1,38 @@
 # Long dictation: preliminary measured results
 
+## Atomic Word surfaces — clean `3eabf11`
+
+The renderer now treats each timed ASR Word as one exact NFC surface, preserving
+internal whitespace and literal punctuation/brackets. It no longer invents
+independently anchorable pieces by splitting an ASR Word. Unique ordered timed
+anchors, connected crossing closure, visible omission alternatives and dry-run
+bounds remain. No character-minimization DP or repeated source labels are added.
+
+Fresh rapid screen: 5/5 delivered, two uncertain joins/four spans/123 marker
+characters; WER26/142 (18.31%), CER98/899 (10.90%). German17/35 edits,
+English4/74 including the exact boundary case, mixed5/33, silence0 words. No
+repeated-phrase insertions. Both retries remain marked; 2827ms retry decode.
+
+Subsequent paced stock-source run: 300 seconds,34 windows,2,400,000 bytes with
+fixture/input/relay hashes identical. Provider final2238ms, stock insertion5010ms,
+no Send. Eight joins/25 spans/947 marker characters. Visible WER131/611 (21.44%),
+CER626/3819 (16.39%),25 substitutions/8 deletions/98 insertions, five repeated-phrase
+inserted words. Final20 has14 errors; final5 exact. Queue peak17.48s; lag17.408s
+includes lookahead. Host GPU memory551MiB baseline/2829MiB peak. Eight retries all
+remain marked, adding9209ms to30964ms normal decode (29.7% wall-time increment).
+Host samples do not isolate GPU kernel cost of retries.
+
+All six texts equal the previous `5b3c399` texts after whitespace normalization;
+marker character totals increase because original Word surfaces retain spaces.
+**Keep the representational safeguard; reject quality/usability acceptance.**
+No quality gain or complete-tail claim. These are self-authored synthetic fixtures
+and a simulated capture/DOM/RPC harness executing stock source with local GPU,
+not real browser/Gateway/microphone or Swiss-German validation. Full local results
+remain ignored; append-only ledger entries `long-atomic-rapid`/`long-atomic-five`
+contain hashes and metrics. 79 Node/18 Python and seven stock no-send checks pass;
+package/fixture/format and extracted native-loader checks pass.
+
+
 Status: experimental implementation ready for review; not release or microphone acceptance.
 All speech here is self-authored, non-looped eSpeak NG synthesis transported as
 8 kHz G.711 mu-law. The five-minute script has 218.332 seconds of synthesized

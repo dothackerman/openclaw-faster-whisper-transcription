@@ -44,7 +44,7 @@ See [source evidence](../research/long-duration-implementation.md),
 
 ## Verification
 
-- 77 Node and 18 Python deterministic tests pass, including maximum worker framing,
+- 79 Node and 18 Python deterministic tests pass, including maximum worker framing,
   independent audio/time ceilings at 60 minutes, serial overlap/tail draining,
   queue overload, pre-ready frames, cancellation, timeout, OOM/crash, disposal,
   invalid word timestamps, repeated-word seams, silence endpoints, and edit scoring.
@@ -71,7 +71,7 @@ See [source evidence](../research/long-duration-implementation.md),
   tests cover nonempty insertion, silence and exact uncertainty-marker text with no send through the actual
   relay and stock encoding/controller. The fake-clock TTL test proves the 30-minute
   host obstacle. Native loader/catalog/disposal passes on the extracted npm artifact.
-  After the retry/marker candidate `5b3c399`, package build/check and extracted-artifact loader were rerun
+  After the atomic-Word candidate `3eabf11`, package build/check and extracted-artifact loader were rerun
   sequentially and passed; no concurrent `dist` rebuild occurred during loading.
   Source was read-only.
 - Published SDK remains an exact locked development dependency; no stub or vendored
@@ -93,13 +93,13 @@ See [source evidence](../research/long-duration-implementation.md),
   failed at window #24 after 212.480 seconds. Subsequent `036514b` and `565b9d1`
   completed with one/two markers but still silently discarded old-only words
   after a valid first anchor. `a6911b9` protects old-only words; `ab6422c` adds
-  localized choices. Current clean `5b3c399` additionally seals crossing words
-  into the alternative, retains exact NFC punctuation/case choices and hoists
+  localized choices. Current clean `3eabf11` additionally seals crossing words
+  into the alternative, retains atomic NFC Word surfaces and punctuation/case choices and hoists
   only unique, monotone, time-compatible common text. Rapid passed first: 5/5,
-  two joins/four spans/114 characters, zero repeated-phrase insertions, visible
+  two joins/four spans/123 characters, zero repeated-phrase insertions, visible
   WER/CER 18.31% / 10.90%. The subsequent paced 300-second stock-code run preserves
   all 2,400,000 audio bytes and completes 34 windows. Eight joins yield 25 spans/
-  877 characters; provider final 1611 ms, stock insertion 5012 ms, no Send.
+  947 characters; provider final 2238 ms, stock insertion 5010 ms, no Send.
   Visible WER 131/611 (21.44%), CER 626/3819 (16.39%): 25 substitutions, eight
   deletions and 98 insertions, including choices/labels. Five repeated-phrase
   inserted words remain; visible final-20 errors 14, final five exact. Keep the
@@ -107,8 +107,8 @@ See [source evidence](../research/long-duration-implementation.md),
   usability or microphone acceptance. This is actual stock code with simulated
   capture/DOM/RPC and real GPU.
 - Retry audit on these completed clean runs: **0/10 real GPU retries resolved**
-  (rapid 0/2, five-minute 0/8). Five-minute retries cost 8911 ms on top of 30164 ms
-  normal decode (29.5% extra wall time). Host GPU samples cannot isolate retry
+  (rapid 0/2, five-minute 0/8). Five-minute retries cost 9209 ms on top of 30964 ms
+  normal decode (29.7% extra wall time). Host GPU samples cannot isolate retry
   cost. A third reading may aid review, but its value remains unvalidated; no
   quality, latency or default-policy improvement is inferred.
 
