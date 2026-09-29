@@ -27,6 +27,16 @@ all rapid fixtures and the paced five-minute whole stock-code path. Report marke
 and retry counts, verbatim WER/CER/duplication, GPU cost, queue occupancy and final
 tail/deadline. Do not inherit qualification from the previous splice semantics.
 
+Completed clean `a6911b9`: 65 Node / 18 Python tests and all seven stock composer/
+relay checks pass. Rapid 5/5 now has two markers, marked WER/CER 53.52% / 43.38%.
+The paced five-minute run completes all 34 normal windows and byte integrity,
+with eight retries/eight markers costing 6642 ms extra decode work. Provider final
+1317 ms, stock insertion 5008 ms, no Send. Marked WER/CER 42.06% / 38.02%, 137
+repeated-phrase inserted words, final-20 errors three, final five exact. Keep the
+omission safeguard; reject usability/release acceptance because the review burden
+is high. [Full results](LONG-DURATION-RESULTS.md) distinguish completion from quality.
+
+
 ## Text coverage and leading semantic disagreement review
 
 The runtime assembles only timed words. Reviewing `python/worker.py` against

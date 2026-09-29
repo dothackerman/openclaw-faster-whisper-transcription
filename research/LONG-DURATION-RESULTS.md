@@ -6,7 +6,58 @@ All speech here is self-authored, non-looped eSpeak NG synthesis transported as
 paragraph audio and padding to 300 seconds. Public manifests record every hash.
 No private OG recordings, real microphone, or Swiss-German acceptance is claimed.
 
-## Latest evidence: coverage and semantic first-word safeguards (`565b9d1`)
+## Latest evidence: retain old-only overlap words (`a6911b9`)
+
+**Keep the omission safeguard; reject usability/release acceptance.** Clean
+`a6911b94a585e19efea2dae59c299251389af735` requires every lexical old word that
+an anchor splice would replace to survive in fresh order at plausible times.
+Missing or changed words receive one bounded retry, then marked alternatives.
+The exact old `Do not send` / fresh `Do send tail` regression now preserves both
+readings instead of silently dropping `not`. The earlier leading-word and
+Python/Node representation-coverage safeguards remain. No dictionary of supposedly
+important words or timestamp-based semantic confidence is assumed.
+
+Same public fixtures, medium/float16/beam5 and repo-local RTX 3060 Laptop runtime:
+
+- **Rapid 5/5 completions**, two retries/two markers (German and English), adding
+  **2119 ms** decode wall time. German final **1912 ms**, English **1582 ms**;
+  boundary **600 ms**, mixed **484 ms**, silence **3 ms**. Marked WER **76/142
+  (53.52%)**, CER **390/899 (43.38%)**. German has seven substitutions/31 insertions;
+  English one substitution/32 insertions; mixed five substitutions and inexact
+  final five; boundary and silence zero errors. No scored deletions. The scorer
+  counts 24 repeated-phrase inserted words across the verbatim alternatives.
+- **Full paced five-minute completion:** 299999.797 ms delivery; 300 seconds /
+  2,400,000 PCMU bytes, fixture/input/relay hashes identical. **34 normal windows,
+  eight anchors, 17 gaps, eight retries and eight markers**. Retry audio spans
+  16.94–18.66 seconds; total extra decode wall time **6641.963 ms**. No retry was
+  skipped. Markers remain visible in the editable composer; no automatic Send.
+- **Final timing:** provider **1317 ms**, stock insertion **5008 ms**, within the
+  provider's unchanged 4500 ms final budget. Queue peak **17.028 s**, maximum
+  unprocessed coverage **16.896 s** includes lookahead, not just GPU waiting time.
+- **GPU:** baseline **551 MiB**, peak **2797 MiB**, post-disposal **551 MiB**;
+  mean sampled host utilization **9.86%**. This is host-wide telemetry and one
+  run; retry wall time is not isolated kernel time or an efficiency benchmark.
+- **Verbatim marked five-minute score:** WER **257/611 (42.06%)**, CER
+  **1452/3819 (38.02%)**, 34 substitutions, two deletions, 221 insertions, six
+  adjacent duplicates and **137 repeated-phrase inserted words**. Labels and all
+  competing readings count without best-alternative selection. **Final-20 errors
+  three; final five exact.** Neither full transcript nor final 20 are verified.
+
+Compared with `565b9d1`'s two-marker draft, safeguarding old-only overlap adds six
+marked joins and much more review text. This is an explicit correctness/usability
+tradeoff, **not an ASR quality gain**. Do not publish the completion figures as
+usable five-minute dictation acceptance. More compact uncertainty presentation
+could reduce editing burden but would require its own reviewed design and tests;
+these measurements are for the unchanged whole-overlap alternative presentation.
+
+This is actual stock source with simulated DOM/capture/RPC and a real local GPU
+worker, not a real browser/Gateway/mic session. The fixture contains 218.332 seconds
+of synthetic speech with pauses/padding to 300 seconds. No microphone, Swiss-German
+or hour-long acceptance. Stock expiry and hardware/deadline/cap loss risks remain.
+Ledger entries `long-overlap-rapid` and `long-overlap-five` preserve hashes,
+versions, counts and keep/reject decisions without raw transcripts.
+
+## Previous evidence: coverage and semantic first-word safeguards (`565b9d1`)
 
 Clean `565b9d1e1207c1505c4901308400969a3012b608` fails closed if any timed
 segment's text lacks word coverage, with an independent Node total-coverage check.

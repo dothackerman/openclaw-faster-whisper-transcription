@@ -152,19 +152,17 @@ synthetic eSpeak NG audio from self-authored scripts. Hashes are in
 `fixtures/public/manifest.json` and `fixtures/public/long-manifest.json`.
 They do not establish real microphone or dialect quality.
 
-The previous candidate (`565b9d1`) completes 5/5 rapid fixtures and a paced
-five-minute stock-code integration replay with both text/word coverage checks and
-marked leading-word disagreements. Two bounded retries took 1617 ms in total and
-left two visible uncertainty spans requiring review. Provider finalization took
-528 ms; stock editable insertion took 5008 ms, with no auto-send. Verbatim marked
-text scores 14.40% WER / 9.58% CER, including labels and competing alternatives;
-this higher edit burden is not a quality gain over the previous one-marker run.
-The final 20 words are exact, but the transcript is not verified. The replay uses
-simulated capture/RPC, not a real browser, Gateway or microphone. These commands
-reproduce evaluation, not general five-minute reliability or microphone acceptance.
-
-The old-only overlap safeguard requires fresh measurements; the previous results
-do not qualify its changed splice semantics.
+The current candidate (`a6911b9`) completes 5/5 rapid fixtures and a paced
+five-minute stock-code integration replay, with old-only overlap words protected
+by retry/marked alternatives. **Usability and release acceptance are rejected:**
+the rapid set needs two markers, and the five-minute run needs eight markers and
+eight retries (6642 ms extra decode work). Provider finalization takes 1317 ms;
+stock editable insertion takes 5008 ms with no auto-send. Verbatim marked
+five-minute WER/CER are 42.06% / 38.02%, including labels and all alternatives.
+The final five words are exact, but the final-20 metric has three errors. This
+high edit burden is not a quality improvement or a verified transcript. The test
+uses actual stock code with simulated capture/RPC, not a real browser, Gateway
+or microphone. Completion does not establish general five-minute reliability.
 
 After provisioning the dedicated runtime/model and a local profile, build and
 validate fixture manifests, then run the five approximately 20-second fixtures
