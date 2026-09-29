@@ -306,3 +306,27 @@ test("final then error recovers only a snapshot, not a successful stop-and-drain
   ]);
   assert.ok(h.requests.every((method) => method.startsWith("talk.")));
 });
+
+test("terminal uncertainty marker at Stop reaches editable stock composer without Send", async (t) => {
+  const h = harness(t, false, { overlapRetry: false });
+  assert.equal(h.controller.startDirect(), true);
+  await h.created;
+  await tick();
+  h.sendAudio(Buffer.alloc(128000));
+  h.jobs[0].resolve([{ text: "not", start: 15.8, end: 15.9 }]);
+  await tick();
+  h.sendAudio(Buffer.alloc(800));
+  const finished = h.controller.finishActive();
+  await tick();
+  assert.equal(h.jobs[1].audio.length, 32800);
+  h.jobs[1].resolve([{ text: "approved", start: 3.8, end: 4.1 }]);
+  await tick();
+  assert.deepEqual(h.errors, []);
+  assert.deepEqual(h.commits, []);
+  h.emit({ type: "close", reason: "completed" });
+  assert.equal(await finished, true);
+  assert.deepEqual(h.commits, [
+    { text: "[uncertain: earlier: not | later: approved]", late: true },
+  ]);
+  assert.ok(h.requests.every((method) => method.startsWith("talk.")));
+});

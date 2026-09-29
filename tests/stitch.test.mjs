@@ -1084,3 +1084,43 @@ test("even exact timed replay and empty rewound decode require explicit failure"
   s.add([w("new", 0, 0.2), w("finish", 0.5, 0.8)], 8.5, 12);
   assert.equal(s.text(), "[uncertain: earlier: old | later: new] new finish");
 });
+
+test("explicit final window permits complete terminal marker but not infinite ordinary frontier", () => {
+  const s = new Stitcher();
+  s.add([w("not", 15.8, 15.9)], 0, 16);
+  const final = [w("approved", 3.8, 4.1)];
+  for (const bound of [16.1, Infinity]) {
+    assert.throws(
+      () => s.markUncertain(final, 12, 16.1, bound),
+      /sealed overlap reaches future audio/,
+    );
+    assert.equal(s.text(), "not");
+    assert.equal(s.uncertainJoins, 0);
+  }
+  s.markUncertain(final, 12, 16.1, { final: true });
+  assert.equal(s.text(), "[uncertain: earlier: not | later: approved]");
+  assert.equal(s.uncertainJoins, 1);
+});
+
+test("final-window exemption never permits fresh or retry evidence to revisit an existing seal", () => {
+  const s = new Stitcher();
+  s.add([w("not", 7.6, 7.9)], 0, 8);
+  s.markUncertain([w("approved", 1.6, 1.9)], 6, 10, 10);
+  const before = s.text();
+  assert.throws(
+    () => s.markUncertain([w("not", 1.6, 1.9)], 6, 12, { final: true }),
+    /revisits sealed audio/,
+  );
+  assert.throws(
+    () =>
+      s.markUncertain(
+        [w("future", 1)],
+        10,
+        12,
+        { final: true },
+        { start: 6, words: [w("not", 1.6, 1.9)] },
+      ),
+    /revisits sealed audio/,
+  );
+  assert.equal(s.text(), before);
+});

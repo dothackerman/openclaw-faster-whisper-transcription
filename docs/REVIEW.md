@@ -45,7 +45,7 @@ See [source evidence](../research/long-duration-implementation.md),
 
 ## Verification
 
-- 107 Node and 18 Python deterministic tests pass, including maximum worker framing,
+- 111 Node and 18 Python deterministic tests pass, including maximum worker framing,
   independent audio/time ceilings at 60 minutes, serial overlap/tail draining,
   queue overload, pre-ready frames, cancellation, timeout, OOM/crash, disposal,
   invalid word timestamps, repeated-word seams, silence endpoints, and edit scoring.
@@ -218,3 +218,10 @@ word reaching into it, fails explicitly. Witness storage and midpoint-based
 suppression are removed. Ordinary strict frontier and skip-crossing-retry gates
 remain. The exact second-can and straddle tests pass;107 Node/18 Python tests
 pass. No new GPU run or completion-quality acceptance.
+
+Terminal-window correction: explicit final mode skips only the future-frontier
+bound when closing and the decoded window covers all accepted samples. Closing
+with more audio pending retains the bound; prior-seal and retry checks remain.
+Exact short-tail and in-flight Stop regressions pass, including editable insertion
+through the actual stock controller without Send.111 Node/18 Python tests pass;
+no new GPU or long-recording qualification is claimed.

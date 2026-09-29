@@ -203,7 +203,9 @@ export class Runtime {
                 words,
                 windowStart,
                 windowEnd,
-                (start + advance) / AUDIO_BYTES_PER_SECOND,
+                state === "closing" && start + size === total
+                  ? { final: true }
+                  : (start + advance) / AUDIO_BYTES_PER_SECOND,
                 retry,
               );
           }

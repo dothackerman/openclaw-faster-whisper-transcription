@@ -5,7 +5,9 @@ actual provider advance, after crossing closure and before mutation.
 Opt-in wider retries additionally require their integer-sample start to be
 strictly after sealedUntil; otherwise skip the decode and mark ordinary readings. This covers
 fixed and pause windows, including zero-duration words at the next start. A
-violation fails explicitly; final windows receive no exemption. All decode attempts that reach sealed audio fail explicitly, even an exact
+violation fails explicitly. The provider omits this bound only with explicit
+`{ final: true }` when closing and `start + size === total`: no future decode
+exists. A closing nonterminal window keeps the bound; Infinity is not accepted. All decode attempts that reach sealed audio fail explicitly, even an exact
 surface/time replay. No witness-based filtering remains. No previous GPU completion qualifies this stricter guard.
 
 Current boundary/editorial screen: fresh words starting before the old seam end

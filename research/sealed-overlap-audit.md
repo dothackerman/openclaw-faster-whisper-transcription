@@ -7,6 +7,28 @@ hypothesis evidence. Exact reproduction: old7.6–7.9, fresh broad7.6–12, then
 recovered11.6–11.8 plus future12.5–12.7. The old filter returned only future.
 This P1 also affects a broad retry word. Passing rapid fixtures did not negate it.
 
+## Explicit terminal-window exception
+
+The next-window frontier only applies when a future decode can occur. While
+closing, the provider now passes `{ final: true }` iff `start + size === total`
+at reconciliation time. Close has stopped accepting audio; the window covers
+all accepted samples. This includes Stop arriving during an in-flight decode.
+A closing state alone is insufficient if more accepted audio remains. Ordinary
+windows still pass the actual numeric next start, and Infinity remains invalid.
+
+The explicit terminal case skips ONLY the seal-versus-next-window bound. Prior
+sealed audio cannot be revisited, and opt-in retries must still begin strictly
+after any prior seal. Transcript caps, word coverage, final deadline and error
+handling remain unchanged. No surface/timestamp witness suppression returns.
+
+Exact case: old not@15.8–15.9, final approved@15.8–16.1, final window12–16.1.
+Numeric16.1 and Infinity boundaries reject; explicit final mode produces the
+complete labeled marker. Tests cover both a short tail and a full in-flight last
+window, closing with another pending window, and ordinary/retry attempts to
+revisit a prior seal despite final mode.111 Node/18 Python tests pass. A stock
+composer test confirms editable late insertion of the exact marker with no Send.
+No GPU run or new recording-quality qualification follows from this correction.
+
 ## Current policy: no witness suppression
 
 The midpoint/surface witness policy below is superseded. can@7.6–8.8 and a
@@ -82,7 +104,8 @@ closure includes old, fresh and retry words, markUncertain requires finite
 `safeNextStart` and strict `seamEnd < safeNextStart`, before any state mutation.
 Failure is a non-AlignmentError: `sealed overlap reaches future audio; no complete
 transcript is available`. It cannot trigger another marker or a successful final.
-No Infinity exemption is used for final windows. This adds a constant-time bound
+Infinity is not used; the explicit terminal mode above applies only when no
+future decode remains. This adds a constant-time bound
 check to the existing closure.
 
 Ordinary subsequent windows begin at or beyond that frontier. Worker validation

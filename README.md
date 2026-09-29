@@ -49,7 +49,8 @@ across linked spans to reconstruct that candidate. Identical exact NFC choices
 merge their labels; unique monotone time-compatible common words appear once.
 Atomic Word surfaces retain punctuation, case and internal whitespace.
 Seals must end strictly before the next normal decode start, including crossing
-retry words. Otherwise finalization fails before sealing.
+retry words. The bound is omitted only for an explicitly closing final window
+covering all accepted audio; otherwise unsafe sealing fails before mutation.
 No word in sealed audio is suppressed as a replay. Any decode revisiting or
 touching that interval fails explicitly, including identical surfaces and
 straddling words. Approximate timestamps do not prove the same spoken occurrence.
@@ -192,7 +193,7 @@ No real browser/Gateway/microphone or Swiss-German qualification is claimed.
 See the [paired experiment](research/overlap-retry-comparison.md) and historical
 [results](research/LONG-DURATION-RESULTS.md). All drafts still need review.
 The earlier witness guard (`293c521`) passed5/5 rapid finals with identical
-text/scores. The stricter next-window frontier and retry-start gate now pass 107 Node/18 Python
+text/scores. The stricter next-window frontier and retry-start gate now pass 111 Node/18 Python
 tests; no new GPU run was performed. Prior recordings do not qualify its
 completion rate.
 

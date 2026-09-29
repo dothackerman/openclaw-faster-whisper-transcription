@@ -605,3 +605,38 @@ test("retry opt-in skips a later wider decode crossing a previous marked seal", 
     ],
   ]);
 });
+
+test("Stop permits a complete marked last window including a decode already in flight", async (t) => {
+  for (const extraSeconds of [0.1, 12]) {
+    const f = fixture(t, { overlapRetry: false });
+    await f.session.connect();
+    f.session.sendAudio(Buffer.alloc(128000));
+    f.jobs[0].resolve([word("not", 15.8, 15.9)]);
+    await tick();
+    f.session.sendAudio(Buffer.alloc(extraSeconds * 8000));
+    f.session.close();
+    assert.equal(f.jobs[1].audio.length, (4 + extraSeconds) * 8000);
+    f.jobs[1].resolve([word("approved", 3.8, 4 + extraSeconds)]);
+    await tick();
+    assert.deepEqual(f.events, [
+      ["final", "[uncertain: earlier: not | later: approved]"],
+    ]);
+    assert.equal(f.jobs.length, 2);
+  }
+});
+
+test("closing alone does not exempt a window when accepted audio still remains", async (t) => {
+  const f = fixture(t, { overlapRetry: false });
+  await f.session.connect();
+  f.session.sendAudio(Buffer.alloc(128000));
+  f.jobs[0].resolve([word("not", 15.8, 15.9)]);
+  await tick();
+  f.session.sendAudio(Buffer.alloc(128000));
+  f.session.close();
+  // Decode12..28, total32, nextStart24: closing still needs another window.
+  f.jobs[1].resolve([word("approved", 3.8, 12)]);
+  await tick();
+  assert.equal(f.events.length, 1);
+  assert.equal(f.events[0][0], "error");
+  assert.match(f.events[0][1], /sealed overlap reaches future audio/);
+});
