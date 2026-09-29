@@ -15,7 +15,7 @@ jobs:
         with:
           python-version: '3.12'
       - run: npm ci --ignore-scripts
-      - run: npm install --no-save --ignore-scripts --package-lock=false openclaw@2026.9.6
+      - run: npm ls openclaw
       - run: python -m venv .venv
       - run: .venv/bin/python -m pip install -r python/requirements.lock
       - run: npm run format:check

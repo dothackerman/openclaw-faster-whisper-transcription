@@ -1,7 +1,9 @@
 # Contributing
 
 Use Node 24 and Python 3.12. Changes must pass `npm test`, `npm run format:check`,
-and `npm run package:check`. Test against the exact OpenClaw SDK and run the
+and `npm run package:check`. Run `npm ci --ignore-scripts` for the locked published
+SDK; do not substitute a prepared checkout symlink for clean-install validation.
+See [SDK development](docs/SDK-DEVELOPMENT.md). Test against the exact OpenClaw SDK and run the
 source contract/composer scripts before changing lifecycle or transcript behavior.
 Do not work against a live Gateway. Keep model environments and caches separate.
 

@@ -45,6 +45,7 @@
     "package:check": "npm run build && mkdir -p .local && npm pack --dry-run --json --ignore-scripts > .local/package-manifest.json && node scripts/check-package.mjs .local/package-manifest.json"
   },
   "devDependencies": {
+    "openclaw": "2026.9.6",
     "@types/node": "24.0.0",
     "typescript": "5.9.3",
     "prettier": "3.6.2"

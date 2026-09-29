@@ -24,7 +24,7 @@ A duration cap finalizes accepted audio before reporting a visible limit notice.
 
 ## Exact checks performed
 
-- `npm test`: **23 Node tests pass** and **10 Python tests pass**,
+- `npm test`: **24 Node tests pass** and **10 Python tests pass**,
   plus strict TypeScript compilation. Tests cover final-tail bytes,
   coalescing internal snapshots, repeated close, concurrent admission, duration cap,
   final timeout, warm reuse/idle eviction, disposal, crash/OOM, cancelled connect,
@@ -36,6 +36,13 @@ A duration cap finalizes accepted audio before reporting a visible limit notice.
   960,000 bytes, verify the payload digest, retain the exact capped prefix on
   overflow, and reject excessive audio/framing. Inference is substituted; this
   proves technical acceptance only and does not qualify longer dictation.
+- Clean published-SDK build: a fresh install outside this repository with Node
+  24.19.0, npm 11.17.0, Python 3.12, the committed npm lock and Python CPU lock
+  passed all tests, formatting and packaging checks. `openclaw@2026.9.6` resolves
+  from that install's own directory, with no source symlink. The built entry
+  imports the public SDK and registers in a deterministic test. The original CI
+  failure was reproduced: an ad-hoc install left the optional host peer absent.
+  See [SDK development](SDK-DEVELOPMENT.md) for the dependency contract and fix.
 - `scripts/composer-smoke.mjs`: **3 tests pass using unmodified stock controller and
   session code** with mocked microphone/RPC. Reproduces pre-P1 stale partial insertion;
   proves full late-tail insertion/no send after the fix; proves accepted-prefix
@@ -102,6 +109,8 @@ source checkout was read-only and remained clean. SHA-256:
 
 Real browser/microphone acceptance, private/held-out quality, reliable longer
 uninterrupted duration, full hot-reload RPC in an isolated running Gateway, public
-CI execution, publication, and any production installation. Kappa must review the
+CI execution of the SDK fix, publication, and any production installation. The
+first public CI run failed SDK resolution; the replacement workflow has only
+been verified locally. Kappa must review the
 exact final tree and evidence before pushing. No installation, live config edit,
 Gateway restart, or production credential use was performed.

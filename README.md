@@ -61,13 +61,12 @@ before choosing settings. Longer dictation is not claimed as supported.
 
 ## Develop and verify
 
-Use Node 24 and Python 3.12. This repository owns its dependencies. Link only the
-SDK for development, or install the exact tested host package without modifying
-the host checkout:
+Use Node 24 and Python 3.12. `openclaw@2026.9.6` is an exact, locked development
+dependency supplying the public `openclaw/plugin-sdk/*` exports. A clean install
+needs no host checkout or SDK symlink:
 
 ```sh
 npm ci --ignore-scripts
-npm install --no-save --ignore-scripts --package-lock=false openclaw@2026.9.6
 python3 -m venv .venv
 .venv/bin/python -m pip install -r python/requirements.lock
 npm test
@@ -92,7 +91,10 @@ node --import "$OPENCLAW_SOURCE/node_modules/tsx/dist/loader.mjs" scripts/compos
 These cover native manifest/registration, model selection without telephony,
 managed disposal, actual relay final drain, and stock composer insertion/no-send.
 The GitHub workflow runs deterministic checks; these exact-source integration
-smokes additionally require a prepared host checkout. CI itself has not run yet.
+smokes additionally require a prepared host checkout. The first public CI run
+failed because an ad-hoc npm install omitted the optional host peer. The locked
+development dependency fixes the locally reproduced failure; the updated public
+workflow awaits Kappa's review and push. See [SDK development](docs/SDK-DEVELOPMENT.md).
 
 ## Evaluate
 
