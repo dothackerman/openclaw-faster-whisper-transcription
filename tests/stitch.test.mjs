@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { Stitcher } from "../dist/stitch.js";
+import { Stitcher, renderUncertainty } from "../dist/stitch.js";
 const w = (text, start, end = start + 0.3) => ({ text, start, end });
 test("uncertainty retains missing negation and phantom alternatives through later windows", () => {
   const s = new Stitcher();
@@ -11,7 +11,7 @@ test("uncertainty retains missing negation and phantom alternatives through late
   s.add([w("tail", 1), w("finish", 3)], 8, 12);
   assert.equal(
     s.text(),
-    "prefix [uncertain: earlier: not | later: (no words)] approved tail finish",
+    "prefix [uncertain: not | (no words)] approved tail finish",
   );
   assert.equal(s.uncertainties, 1);
 });
@@ -116,10 +116,7 @@ test("exact old-only negation repro must be marked, never silently deleted", () 
   assert.equal(s.text(), "Do not send");
   assert.equal(s.anchors, 0);
   s.markUncertain(fresh, 4, 10);
-  assert.equal(
-    s.text(),
-    "Do [uncertain: earlier: not | later: (no words)] send tail",
-  );
+  assert.equal(s.text(), "Do [uncertain: not | (no words)] send tail");
 });
 test("old repeated lexical words each need a distinct fresh match", () => {
   const s = new Stitcher();
@@ -166,8 +163,8 @@ for (const common of [[w("anchor", 7)], [w("in", 6.6), w("the", 7)]]) {
     ].map((word) => ({ ...word, start: word.start - 4, end: word.end - 4 }));
     assert.throws(() => s.add(fresh, 4, 10), /competing overlap words/);
     s.markUncertain(fresh, 4, 10);
-    assert.match(s.text(), /earlier: wrong/);
-    assert.match(s.text(), /later: corrected/);
+    assert.match(s.text(), /wrong/);
+    assert.match(s.text(), /corrected/);
     assert.ok(s.text().endsWith(common.map((x) => x.text).join(" ") + " tail"));
     assert.equal(s.anchors, 0);
   });
@@ -208,10 +205,7 @@ test("leading semantic substitution is ambiguous despite two exact timed words",
     const next = [w(fresh, 0), w("agree", 0.3), w("now", 0.7), w("tail", 3)];
     assert.throws(() => s.add(next, 6, 10), /competing first words/);
     s.markUncertain(next, 6, 10);
-    assert.equal(
-      s.text(),
-      `[uncertain: earlier: ${old} | later: ${fresh}] agree now tail`,
-    );
+    assert.equal(s.text(), `[uncertain: ${old} | ${fresh}] agree now tail`);
   }
 });
 test("exact German trace boundary marks leading Wir/Wie despite timed corroboration", () => {
@@ -235,7 +229,7 @@ test("exact German trace boundary marks leading Wir/Wie despite timed corroborat
   s.markUncertain(next, 156.28, 162.1);
   assert.match(
     s.text(),
-    /earlier: Wir erklärten ihr, \| later: Wie erklärten ihr, weiter/,
+    /\[uncertain: Wir \| Wie\] erklärten ihr, \[uncertain: \(no words\) \| weiter\]/,
   );
 });
 test("saved synthetic trace marks for/four and letter/label alternatives", () => {
@@ -277,8 +271,10 @@ test("saved synthetic trace marks for/four and letter/label alternatives", () =>
   );
   assert.throws(() => s.add(next, 43.16, 48.18), /competing overlap words/);
   s.markUncertain(next, 43.16, 48.18);
-  assert.match(s.text(), /earlier: and the largest for folded instructions/);
-  assert.match(s.text(), /later: the largest four folded instructions/);
+  assert.match(
+    s.text(),
+    /the largest \[uncertain: for \| four\] folded instructions/,
+  );
   assert.match(s.text(), /letter\./);
   assert.match(s.text(), /label\.$/);
 });
@@ -360,7 +356,7 @@ test("a conflicting old phrase is marked rather than assumed hallucinated", () =
   s.markUncertain(fresh, 6, 10);
   assert.equal(
     s.text(),
-    `These are the final words [uncertain: earlier: ${old.slice(5).join(" ")} | later: ${next.slice(5).join(" ")}]`,
+    "These are the final words [uncertain: on | of] the recording. The [uncertain: final task was to save the draft report. | orange umbrella.]",
   );
 });
 
@@ -370,7 +366,7 @@ test("a suffix spelling extension cannot silently change can to cannot", () => {
   const fresh = [w("We", 1), w("cannot", 2), w("send", 5)];
   assert.throws(() => s.add(fresh, 4, 10), /competing overlap words/);
   s.markUncertain(fresh, 4, 10);
-  assert.equal(s.text(), "We [uncertain: earlier: can | later: cannot] send");
+  assert.equal(s.text(), "We [uncertain: can | cannot] send");
 });
 
 test("exact reviewed marker omits the lexically duplicate retry", () => {
@@ -383,44 +379,117 @@ test("exact reviewed marker omits the lexically duplicate retry", () => {
     words: [w(earlier.slice(0, -1), 1, 3)],
     start: 4,
   });
-  assert.equal(s.text(), `[uncertain: earlier: ${earlier} | later: ${later}]`);
-  assert.equal(s.uncertainties, 1);
+  assert.equal(
+    s.text(),
+    "[uncertain: beten die Etmas zu leiten | (no words)] und [uncertain: stellten | schmelzen] den Monitor weiter von der [uncertain: Wand. | (no words)]",
+  );
+  assert.equal(s.uncertainties, 3);
+  assert.equal(s.uncertainJoins, 1);
   assert.ok(s.text().length < 223);
 });
-test("factored shared context reconstructs every distinct reading in order", () => {
+function reconstructs(rendered, reading) {
+  const parts = [];
+  let end = 0;
+  const words = (s) => (s.trim() ? s.trim().split(/\s+/u) : []);
+  for (const match of rendered.matchAll(/\[uncertain: ([^\]]*)\]/g)) {
+    parts.push([words(rendered.slice(end, match.index))]);
+    parts.push(
+      match[1].split(" | ").map((s) => (s === "(no words)" ? [] : words(s))),
+    );
+    end = match.index + match[0].length;
+  }
+  parts.push([words(rendered.slice(end))]);
+  let positions = new Set([0]);
+  for (const choices of parts) {
+    const next = new Set();
+    for (const offset of positions)
+      for (const choice of choices)
+        if (choice.every((word, i) => reading[offset + i] === word))
+          next.add(offset + choice.length);
+    positions = next;
+  }
+  return positions.has(reading.length);
+}
+test("word diff reconstruction preserves every reading including negation and repetitions", () => {
   const cases = [
     ["Do not send", "Do send", "Do not send"],
     ["We may not send today", "We may send today", "We may never send today"],
     ["very very clear", "very clear", "very very clear"],
     ["Do send", "Do not send", "Do send"],
+    ["soll auf Ihrem", "wollen auf deinem", "soll auf deinem"],
   ];
-  for (const readings of cases) {
-    const s = new Stitcher();
-    s.add([w(readings[0], 5, 7)], 0, 8);
-    s.markUncertain([w(readings[1], 1, 3)], 4, 10, {
-      words: [w(readings[2], 1, 3)],
-      start: 4,
-    });
-    const [_, prefix, marker, suffix] = s
-      .text()
-      .match(/^(.*?)\[uncertain: (.*?)\](.*?)$/);
-    const restored = marker.split(" | ").map((part) => {
-      const middle = part.slice(part.indexOf(": ") + 2);
-      return [
-        prefix.trim(),
-        middle === "(no words)" ? "" : middle,
-        suffix.trim(),
-      ]
-        .filter(Boolean)
-        .join(" ");
-    });
-    assert.deepEqual(restored, [...new Set(readings)]);
+  let seed = 7419;
+  const random = () => {
+    seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
+    return seed;
+  };
+  for (let i = 0; i < 100; i++)
+    cases.push(
+      Array.from({ length: 3 }, () =>
+        Array.from(
+          { length: random() % 9 },
+          () => ["not", "send", "now"][random() % 3],
+        ).join(" "),
+      ),
+    );
+  for (const example of cases) {
+    const readings = example.map((s) => (s ? s.split(" ") : []));
+    const result = renderUncertainty(readings);
+    for (const reading of readings)
+      assert.ok(
+        reconstructs(result.text, reading),
+        JSON.stringify({ example, result }),
+      );
+    assert.equal(
+      result.markers,
+      [...result.text.matchAll(/\[uncertain:/g)].length,
+    );
+  }
+});
+test("exact rapid German conflict shares all agreed interior words once", () => {
+  const result = renderUncertainty(
+    [
+      "Die Aufnahmen soll auf Ihrem Computer bleiben. Ich lehne jeden Mats von -",
+      "Die Aufnahmen wollen auf deinem Computer bleiben. Ich lehne jeden Mats",
+      "Die Aufnahmen soll auf deinem Computer bleiben. Ich lehne jeden Mats vor",
+    ].map((s) => s.split(" ")),
+  );
+  assert.equal(
+    result.text,
+    "Die Aufnahmen [uncertain: soll | wollen] auf [uncertain: Ihrem | deinem] Computer bleiben. Ich lehne jeden Mats [uncertain: von - | (no words) | vor]",
+  );
+  assert.equal(result.markers, 3);
+});
+test("exact rapid English conflict never repeats the shared sentence prefix", () => {
+  const prefix =
+    "The recording should stay on this computer. I will renew every sentence";
+  const result = renderUncertainty(
+    [prefix + " with...", prefix, prefix + " before"].map((s) => s.split(" ")),
+  );
+  assert.equal(
+    result.text,
+    prefix + " [uncertain: with... | (no words) | before]",
+  );
+  assert.equal(result.markers, 1);
+});
+test("DP boundary and linear fallback both preserve all readings", () => {
+  assert.throws(() => renderUncertainty([[], [], [], []]), /one to three/);
+  for (const size of [512, 513]) {
+    const old = Array.from({ length: size }, (_, i) => `word${i}`);
+    const fresh = old.slice();
+    fresh[250] = "not";
+    const retry = old.slice();
+    retry[260] = "never";
+    const result = renderUncertainty([old, fresh, retry]);
+    for (const words of [old, fresh, retry])
+      assert.ok(reconstructs(result.text, words));
+    assert.equal(result.markers, size === 512 ? 2 : 1);
   }
 });
 test("deduplication never hides uncertainty when timing alone disagrees", () => {
   const s = new Stitcher();
   s.add([w("same words", 5, 7)], 0, 8);
   s.markUncertain([w("same words", 1, 3)], 4, 10);
-  assert.equal(s.text(), "[uncertain: earlier: same words]");
+  assert.equal(s.text(), "[uncertain: same words]");
   assert.equal(s.uncertainties, 1);
 });

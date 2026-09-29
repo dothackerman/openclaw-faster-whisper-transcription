@@ -46,7 +46,8 @@ The total Stop drain remains **4.5 seconds**, including in-flight work.
 An ambiguous seam gets at most one bounded local overlap re-decode. If it remains
 ambiguous, final text includes `[uncertain: earlier: ... | later: ... | retry: ...]`
 with competing readings; review and edit it before Send. Lexically duplicate
-readings are omitted, and shared prefix/suffix words appear once outside the span.
+readings are omitted, and agreed words appear once outside localized spans.
+A span shows word choices, e.g. `[uncertain: soll | wollen]`, without decoder labels.
 An absent reading remains explicit as `(no words)`; this never chooses a winner. Markers are never sent
 automatically and are not verified transcription. The retry shares the existing
 Stop deadline and may be skipped when too little time remains.
@@ -154,7 +155,7 @@ synthetic eSpeak NG audio from self-authored scripts. Hashes are in
 `fixtures/public/manifest.json` and `fixtures/public/long-manifest.json`.
 They do not establish real microphone or dialect quality.
 
-The current candidate (`e0157ce`) completes 5/5 rapid fixtures and a paced
+The previous candidate (`e0157ce`) completes 5/5 rapid fixtures and a paced
 five-minute stock-code integration replay with compact marked alternatives.
 **Usability and release acceptance remain rejected:** the rapid set has two markers,
 and the five-minute run has eight. Five-minute marker text is 1888 characters
@@ -165,6 +166,9 @@ presentation overhead, **not better ASR recognition**. Eight retries cost 8120 m
 provider final takes 1651 ms and stock insertion 5009 ms, with no auto-send. Final
 five words are exact; final-20 errors remain three. Actual stock code uses simulated
 capture/RPC, not a real browser, Gateway or microphone. The draft remains unverified.
+
+Word-diff presentation is being screened on 20-second fixtures first; no fresh
+five-minute qualification is claimed until that screen supports proceeding.
 
 After provisioning the dedicated runtime/model and a local profile, build and
 validate fixture manifests, then run the five approximately 20-second fixtures

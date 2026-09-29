@@ -6,6 +6,105 @@ const token = (s: string) =>
     .normalize("NFC")
     .toLowerCase()
     .replace(/[\p{P}\s]/gu, "");
+// Editorial alignment only, never evidence for accepting an ASR splice.
+// At most two 513×513 Uint16 DP tables (~514 KiB each, allocated sequentially).
+// Larger readings use linear prefix/suffix factoring rather than unbounded DP.
+export function renderUncertainty(input: string[][]): {
+  text: string;
+  markers: number;
+} {
+  if (input.length < 1 || input.length > 3)
+    throw new Error("Uncertainty rendering requires one to three readings");
+  const distinct = new Map<string, string[]>();
+  for (const words of input) {
+    const key = JSON.stringify(words.map(token));
+    if (!distinct.has(key)) distinct.set(key, words);
+  }
+  const readings = [...distinct.values()];
+  const first = readings[0] ?? [];
+  const show = (words: string[]) => words.join(" ") || "(no words)";
+  if (readings.length <= 1)
+    return { text: `[uncertain: ${show(first)}]`, markers: 1 };
+  let markers = 0;
+  const output: string[] = [];
+  const emit = (chunks: string[][]) => {
+    const choices = new Map<string, string[]>();
+    for (const chunk of chunks) {
+      const key = JSON.stringify(chunk.map(token));
+      if (!choices.has(key)) choices.set(key, chunk);
+    }
+    const unique = [...choices.values()];
+    if (unique.length === 1) output.push(unique[0]!.join(" "));
+    else {
+      output.push(`[uncertain: ${unique.map(show).join(" | ")}]`);
+      markers++;
+    }
+  };
+  if (readings.some((r) => r.length > 512)) {
+    const shortest = Math.min(...readings.map((r) => r.length));
+    let prefix = 0,
+      suffix = 0;
+    while (
+      prefix < shortest &&
+      readings.every((r) => token(r[prefix]!) === token(first[prefix]!))
+    )
+      prefix++;
+    while (
+      suffix < shortest - prefix &&
+      readings.every(
+        (r) =>
+          token(r[r.length - 1 - suffix]!) ===
+          token(first[first.length - 1 - suffix]!),
+      )
+    )
+      suffix++;
+    output.push(first.slice(0, prefix).join(" "));
+    emit(readings.map((r) => r.slice(prefix, r.length - suffix)));
+    if (suffix) output.push(first.slice(-suffix).join(" "));
+  } else {
+    const lcs = (a: string[], b: string[]) => {
+      const width = b.length + 1;
+      const table = new Uint16Array((a.length + 1) * width);
+      for (let i = a.length - 1; i >= 0; i--)
+        for (let j = b.length - 1; j >= 0; j--)
+          table[i * width + j] =
+            a[i] === b[j]
+              ? 1 + table[(i + 1) * width + j + 1]!
+              : Math.max(
+                  table[(i + 1) * width + j]!,
+                  table[i * width + j + 1]!,
+                );
+      const common: string[] = [];
+      let i = 0,
+        j = 0;
+      while (i < a.length && j < b.length) {
+        if (a[i] === b[j]) {
+          common.push(a[i]!);
+          i++;
+          j++;
+        } else if (table[(i + 1) * width + j]! >= table[i * width + j + 1]!)
+          i++;
+        else j++;
+      }
+      return common;
+    };
+    let common = first.map(token);
+    for (const r of readings.slice(1)) common = lcs(common, r.map(token));
+    const offsets = readings.map(() => 0);
+    for (const anchor of common) {
+      const positions = readings.map((r, i) =>
+        r.findIndex((w, j) => j >= offsets[i]! && token(w) === anchor),
+      );
+      emit(readings.map((r, i) => r.slice(offsets[i], positions[i])));
+      output.push(first[positions[0]!]!);
+      positions.forEach((position, i) => {
+        offsets[i] = position + 1;
+      });
+    }
+    emit(readings.map((r, i) => r.slice(offsets[i])));
+  }
+  return { text: output.filter(Boolean).join(" "), markers };
+}
 // Only the bounded overlap can revise prior words; nothing is published early.
 export class Stitcher {
   private words: Word[] = [];
@@ -14,6 +113,7 @@ export class Stitcher {
   private sealedUntil = -Infinity;
   private sealedWords = 0;
   uncertainties = 0;
+  uncertainJoins = 0;
   anchors = 0;
   gaps = 0;
   add(relative: Word[], start: number, end: number): void {
@@ -181,66 +281,26 @@ export class Stitcher {
         .map((w) => w.text.trim())
         .filter(Boolean)
         .join(" ");
-    // Compact presentation only: preserve each distinct lexical reading and
-    // its order. Case/punctuation follow the first reading, as in seam matching.
-    // Shared boundary words appear once outside the marker; empty alternatives
-    // stay explicit so a missing negation cannot look like confident omission.
-    const readings: { label: string; words: string[] }[] = [];
-    const keys = new Set<string>();
-    const addReading = (label: string, words: Word[]) => {
+    // Brackets remain reserved for editorial markers, not literal ASR text.
+    const reading = (words: Word[]) => {
       const text = render(words).replaceAll("[", "(").replaceAll("]", ")");
-      const parts = text ? text.split(/\s+/u) : [];
-      const key = JSON.stringify(parts.map(token));
-      if (!keys.has(key)) {
-        keys.add(key);
-        readings.push({ label, words: parts });
-      }
+      return text ? text.split(/\s+/u) : [];
     };
-    addReading("earlier", old);
-    addReading("later", fresh);
+    const readings = [reading(old), reading(fresh)];
     if (retry)
-      addReading(
-        "retry",
-        retry.words
-          .map((w) => ({
-            ...w,
-            start: w.start + retry.start,
-            end: w.end + retry.start,
-          }))
-          .filter((w) => w.end > uncertainStart && w.start < seamEnd),
+      readings.push(
+        reading(
+          retry.words
+            .map((w) => ({
+              ...w,
+              start: w.start + retry.start,
+              end: w.end + retry.start,
+            }))
+            .filter((w) => w.end > uncertainStart && w.start < seamEnd),
+        ),
       );
-    const first = readings[0]!.words;
-    const shortest = Math.min(...readings.map((r) => r.words.length));
-    let prefix = 0,
-      suffix = 0;
-    // A sole identical reading can still have ambiguous timing: retain a marker.
-    if (readings.length > 1) {
-      while (
-        prefix < shortest &&
-        readings.every((r) => token(r.words[prefix]!) === token(first[prefix]!))
-      )
-        prefix++;
-      while (
-        suffix < shortest - prefix &&
-        readings.every(
-          (r) =>
-            token(r.words[r.words.length - 1 - suffix]!) ===
-            token(first[first.length - 1 - suffix]!),
-        )
-      )
-        suffix++;
-    }
-    const alternatives = readings.map(
-      (r) =>
-        `${r.label}: ${r.words.slice(prefix, r.words.length - suffix).join(" ") || "(no words)"}`,
-    );
-    const sealed = [
-      this.sealed,
-      render(before),
-      first.slice(0, prefix).join(" "),
-      `[uncertain: ${alternatives.join(" | ")}]`,
-      suffix ? first.slice(-suffix).join(" ") : "",
-    ]
+    const compact = renderUncertainty(readings);
+    const sealed = [this.sealed, render(before), compact.text]
       .filter(Boolean)
       .join(" ");
     const sealedWords = sealed.split(/\s+/).length;
@@ -257,7 +317,8 @@ export class Stitcher {
     this.sealedUntil = Math.max(this.sealedUntil, seamEnd);
     this.words = tail;
     this.end = end;
-    this.uncertainties++;
+    this.uncertainties += compact.markers;
+    this.uncertainJoins++;
   }
   retryRetainsReadings(
     fresh: Word[],

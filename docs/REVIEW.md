@@ -25,7 +25,9 @@ Worker response: 64 KiB, 512 timed words, 16,000 text characters. Final transcri
 crash/OOM and timeout failures insert no successful truncated prefix. Ambiguous
 seams receive one bounded context retry, then visibly marked alternatives if
 unresolved. Presentation removes lexically duplicate readings and factors shared
-prefix/suffix words outside the span, while empty alternatives remain explicit.
+ordered shared words outside localized choice spans, while empty alternatives
+remain explicit. Up to three readings of 512 tokens use bounded dynamic programming;
+larger inputs fall back to prefix/suffix factoring without truncation.
 Marked insertion is reviewable completion, not quality acceptance.
 The fixed stock-host 30-minute TTL prevents actual 60-minute browser sessions;
 a host deviation needs Kappa approval before implementation.
@@ -41,7 +43,7 @@ See [source evidence](../research/long-duration-implementation.md),
 
 ## Verification
 
-- 68 Node and 18 Python deterministic tests pass, including maximum worker framing,
+- 71 Node and 18 Python deterministic tests pass, including maximum worker framing,
   independent audio/time ceilings at 60 minutes, serial overlap/tail draining,
   queue overload, pre-ready frames, cancellation, timeout, OOM/crash, disposal,
   invalid word timestamps, repeated-word seams, silence endpoints, and edit scoring.

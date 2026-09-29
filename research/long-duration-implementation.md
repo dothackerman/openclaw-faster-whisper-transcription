@@ -2,6 +2,31 @@
 
 Independent architect notes; do not replace incoming researcher files.
 
+## Localized word-choice markers
+
+Prefix/suffix-only factoring left agreed interior words repeated. The new
+`renderUncertainty` factors a common ordered subsequence across two or three
+readings, emits agreed words once, and puts only intervening disputes in
+`[uncertain: option | option]` spans. Duplicate local choices disappear; missing
+text stays `(no words)`. Decoder labels are removed from this editable user text.
+All original readings remain reconstructible in order; repeated words get distinct
+positions. Multiple local choices are not a claim that every combination was
+observed by ASR, and none is selected as the correct reading.
+
+Alignment is deterministic progressive LCS, bounded to three readings/512 tokens
+per reading and at most two 513×513 Uint16 tables (~1 MiB total allocation). Larger
+inputs use linear prefix/suffix factoring with complete alternatives. This does
+not change acoustic decoding, seam acceptance or the bounded retry. Metrics now
+separate uncertain joins from visible marker spans. Tests include exact rapid
+German/English examples, old-only negation, 100 seeded repeated-word/negation
+reconstruction cases, and the 512/513-token boundary and oversized reading count.
+
+Plan: deterministic tests and stock no-send checks, then commit clean and run the
+20-second screen. Only proceed to paced five-minute measurement if rapid cases
+complete and the exact examples show less repeated agreed text while preserving
+all conflict choices. Record visible score, characters, joins/spans, retries and
+tail errors; no presentation score improvement establishes ASR quality.
+
 ## Compact uncertainty presentation
 
 `Stitcher.markUncertain` now deduplicates readings using the same normalized

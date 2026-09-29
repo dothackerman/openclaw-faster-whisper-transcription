@@ -1,5 +1,17 @@
 # Long dictation implementation and experiment plan
 
+Current editorial screen: render localized word choices, with common ordered
+words shared once and no decoder labels. At most three readings of at most 512
+words use progressive longest-common-subsequence factoring; at most two 513×513
+Uint16 tables are allocated (~1 MiB total). Larger readings fall back to linear
+prefix/suffix factoring, never truncation. This is presentation only; all original
+readings must remain reconstructible. Local choices do not imply confidence or
+that every combination was produced by the decoder. Counts distinguish uncertain
+joins from actual visible spans. Run deterministic reconstruction/bounds tests and
+20-second fixtures before another paced run. Proceed to the paced run only if all
+rapid cases complete, exact omissions remain visible, and repeated agreed text is
+reduced; completion is not a quality or release gate.
+
 Current uncertainty experiment: retain the preceding 16-second audio window and
 attempt at most one wider-context decode (20-second cap) per ambiguous boundary
 on the same serial GPU lane. During Stop, retry only if the remaining original

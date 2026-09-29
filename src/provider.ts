@@ -31,6 +31,7 @@ export class Runtime {
     retryAudioSeconds: [] as number[],
     retrySkipped: 0,
     uncertaintyMarkers: 0,
+    uncertainJoins: 0,
   };
   private decoder?: Decoder;
   private active?: { abort: (e: Error) => void };
@@ -205,6 +206,7 @@ export class Runtime {
           metrics.anchors = stitch.anchors;
           metrics.gaps = stitch.gaps;
           metrics.uncertaintyMarkers = stitch.uncertainties;
+          metrics.uncertainJoins = stitch.uncertainJoins;
           previousAudio.fill(0);
           previousAudio = snapshot;
           previousStart = start;
@@ -272,6 +274,7 @@ export class Runtime {
           retryAudioSeconds: [],
           retrySkipped: 0,
           uncertaintyMarkers: 0,
+          uncertainJoins: 0,
         };
         buffer = Buffer.alloc(QUEUE_SECONDS * AUDIO_BYTES_PER_SECOND);
         lifetime = setTimeout(
