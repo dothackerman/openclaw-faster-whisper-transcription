@@ -7,6 +7,32 @@ hypothesis evidence. Exact reproduction: old7.6–7.9, fresh broad7.6–12, then
 recovered11.6–11.8 plus future12.5–12.7. The old filter returned only future.
 This P1 also affects a broad retry word. Passing rapid fixtures did not negate it.
 
+## Current policy: no witness suppression
+
+The midpoint/surface witness policy below is superseded. can@7.6–8.8 and a
+second can@8.3–8.5 can be different spoken occurrences despite midpoint distance
+0.2s and identical surface. No spelling/timestamp match proves replay identity.
+All witness storage and sealed-word filtering are removed.
+
+The ordinary-window seal remains strictly before the provider's actual next
+start. Optional retries starting at/before the seal are skipped before decoding.
+At the stitcher boundary, ANY decode whose start is <= sealedUntil, or whose
+word starts at/before sealedUntil, fails with a non-AlignmentError. Straddles
+retain their explicit error. There is no path that suppresses such words as
+already seen. Empty rewound windows and exact timed replay fail too. Words
+strictly after the seal remain ordinary evidence, including a repeated surface.
+The common-text renderer's timing checks do not authorize suppression of speech.
+
+Regression: cannot@7.6–7.9, marked can@7.6–8.8, then can@8.3–8.5 plus finish@9
+must throw without mutation; it cannot succeed with only finish appended. Direct
+marking bypass also fails. Previous tests that accepted covered replay now assert
+failure, followed by valid forward-tail insertion.107 Node/18 Python tests pass.
+No GPU run; previous completion/quality results do not qualify these guards.
+Explicit failure may still discard the draft and remains a release limitation.
+
+The sections below record the superseded policies and the independent boundary
+fixes that remain. Witness claims there are historical, not the current contract.
+
 ## Straddling-word defense
 
 The prior witness predicate covered only words ending at/before sealedUntil.

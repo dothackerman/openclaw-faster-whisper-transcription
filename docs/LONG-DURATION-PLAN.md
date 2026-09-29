@@ -5,9 +5,8 @@ actual provider advance, after crossing closure and before mutation.
 Opt-in wider retries additionally require their integer-sample start to be
 strictly after sealedUntil; otherwise skip the decode and mark ordinary readings. This covers
 fixed and pause windows, including zero-duration words at the next start. A
-violation fails explicitly; final windows receive no exemption. Optional retries
-that look backward still require bounded single-reading witnesses before filtering
-already sealed words. No previous GPU completion qualifies this stricter guard.
+violation fails explicitly; final windows receive no exemption. All decode attempts that reach sealed audio fail explicitly, even an exact
+surface/time replay. No witness-based filtering remains. No previous GPU completion qualifies this stricter guard.
 
 Current boundary/editorial screen: fresh words starting before the old seam end
 belong to its alternative even when they end after it. Extend sealing through

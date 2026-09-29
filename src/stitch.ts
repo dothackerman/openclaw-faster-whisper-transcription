@@ -109,7 +109,6 @@ export class Stitcher {
   private sealed = "";
   private sealedUntil = -Infinity;
   private sealedWords = 0;
-  private sealedReadings: Word[][] = [];
   uncertainties = 0;
   uncertainJoins = 0;
   anchors = 0;
@@ -119,14 +118,9 @@ export class Stitcher {
   canRetryFrom(startSeconds: number): boolean {
     return Number.isFinite(startSeconds) && startSeconds > this.sealedUntil;
   }
-  // Time coverage alone is never proof that a fresh word was already rendered.
-  // Keep bounded witnesses for the last seal. Suppression must reconstruct the
-  // covered prefix from ONE labeled reading with exact surfaces and timed order.
-  // Missing proof is a fatal conflict, not an AlignmentError eligible for marking
-  // over immutable text (which would otherwise discard the fresh evidence again).
-  private unsealed(words: Word[]): Word[] {
-    // A straddling word is neither proven replay nor definite new tail. Even
-    // matching spelling cannot justify appending it after competing sealed text.
+  // No surface/timestamp heuristic can prove two words are the same spoken
+  // occurrence. Never suppress evidence in sealed audio, even an exact repeat.
+  private requireUnsealed(words: Word[], start: number): Word[] {
     if (
       words.some(
         (word) => word.start < this.sealedUntil && word.end > this.sealedUntil,
@@ -135,38 +129,23 @@ export class Stitcher {
       throw new Error(
         "Faster-Whisper word straddles a sealed overlap; no complete transcript is available",
       );
-    const covered = words.filter((word) => word.end <= this.sealedUntil);
     if (
-      covered.length &&
-      !this.sealedReadings.some((reading) => {
-        let from = 0;
-        for (const word of covered) {
-          const matches = reading.flatMap((known, index) =>
-            index >= from &&
-            known.text.normalize("NFC") === word.text.normalize("NFC") &&
-            Math.abs((known.start + known.end - word.start - word.end) / 2) <=
-              0.8
-              ? [index]
-              : [],
-          );
-          if (matches.length !== 1) return false;
-          from = matches[0]! + 1;
-        }
-        return true;
-      })
+      !this.canRetryFrom(start) ||
+      words.some((word) => word.start <= this.sealedUntil)
     )
       throw new Error(
-        "Faster-Whisper received conflicting words inside a sealed overlap; no complete transcript is available",
+        "Faster-Whisper decode revisits sealed audio; no complete transcript is available",
       );
-    return words.filter((word) => word.end > this.sealedUntil);
+    return words;
   }
   add(relative: Word[], start: number, end: number): void {
-    const next = this.unsealed(
+    const next = this.requireUnsealed(
       relative.map((w) => ({
         ...w,
         start: w.start + start,
         end: w.end + start,
       })),
+      start,
     );
     let merged: Word[];
     if (!this.words.length || !next.length) {
@@ -314,14 +293,16 @@ export class Stitcher {
     const uncertainStart = Math.max(start, this.sealedUntil);
     const before = this.words.filter((w) => w.end <= uncertainStart);
     const old = this.words.filter((w) => w.end > uncertainStart);
-    const active = this.unsealed(absolute);
+    const active = this.requireUnsealed(absolute, start);
     const retryAll = retry?.words.map((w) => ({
       ...w,
       start: w.start + retry.start,
       end: w.end + retry.start,
     }));
     const retryAbsolute = retryAll
-      ? this.unsealed(retryAll).filter((w) => w.end > uncertainStart)
+      ? this.requireUnsealed(retryAll, retry!.start).filter(
+          (w) => w.end > uncertainStart,
+        )
       : undefined;
     // Crossing words belong to the alternative, never to a definite suffix.
     // Extend the sealed region through the connected overlap (including retry)
@@ -336,7 +317,7 @@ export class Stitcher {
     }
     // Ordinary future windows cannot revisit a sealed interval. Strict inequality
     // also protects zero-duration words at the next decode start. Wider-context
-    // retries can look backward, so their witness checks remain a second defense.
+    // retries may look backward only without touching an existing seal.
     if (!Number.isFinite(safeNextStart) || !(seamEnd < safeNextStart))
       throw new Error(
         "Faster-Whisper sealed overlap reaches future audio; no complete transcript is available",
@@ -370,13 +351,6 @@ export class Stitcher {
       throw new Error(
         "Faster-Whisper transcript safety limit exceeded; no complete transcript is available",
       );
-    // At most three × 512 Word witnesses. Older unsupported evidence fails
-    // explicitly rather than trusting a timestamp-only suppression frontier.
-    this.sealedReadings = [
-      [...before, ...old],
-      absolute,
-      ...(retryAll ? [retryAll] : []),
-    ].map((reading) => reading.filter((w) => w.start < seamEnd).slice(-512));
     this.sealed = sealed;
     this.sealedWords = sealedWords;
     this.sealedUntil = Math.max(this.sealedUntil, seamEnd);
@@ -415,12 +389,13 @@ export class Stitcher {
     return (
       contains(this.words.filter((w) => w.end > retryStart)) &&
       contains(
-        this.unsealed(
+        this.requireUnsealed(
           fresh.map((w) => ({
             ...w,
             start: w.start + start,
             end: w.end + start,
           })),
+          start,
         ),
       )
     );
@@ -430,6 +405,5 @@ export class Stitcher {
     this.sealed = "";
     this.sealedWords = 0;
     this.sealedUntil = -Infinity;
-    this.sealedReadings = [];
   }
 }

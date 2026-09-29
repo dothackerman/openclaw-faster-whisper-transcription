@@ -8,7 +8,7 @@ test("uncertainty retains missing negation and phantom alternatives through late
   const fresh = [w("approved", 1), w("tail", 3)];
   assert.throws(() => s.add(fresh, 6, 10), /align/);
   s.markUncertain(fresh, 6, 10, 10);
-  s.add([w("tail", 1), w("finish", 3)], 8, 12);
+  s.add([w("tail", 0.5), w("finish", 2.5)], 8.5, 12);
   assert.equal(
     s.text(),
     "prefix [uncertain: earlier: not | later: (no words)] approved tail finish",
@@ -551,7 +551,16 @@ test("crossing contradiction is an alternative, never definite tail or reinserte
   assert.throws(() => s.add(fresh, 6, 10), /align/);
   s.markUncertain(fresh, 6, 10, 10);
   assert.equal(s.text(), "[uncertain: earlier: cannot | later: can] tail");
-  s.add([w("can", 0, 0.2), w("tail", 0.3, 0.6), w("finish", 1, 1.3)], 8, 12);
+  assert.throws(
+    () =>
+      s.add(
+        [w("can", 0, 0.2), w("tail", 0.3, 0.6), w("finish", 1, 1.3)],
+        8,
+        12,
+      ),
+    /revisits sealed audio/,
+  );
+  s.add([w("tail", 0, 0.3), w("finish", 0.7, 1)], 8.3, 12);
   assert.equal(
     s.text(),
     "[uncertain: earlier: cannot | later: can] tail finish",
@@ -571,16 +580,21 @@ test("connected crossing group seals once while a separate following tail surviv
     s.text(),
     "[uncertain: earlier/retry: cannot | later: can link] tail",
   );
-  s.add(
-    [
-      w("can", 0, 0.2),
-      w("link", 0.1, 0.4),
-      w("tail", 0.5, 0.8),
-      w("finish", 1, 1.3),
-    ],
-    8,
-    12,
+  assert.throws(
+    () =>
+      s.add(
+        [
+          w("can", 0, 0.2),
+          w("link", 0.1, 0.4),
+          w("tail", 0.5, 0.8),
+          w("finish", 1, 1.3),
+        ],
+        8,
+        12,
+      ),
+    /revisits sealed audio/,
   );
+  s.add([w("tail", 0, 0.3), w("finish", 0.5, 0.8)], 8.5, 12);
   assert.equal(
     s.text(),
     "[uncertain: earlier/retry: cannot | later: can link] tail finish",
@@ -737,7 +751,11 @@ test("Sol exact crossing contradiction marks can while send remains definite", (
     earlierWithTail: [...earlier, later[1]],
     later,
   });
-  s.add([w("can", 0, 0.2), w("send", 0.5, 0.8), w("now", 1)], 8, 12);
+  assert.throws(
+    () => s.add([w("can", 0, 0.2), w("send", 0.5, 0.8), w("now", 1)], 8, 12),
+    /revisits sealed audio/,
+  );
+  s.add([w("send", 0, 0.3), w("now", 0.5)], 8.5, 12);
   assert.equal(s.text(), "[uncertain: earlier: cannot | later: can] send now");
 });
 
@@ -837,21 +855,18 @@ test("backward re-decode cannot silently discard newly recovered words or negati
     s.markUncertain([w("broad", 1.6, 6)], 6, 13, 13);
     const before = s.text();
     const next = [w(text, 0.1, 0.3), w("future", 1, 1.2)];
-    assert.throws(
-      () => s.add(next, 11.5, 15),
-      /conflicting words inside a sealed overlap/,
-    );
+    assert.throws(() => s.add(next, 11.5, 15), /decode revisits sealed audio/);
     assert.equal(s.text(), before);
     assert.throws(
       () => s.markUncertain(next, 11.5, 15, 15),
-      /conflicting words inside a sealed overlap/,
+      /decode revisits sealed audio/,
     );
     assert.equal(s.text(), before);
     assert.equal(s.uncertainJoins, 1);
   }
 });
 
-test("long retry witness cannot discard backward re-decode evidence", () => {
+test("long retry cannot discard backward re-decode evidence", () => {
   const s = new Stitcher();
   s.add([w("old", 7.6, 7.9)], 0, 8);
   s.markUncertain([w("new", 1.6, 1.9)], 6, 13, 13, {
@@ -861,12 +876,12 @@ test("long retry witness cannot discard backward re-decode evidence", () => {
   const before = s.text();
   assert.throws(
     () => s.add([w("not", 0.1, 0.3), w("future", 1, 1.2)], 11.5, 15),
-    /sealed overlap/,
+    /sealed audio/,
   );
   assert.equal(s.text(), before);
 });
 
-test("sealed replay proof preserves surface, repetition and single-source provenance", () => {
+test("sealed replay is rejected regardless of surface, repetition or provenance", () => {
   for (const fresh of [
     [w("Stop?", 0, 0.3)],
     [w("Stop.", 0, 0.3), w("Stop.", 0.1, 0.4)],
@@ -874,15 +889,12 @@ test("sealed replay proof preserves surface, repetition and single-source proven
     const s = new Stitcher();
     s.add([w("Stop.", 7.6, 7.9)], 0, 8);
     s.markUncertain([w("go", 1.6, 1.9)], 6, 10, 10);
-    assert.throws(() => s.add(fresh, 7.6, 12), /sealed overlap/);
+    assert.throws(() => s.add(fresh, 7.6, 12), /revisits sealed audio/);
   }
   const s = new Stitcher();
   s.add([w("do", 6), w("not", 7)], 0, 8);
   s.markUncertain([w("never", 0), w("send", 1)], 6, 10, 10);
-  assert.throws(
-    () => s.add([w("do", 0), w("send", 1)], 6, 12),
-    /sealed overlap/,
-  );
+  assert.throws(() => s.add([w("do", 0), w("send", 1)], 6, 12), /sealed audio/);
 });
 
 test("exact A/B/C review preserves linked choices and rejects the unsupported hybrid", () => {
@@ -985,13 +997,10 @@ test("retry-only recovered negation in a prior seal cannot become a successful o
   const before = s.text();
   // Even a caller bypassing the skip cannot add or mark this observed evidence
   // while filtering out not@21 inside the prior sealed interval.
-  assert.throws(
-    () => s.add(retry, 20, 40),
-    /conflicting words inside a sealed overlap/,
-  );
+  assert.throws(() => s.add(retry, 20, 40), /decode revisits sealed audio/);
   assert.throws(
     () => s.markUncertain(later, 24, 40, 36, { words: retry, start: 20 }),
-    /conflicting words inside a sealed overlap/,
+    /decode revisits sealed audio/,
   );
   assert.equal(s.text(), before);
 });
@@ -1038,6 +1047,40 @@ test("straddling evidence cannot bypass rejection through marking or retry alter
   assert.equal(s.text(), before);
   assert.equal(s.uncertainJoins, 1);
   // A distinct word strictly beyond the frontier is still ordinary new audio.
-  s.add([w("tail", 0.5, 0.8), w("future", 2)], 8, 12);
+  s.add([w("tail", 0, 0.3), w("future", 1.5)], 8.5, 12);
   assert.equal(s.text(), before + " future");
+});
+
+test("repeated can inside a broad seal is rejected, never suppressed by midpoint similarity", () => {
+  const s = new Stitcher();
+  s.add([w("cannot", 7.6, 7.9)], 0, 8);
+  s.markUncertain([w("can", 1.6, 2.8)], 6, 10, 10);
+  const before = "[uncertain: earlier: cannot | later: can]";
+  assert.equal(s.text(), before);
+  const repeat = [w("can", 0.3, 0.5), w("finish", 1, 1.3)];
+  assert.throws(() => s.add(repeat, 8, 12), /decode revisits sealed audio/);
+  assert.throws(
+    () => s.markUncertain(repeat, 8, 12, 11.5),
+    /decode revisits sealed audio/,
+  );
+  assert.equal(s.text(), before);
+  assert.equal(s.uncertainJoins, 1);
+});
+
+test("even exact timed replay and empty rewound decode require explicit failure", () => {
+  const s = new Stitcher();
+  s.add([w("old", 7.6, 7.9)], 0, 8);
+  s.markUncertain([w("new", 1.6, 1.9)], 6, 10, 10);
+  assert.throws(
+    () => s.add([w("new", 1.6, 1.9)], 6, 12),
+    /revisits sealed audio/,
+  );
+  assert.throws(() => s.add([], 8, 12), /revisits sealed audio/);
+  assert.throws(
+    () => s.add([w("late", -1, -0.5)], 8.5, 12),
+    /revisits sealed audio/,
+  );
+  // A genuine repeated surface after the seal must be retained normally.
+  s.add([w("new", 0, 0.2), w("finish", 0.5, 0.8)], 8.5, 12);
+  assert.equal(s.text(), "[uncertain: earlier: old | later: new] new finish");
 });
