@@ -438,3 +438,27 @@ test("Do/Don't first-word disagreement reaches final as visible alternatives", a
   assert.equal(f.runtime.metrics.retries, 1);
   assert.equal(f.runtime.metrics.uncertaintyMarkers, 1);
 });
+
+test("old-only overlap negation survives bounded retry as a marked final", async (t) => {
+  const f = fixture(t);
+  await f.session.connect();
+  f.session.sendAudio(Buffer.alloc(128000));
+  f.jobs[0].resolve([word("Do", 13), word("not", 13.5), word("send", 15)]);
+  await tick();
+  f.session.sendAudio(Buffer.alloc(96000));
+  f.jobs[1].resolve([word("Do", 1), word("send", 3), word("tail", 10)]);
+  await tick();
+  assert.equal(f.jobs.length, 3);
+  assert.deepEqual(f.events, []);
+  f.session.close();
+  f.jobs[2].resolve([word("Do", 5), word("send", 7), word("tail", 14)]);
+  await tick();
+  assert.deepEqual(f.events, [
+    [
+      "final",
+      "[uncertain: earlier: Do not send | later: Do send | retry: Do send] tail",
+    ],
+  ]);
+  assert.equal(f.runtime.metrics.retries, 1);
+  assert.equal(f.runtime.metrics.uncertaintyMarkers, 1);
+});

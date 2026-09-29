@@ -106,6 +106,22 @@ export class Stitcher {
           throw new AlignmentError(
             "Faster-Whisper could not align all words at a chunk boundary; no complete transcript is available",
           );
+        // The splice replaces the entire old suffix, not just the anchor.
+        // Every lexical word it would discard must survive in fresh order at
+        // plausible times. New-only words are allowed; old-only deletions or
+        // substitutions (including negation) require visible reconciliation.
+        let freshFrom = 1;
+        for (const old of this.words.slice(anchor + 1)) {
+          if (!token(old.text)) continue;
+          const retained = next.findIndex(
+            (word, i) => i >= freshFrom && exact(old, word),
+          );
+          if (retained < 0)
+            throw new AlignmentError(
+              "Faster-Whisper chunk boundary has competing overlap words",
+            );
+          freshFrom = retained + 1;
+        }
         merged = [...this.words.slice(0, anchor + 1), ...next.slice(1)];
         this.anchors++;
       } else if (next[0]!.start >= this.words.at(-1)!.end - 0.08) {

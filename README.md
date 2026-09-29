@@ -55,8 +55,10 @@ rejects an automatic splice if it ends at least 200 ms before the first fresh to
 Overlapping/nearby timestamps and left-clipped context may remain; this can also
 retain spurious words and is not a calibrated confidence guarantee. A leading
 substitution enters retry/marking even with acoustic overlap and two following
-exact timed words; timing cannot decide between `Do` and `Don't`. The fresh suffix can still replace correct old words with
-incorrect ones. This heuristic can reject ordinary speech and is not qualified
+exact timed words; timing cannot decide between `Do` and `Don't`. Every lexical
+old word after the anchor must also survive in fresh order at plausible times;
+otherwise retry/marking preserves competing readings, including old-only negation.
+Ordinary corrections can therefore require markers. This heuristic is not qualified
 for complete dictation; timestamps do not prove that no speech was missed.
 
 The plugin has a **60-minute wall/audio safety ceiling**. However, stock OpenClaw
@@ -150,7 +152,7 @@ synthetic eSpeak NG audio from self-authored scripts. Hashes are in
 `fixtures/public/manifest.json` and `fixtures/public/long-manifest.json`.
 They do not establish real microphone or dialect quality.
 
-The current candidate (`565b9d1`) completes 5/5 rapid fixtures and a paced
+The previous candidate (`565b9d1`) completes 5/5 rapid fixtures and a paced
 five-minute stock-code integration replay with both text/word coverage checks and
 marked leading-word disagreements. Two bounded retries took 1617 ms in total and
 left two visible uncertainty spans requiring review. Provider finalization took
@@ -160,6 +162,9 @@ this higher edit burden is not a quality gain over the previous one-marker run.
 The final 20 words are exact, but the transcript is not verified. The replay uses
 simulated capture/RPC, not a real browser, Gateway or microphone. These commands
 reproduce evaluation, not general five-minute reliability or microphone acceptance.
+
+The old-only overlap safeguard requires fresh measurements; the previous results
+do not qualify its changed splice semantics.
 
 After provisioning the dedicated runtime/model and a local profile, build and
 validate fixture manifests, then run the five approximately 20-second fixtures

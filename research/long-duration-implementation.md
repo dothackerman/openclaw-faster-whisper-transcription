@@ -2,6 +2,31 @@
 
 Independent architect notes; do not replace incoming researcher files.
 
+## Old-only overlap after a valid anchor
+
+The first-fresh-anchor splice formerly discarded the entire old suffix. Exact
+`Do@5 not@5.5 send@7` versus fresh `Do@5 send@7 tail@8` therefore lost `not`
+even though the anchor itself agreed. The new guard requires every lexical old
+word after the anchor to survive monotonically in the fresh hypothesis, with the
+existing 0.8-second midpoint tolerance and a distinct match for each occurrence.
+Missing or substituted old words raise alignment ambiguity into the one-retry,
+then-visible-alternatives path. New-only fresh additions remain intact. Case and
+punctuation differences continue to compare equal. No list of “important” words
+is used: any content word can change intent, including numbers and names.
+
+This intentionally supersedes tests that assumed discarded text was hallucinated
+or a changed word was corrected. Even spelling extensions can change meaning
+(`can`/`cannot`). Ordinary corrections may now need markers; that is measured
+review burden rather than evidence of ASR truth. Sealed earlier alternatives
+cannot be rewritten by later windows. Leading substitutions and Python/Node text
+coverage safeguards from `565b9d1` remain active.
+
+Plan: exact omission and repeated-word regressions, provider retry/final test,
+full deterministic suite and unchanged stock no-send checks; commit clean, rerun
+all rapid fixtures and the paced five-minute whole stock-code path. Report marker
+and retry counts, verbatim WER/CER/duplication, GPU cost, queue occupancy and final
+tail/deadline. Do not inherit qualification from the previous splice semantics.
+
 ## Text coverage and leading semantic disagreement review
 
 The runtime assembles only timed words. Reviewing `python/worker.py` against

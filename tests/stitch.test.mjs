@@ -108,11 +108,26 @@ test("exact trace #13 retains chair under a broad fresh first-word timestamp", (
     "repairing a chair. We agreed to keep a separate work area for each task.",
   );
 });
-test("old suffix after the initial anchor is replaced by the fresh hypothesis", () => {
+test("exact old-only negation repro must be marked, never silently deleted", () => {
   const s = new Stitcher();
-  s.add([w("alpha", 5), w("old-only", 5.5), w("anchor", 7)], 0, 8);
-  s.add([w("alpha", 1), w("anchor", 3), w("tail", 4)], 4, 10);
-  assert.equal(s.text(), "alpha anchor tail");
+  s.add([w("Do", 5), w("not", 5.5), w("send", 7)], 0, 8);
+  const fresh = [w("Do", 1), w("send", 3), w("tail", 4)];
+  assert.throws(() => s.add(fresh, 4, 10), /competing overlap words/);
+  assert.equal(s.text(), "Do not send");
+  assert.equal(s.anchors, 0);
+  s.markUncertain(fresh, 4, 10);
+  assert.equal(
+    s.text(),
+    "[uncertain: earlier: Do not send | later: Do send] tail",
+  );
+});
+test("old repeated lexical words each need a distinct fresh match", () => {
+  const s = new Stitcher();
+  s.add([w("Do", 5), w("not", 5.5), w("not", 5.8), w("send", 7)], 0, 8);
+  assert.throws(
+    () => s.add([w("Do", 1), w("not", 1.5), w("send", 3)], 4, 10),
+    /competing overlap words/,
+  );
 });
 test("old-only overlap prefix cannot survive before a fully matching fresh prefix", () => {
   const s = new Stitcher();
@@ -140,7 +155,7 @@ test("a left-clipped word is prior context, not wholly observed fresh audio", ()
   assert.equal(edge.text(), "behind the table");
 });
 for (const common of [[w("anchor", 7)], [w("in", 6.6), w("the", 7)]]) {
-  test(`a corrected word before later common tokens (${common.map((x) => x.text).join(" ")}) uses the fresh suffix after its initial anchor`, () => {
+  test(`a corrected word before later common tokens requires marked alternatives (${common.map((x) => x.text).join(" ")})`, () => {
     const s = new Stitcher();
     s.add([w("alpha", 5), w("wrong", 5.5), ...common], 0, 8);
     const fresh = [
@@ -149,12 +164,12 @@ for (const common of [[w("anchor", 7)], [w("in", 6.6), w("the", 7)]]) {
       ...common,
       w("tail", 8),
     ].map((word) => ({ ...word, start: word.start - 4, end: word.end - 4 }));
-    s.add(fresh, 4, 10);
-    assert.equal(
-      s.text(),
-      ["alpha", "corrected", ...common.map((x) => x.text), "tail"].join(" "),
-    );
-    assert.equal(s.anchors, 1);
+    assert.throws(() => s.add(fresh, 4, 10), /competing overlap words/);
+    s.markUncertain(fresh, 4, 10);
+    assert.match(s.text(), /earlier: alpha wrong/);
+    assert.match(s.text(), /later: alpha corrected/);
+    assert.match(s.text(), /\] tail$/);
+    assert.equal(s.anchors, 0);
   });
 }
 test("initial prefix preserves a newly recovered overlap negation", () => {
@@ -174,7 +189,7 @@ test("an unmatched fresh leading word cannot disappear at a one-word anchor", ()
 });
 test("timestamp anchors join boundary words and retain final punctuation", () => {
   const s = new Stitcher();
-  s.add([w("Hello", 1), w("international", 6.8), w("cooper", 7.6)], 0, 8);
+  s.add([w("Hello", 1), w("international", 6.8), w("cooperation", 7.6)], 0, 8);
   s.add(
     [w("international", 0.8), w("cooperation.", 1.6), w("Finish.", 5)],
     6,
@@ -223,7 +238,7 @@ test("exact German trace boundary marks leading Wir/Wie despite timed corroborat
     /earlier: Wir erklärten ihr, \| later: Wie erklärten ihr, weiter/,
   );
 });
-test("saved synthetic trace permits for/four substitution and corrected letter/label tail", () => {
+test("saved synthetic trace marks for/four and letter/label alternatives", () => {
   const s = new Stitcher();
   const old = [
     ["and", 43, 43.2],
@@ -257,15 +272,15 @@ test("saved synthetic trace permits for/four substitution and corrected letter/l
     31.16,
     47.16,
   );
-  s.add(
-    fresh.map(([text, start, end]) => w(text, start - 43.16, end - 43.16)),
-    43.16,
-    48.18,
+  const next = fresh.map(([text, start, end]) =>
+    w(text, start - 43.16, end - 43.16),
   );
-  assert.equal(
-    s.text(),
-    "and the largest four folded instructions. Each box received a handwritten label.",
-  );
+  assert.throws(() => s.add(next, 43.16, 48.18), /competing overlap words/);
+  s.markUncertain(next, 43.16, 48.18);
+  assert.match(s.text(), /earlier: and the largest for folded instructions/);
+  assert.match(s.text(), /later: the largest four folded instructions/);
+  assert.match(s.text(), /letter\./);
+  assert.match(s.text(), /label\.$/);
 });
 test("genuine repetitions at different times are not collapsed by token equality", () => {
   const s = new Stitcher();
@@ -301,7 +316,7 @@ test("conflicting active overlap fails closed and transcript bound is explicit",
     /safety limit/,
   );
 });
-test("contiguous overlap agreement removes a hallucinated phrase despite later common tokens", () => {
+test("a conflicting old phrase is marked rather than assumed hallucinated", () => {
   const s = new Stitcher();
   const old = [
     "These",
@@ -340,13 +355,23 @@ test("contiguous overlap agreement removes a hallucinated phrase despite later c
     "orange",
     "umbrella.",
   ];
-  s.add(
-    next.map((text, i) => w(text, i * 0.05, i * 0.05 + 0.04)),
-    6,
-    10,
-  );
+  const fresh = next.map((text, i) => w(text, i * 0.05, i * 0.05 + 0.04));
+  assert.throws(() => s.add(fresh, 6, 10), /competing overlap words/);
+  s.markUncertain(fresh, 6, 10);
   assert.equal(
     s.text(),
-    "These are the final words of the recording. The orange umbrella.",
+    `[uncertain: earlier: ${old.join(" ")} | later: ${next.join(" ")}]`,
+  );
+});
+
+test("a suffix spelling extension cannot silently change can to cannot", () => {
+  const s = new Stitcher();
+  s.add([w("We", 5), w("can", 6)], 0, 8);
+  const fresh = [w("We", 1), w("cannot", 2), w("send", 5)];
+  assert.throws(() => s.add(fresh, 4, 10), /competing overlap words/);
+  s.markUncertain(fresh, 4, 10);
+  assert.equal(
+    s.text(),
+    "[uncertain: earlier: We can | later: We cannot] send",
   );
 });

@@ -39,7 +39,7 @@ See [source evidence](../research/long-duration-implementation.md),
 
 ## Verification
 
-- 62 Node and 18 Python deterministic tests pass, including maximum worker framing,
+- 65 Node and 18 Python deterministic tests pass, including maximum worker framing,
   independent audio/time ceilings at 60 minutes, serial overlap/tail draining,
   queue overload, pre-ready frames, cancellation, timeout, OOM/crash, disposal,
   invalid word timestamps, repeated-word seams, silence endpoints, and edit scoring.
@@ -48,7 +48,10 @@ See [source evidence](../research/long-duration-implementation.md),
   The exact `alpha@5 / recovered@5.5 / anchor@7 / tail@8` repro now retains the
   recovered word using only the initial fresh prefix anchor. A leading substitution
   enters bounded retry/marking even with two following exact timed words;
-  the fresh suffix always remains. Python checks text/word coverage per segment,
+  the fresh suffix always remains. Every replaced old lexical word must survive
+  monotonically in the fresh overlap; missing or changed words enter retry/marking.
+  Exact old-only negation, repeated-word counts and can/cannot regressions pass.
+  Python checks text/word coverage per segment,
   and Node independently checks total lexical coverage for timestamped replies.
   Missing words fail without emitting a successful partial transcript.
   Old-only words fully within new audio before the first anchor fail when at
