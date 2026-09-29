@@ -23,6 +23,31 @@ the provider callback, never through worker stdout. A deterministic provider tes
 joins 20 window results into exactly 18,019 characters. This verifies aggregation,
 not ASR quality, a real long-duration decode, or host/browser message acceptance.
 
+### Ceiling recovery and paced-test audit
+
+`src/realtime-transcription/provider-types.ts:21–40` has transcript/error/speech
+callbacks, but no provider-initiated successful capture-stop acknowledgement.
+`transcription-relay.ts:315–355` forwards a final without closing capture, whereas
+an error removes the relay. `composer-dictation.ts:628–636` preserves an existing
+snapshot on an error by stopping with `commit: true`. Final-then-error therefore
+offers a possible interrupted-text recovery experiment, but does not establish
+an atomic last-accepted-audio boundary during the asynchronous drain. No such
+sequence is implemented or claimed safe. Current plugin `fail()` clears every
+assembled word and buffered byte; its 60-minute ceiling is explicitly unsuitable
+as a loss-safe user limit. Host expiry needs separately scoped changes, including
+safe drain semantics, rather than only a longer TTL constant.
+
+The corrected five-minute artifact (`long-five-aligned`, clean `9d27248`) records
+row start 14735.944015 ms, ready delay 3464.084849 ms, row end 323209.202594 ms,
+and Stop-to-result 5008.717413 ms. Subtracting ready and final time gives
+300000.456317 ms of paced audio delivery (about 300.00046 seconds). The full run
+was 315615.663096 ms including setup/baseline/teardown. `experiment.mjs` paces by
+absolute cumulative PCMU duration at 8000 bytes/s using 4096-byte blocks; each
+block precedes its wait, permitting up to 512 ms burst lead. This is real-time
+source-level integration with simulated DOM/audio device/RPC transport, actual
+stock encoding/controller/relay, and actual local Python/GPU inference. It does
+not test a browser engine, listening Gateway, network, or physical microphone.
+
 ## Primary-source checks
 
 - Prepared OpenClaw `src/gateway/talk/transcription-relay.ts`, source commit

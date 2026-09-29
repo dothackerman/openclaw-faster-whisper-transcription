@@ -45,6 +45,10 @@ before expiry, accepting that this does not meet uninterrupted hour-long dictati
 or separately authorize an upstream host change with configurable lifetime and
 expiry final-drain semantics. Changing only the timer constant would not resolve
 the current expiry path's loss of late finals. Neither path is deployed here.
+The current plugin ceiling also aborts and discards all session text; it is a
+memory/time guard, not a safe auto-finalization feature. Hour-long acceptance
+requires capture-stop acknowledgement and final-drain/recovery behavior at both
+host expiry and the plugin ceiling. See [exact loss and callback behavior](STOCK-COMPOSER.md).
 
 The worker's 16,000-character text and 64-KiB stdout limits apply to individual
 windows. The complete transcript is assembled in TypeScript, separately bounded

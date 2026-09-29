@@ -50,6 +50,11 @@ On stock OpenClaw, stop well before expiry and start another recording manually;
 this does not satisfy uninterrupted hour-long dictation. That requirement needs a
 separately reviewed host change for a longer/configurable TTL and safe expiry drain.
 The plugin cannot promise a recoverable final when the host expires its session.
+**Loss risk:** the current plugin ceiling is an abort, not an automatic save.
+If reached on a host with a longer lifetime, it clears the entire in-memory
+dictation and inserts no text, including text already decoded. There is no recovery
+file. This behavior does not satisfy loss-safe hour-long dictation; do not rely on
+the 60-minute guard as a usable recording limit.
 See [long-duration design and host limitations](docs/LONG-DURATION-PLAN.md) and
 [measured long-duration results](research/LONG-DURATION-RESULTS.md). Synthetic
 replay cannot qualify real microphones or Swiss German.

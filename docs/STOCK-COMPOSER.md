@@ -38,6 +38,25 @@ has a fixed 30-minute lifetime and offers no renewal hook. Queue overflow, trans
 bounds, or either plugin ceiling fail explicitly with no final transcript. Since no
 partial is exposed, the stock error-stop path cannot insert a misleading prefix.
 
+This fail-closed policy is **not loss-safe recording**: at the plugin ceiling,
+`fail()` clears all assembled words and buffered audio, then emits an error with
+no final. Already decoded text is also lost, with no disk recovery. The audio
+guard rejects the whole frame that would reach/exceed the ceiling before copying
+it; the wall timer aborts even if a decode is in flight. Stock host expiry happens
+first and can likewise discard the late final. Neither limit is safe auto-save.
+
+The provider callback contract has no successful "stop capture and drain" event.
+`onTranscript` records text but does not stop microphone capture. A final followed
+by `onError` could make this particular composer preserve its snapshot and stop,
+but that is an interrupted-session recovery path, not an acknowledged successful
+stop: capture continues during inference and there is no agreement on the last
+accepted sample. An error first causes the relay to be removed before a late final.
+We have not substituted either sequence for a safe ceiling protocol or claimed
+it tested. A separately reviewed host change should stop capture, establish the
+last accepted audio boundary, keep the relay alive for bounded final draining,
+and insert recovered text with an explicit stopped/incomplete status when needed.
+That design must cover both TTL expiry and the plugin safety ceiling.
+
 `scripts/composer-smoke.mjs` executes the unmodified stock controller and session,
 with fake capture/RPC and the real provider session implementation. One test
 reproduces the stale partial bug; the regression test keeps a three-byte tail,
@@ -49,3 +68,11 @@ checking provider callbacks in isolation. It is not a real browser/microphone te
 stock capture encoding, stock controller/session, actual host relay, and the real
 GPU worker, then checks late editable insertion and absence of chat-send RPCs.
 This is an in-process integration replay, not a real browser, network, or mic test.
+The five-minute run uses real-time pacing: each 4096-byte frame is followed by a
+wait until its cumulative 8-kHz duration has elapsed, with the final frame shortened
+to the fixture length. A full frame is delivered in a burst before that wait, so
+it may lead its nominal sample times by up to 512 ms. DOM, AudioContext, microphone
+input and RPC transport are simulated; stock encoding/controller/session/relay and
+the Python/GPU inference are real. There is no listening Gateway process or browser
+engine in this test. It is a paced source-level whole-path integration test, not
+production end-to-end acceptance.
