@@ -17,6 +17,19 @@ hallucinated-tail tests remain passing. This is a conservative failure policy,
 not proof that the recognizer heard every spoken word or that failures preserve
 the user's dictation. Failing the session loses its text as documented.
 
+The exact additional reviewer repro is now checked: old `alpha@5, anchor@7`;
+fresh `alpha@5, recovered@5.5, anchor@7, tail@8`. Tests use 300-ms word spans
+and a fresh window beginning at 4 seconds, converting its timestamps to relative
+1/1.5/3/4 seconds. Running the pre-fix `0050c30` implementation confirms the
+successful but incorrect `alpha anchor tail`. The guarded version throws.
+Single-word run ties can still select the later anchor, but the separate prefix
+proof rejects it because run length 1 cannot account for three discarded fresh
+words. Additional tests reject silent reversion of a corrected word before a
+later single common token and a two-token `in the` sequence. All 42 Node and
+13 Python tests pass; runtime code did not change for these additional tests.
+This resolves the precise silent-deletion repro, not overall seam reliability:
+the previously recorded rapid German and five-minute failures still apply.
+
 An offline replay of the saved 34-window five-minute trace first rejects window
 5 (43.16–48.18 seconds): a changed token before a later matching sequence no
 longer gets silently discarded. This is diagnostic evidence only; paced reruns

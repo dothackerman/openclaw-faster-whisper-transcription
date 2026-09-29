@@ -2,6 +2,41 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { Stitcher } from "../dist/stitch.js";
 const w = (text, start, end = start + 0.3) => ({ text, start, end });
+test("exact review repro: tied single-word anchors must not delete recovered@5.5", () => {
+  const s = new Stitcher();
+  s.add([w("alpha", 5), w("anchor", 7)], 0, 8);
+  // Next window begins at absolute 4s. Relative 1/1.5/3/4 map to
+  // the review's exact absolute alpha@5/recovered@5.5/anchor@7/tail@8.
+  assert.throws(
+    () =>
+      s.add(
+        [w("alpha", 1), w("recovered", 1.5), w("anchor", 3), w("tail", 4)],
+        4,
+        10,
+      ),
+    /align all words/,
+  );
+  assert.equal(s.text(), "alpha anchor");
+  assert.equal(s.anchors, 0);
+});
+for (const common of [[w("anchor", 7)], [w("in", 6.6), w("the", 7)]]) {
+  test(`a corrected word before later common tokens (${common.map((x) => x.text).join(" ")}) must not revert silently`, () => {
+    const s = new Stitcher();
+    s.add([w("alpha", 5), w("wrong", 5.5), ...common], 0, 8);
+    const fresh = [
+      w("alpha", 5),
+      w("corrected", 5.5),
+      ...common,
+      w("tail", 8),
+    ].map((word) => ({ ...word, start: word.start - 4, end: word.end - 4 }));
+    assert.throws(() => s.add(fresh, 4, 10), /align all words/);
+    assert.equal(
+      s.text(),
+      ["alpha", "wrong", ...common.map((x) => x.text)].join(" "),
+    );
+    assert.equal(s.anchors, 0);
+  });
+}
 test("a later anchor cannot silently delete a newly recovered overlap negation", () => {
   const s = new Stitcher();
   s.add([w("Do", 6), w("send", 7), w("this", 7.4)], 0, 8);
