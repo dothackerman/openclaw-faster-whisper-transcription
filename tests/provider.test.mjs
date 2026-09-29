@@ -2,7 +2,11 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { Runtime } from "../dist/provider.js";
 import { parseConfig } from "../dist/config.js";
-const config = parseConfig({ python: "/usr/bin/python3", modelPath: "/tmp" });
+const config = parseConfig({
+  python: "/usr/bin/python3",
+  modelPath: "/tmp",
+  snapshotIntervalSeconds: 2,
+});
 const tick = () => new Promise((resolve) => setImmediate(resolve));
 function fixture(t, overrides = {}) {
   const jobs = [],
@@ -28,14 +32,12 @@ function fixture(t, overrides = {}) {
     return decoder;
   });
   t.after(() => runtime.dispose());
-  const session = runtime
-    .provider()
-    .createSession({
-      providerConfig: {},
-      onPartial: (text) => events.push(["partial", text]),
-      onTranscript: (text) => events.push(["final", text]),
-      onError: (e) => events.push(["error", e.message]),
-    });
+  const session = runtime.provider().createSession({
+    providerConfig: {},
+    onPartial: (text) => events.push(["partial", text]),
+    onTranscript: (text) => events.push(["final", text]),
+    onError: (e) => events.push(["error", e.message]),
+  });
   return {
     runtime,
     session,
@@ -51,7 +53,7 @@ function fixture(t, overrides = {}) {
     crash: (e) => crash(e),
   };
 }
-test("coalesces previews, preserves final tail, and closes exactly once", async (t) => {
+test("coalesces internal snapshots, preserves final tail, and closes exactly once", async (t) => {
   const f = fixture(t);
   await f.session.connect();
   f.session.sendAudio(Buffer.alloc(16000, 1));
@@ -60,7 +62,7 @@ test("coalesces previews, preserves final tail, and closes exactly once", async 
   assert.equal(f.jobs.length, 1);
   f.jobs[0].resolve("old preview");
   await tick();
-  assert.deepEqual(f.events, [["partial", "old preview"]]);
+  assert.deepEqual(f.events, []);
   assert.equal(f.jobs.length, 2);
   assert.equal(f.jobs[1].audio.length, 32100);
   f.session.close();
@@ -68,15 +70,11 @@ test("coalesces previews, preserves final tail, and closes exactly once", async 
   assert.equal(f.session.isConnected(), false);
   f.jobs[1].resolve("complete final");
   await tick();
-  assert.deepEqual(f.events, [
-    ["partial", "old preview"],
-    ["partial", ""],
-    ["final", "complete final"],
-  ]);
+  assert.deepEqual(f.events, [["final", "complete final"]]);
   f.session.sendAudio(Buffer.alloc(4));
   assert.equal(f.jobs.length, 2);
 });
-test("close during a preview decodes newly arrived tail instead of promoting stale text", async (t) => {
+test("close during a speculative snapshot decodes newly arrived tail instead of promoting stale text", async (t) => {
   const f = fixture(t);
   await f.session.connect();
   f.session.sendAudio(Buffer.alloc(16000));
@@ -88,10 +86,7 @@ test("close during a preview decodes newly arrived tail instead of promoting sta
   assert.deepEqual(f.jobs[1].audio.subarray(-3), Buffer.from([1, 2, 3]));
   f.jobs[1].resolve("fresh");
   await tick();
-  assert.deepEqual(f.events, [
-    ["partial", ""],
-    ["final", "fresh"],
-  ]);
+  assert.deepEqual(f.events, [["final", "fresh"]]);
 });
 test("rejects concurrent admission and closing an unconnected session cannot kill the owner", async (t) => {
   const f = fixture(t);
@@ -102,16 +97,19 @@ test("rejects concurrent admission and closing an unconnected session cannot kil
   assert.equal(f.stops, 0);
   assert.equal(f.session.isConnected(), true);
 });
-test("audio overflow fails visibly, frees worker, and suppresses stale results", async (t) => {
+test("duration cap finalizes the accepted prefix before reporting the limit", async (t) => {
   const f = fixture(t, { maxAudioSeconds: 2 });
   await f.session.connect();
-  f.session.sendAudio(Buffer.alloc(16000));
-  f.session.sendAudio(Buffer.alloc(1));
-  assert.equal(f.stops, 1);
-  assert.equal(f.events[0][0], "error");
-  f.jobs[0].resolve("private stale");
+  f.session.sendAudio(Buffer.alloc(16001));
+  assert.equal(f.session.isConnected(), false);
+  assert.equal(f.jobs[0].audio.length, 16000);
+  f.jobs[0].resolve("Retained text");
   await tick();
-  assert.equal(f.events.length, 1);
+  assert.equal(f.events[0][0], "final");
+  assert.equal(f.events[0][1], "Retained text");
+  assert.equal(f.events[1][0], "error");
+  assert.match(f.events[1][1], /limit reached/);
+  assert.equal(f.stops, 0);
 });
 test("final deadline kills worker and never emits a successful final", async (t) => {
   t.mock.timers.enable({ apis: ["setTimeout"] });
@@ -173,10 +171,7 @@ test("empty close has no inference and warm model is reused", async (t) => {
   await f.session.connect();
   f.session.close();
   await tick();
-  assert.deepEqual(f.events, [
-    ["partial", ""],
-    ["final", ""],
-  ]);
+  assert.deepEqual(f.events, [["final", ""]]);
   assert.equal(f.jobs.length, 0);
   assert.equal(f.stops, 0);
 });

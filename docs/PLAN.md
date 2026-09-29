@@ -14,8 +14,10 @@ All three research notes are inputs to verify, not implementation authority.
   A dedicated, explicitly provisioned virtualenv and model directory are required.
   Runtime does not install packages or download models.
 - One admitted dictation and one GPU decode at a time. Retain at most 30 seconds
-  of mu-law audio. Re-decode cumulative snapshots every two audio seconds, coalesce
-  previews while busy, and replace partial text. Emit exactly one final on stop.
+  of mu-law audio by default (configurable up to 120 seconds). Emit exactly one
+  final on stop. No UI partials: the P1 review found that stock Stop commits a
+  partial before awaiting the final; see STOCK-COMPOSER.md. Optional speculative
+  snapshots are internal only and disabled by default.
   This small initial design deliberately rejects longer dictation instead of
   introducing unmeasured chunk-boundary stitching.
 - Python decodes G.711 mu-law/8 kHz and polyphase-resamples once to float32/16 kHz.
@@ -58,7 +60,10 @@ establish microphone/dialect quality. Real browser/mic acceptance remains separa
 
 The contract and 5-second drain were personally verified in provider-types.ts,
 transcription-relay.ts, session-config.ts, and composer-dictation.ts. The browser
-replaces partials, accumulates finals, and inserts editable text without sending.
+replaces partials while recording, but commits a nonempty snapshot immediately on
+Stop; the initial assumption that a late final could replace it was incorrect.
+An empty snapshot takes the late-final path and inserts editable text without sending.
 Hot replacement disposes plugin ownership; no routine Gateway restart is needed.
-`nvidia-smi` currently cannot communicate with the driver in this execution
-sandbox. GPU measurements require working device access; do not invent results.
+The sandbox cannot access the GPU; the authorized read-only host probe succeeded.
+Isolated GPU experiments use the dedicated repository runtime with explicit
+host execution. No production Gateway or credential access is involved.

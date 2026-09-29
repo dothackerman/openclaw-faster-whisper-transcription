@@ -17,7 +17,7 @@ if root.exists():
 root.mkdir(parents=True, mode=0o700)
 venv.create(root / 'venv', with_pip=True)
 python = root / 'venv/bin/python'
-requirements = pathlib.Path(__file__).resolve().parents[1] / 'python' / ('requirements-gpu.txt' if args.gpu else 'requirements.txt')
+requirements = pathlib.Path(__file__).resolve().parents[1] / 'python' / ('requirements-gpu.lock' if args.gpu else 'requirements.lock')
 subprocess.run([str(python), '-m', 'pip', 'install', '--disable-pip-version-check', '-r', str(requirements)], check=True)
 frozen = subprocess.check_output([str(python), '-m', 'pip', 'freeze'], text=True)
 (root / 'requirements-resolved.txt').write_text(frozen)

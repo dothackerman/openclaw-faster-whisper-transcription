@@ -10,7 +10,7 @@ export type Config = {
   computeType: "float16" | "int8_float16" | "int8" | "float32";
   beamSize: number;
   maxAudioSeconds: number;
-  partialIntervalSeconds: number;
+  snapshotIntervalSeconds: number;
   idleSeconds: number;
   loadTimeoutMs: number;
   decodeTimeoutMs: number;
@@ -22,7 +22,7 @@ export const defaults = {
   computeType: "float16",
   beamSize: 5,
   maxAudioSeconds: 30,
-  partialIntervalSeconds: 2,
+  snapshotIntervalSeconds: 0,
   idleSeconds: 120,
   loadTimeoutMs: 90000,
   decodeTimeoutMs: 15000,
@@ -30,8 +30,8 @@ export const defaults = {
 } as const;
 const bounds: Record<string, [number, number]> = {
   beamSize: [1, 5],
-  maxAudioSeconds: [1, 30],
-  partialIntervalSeconds: [0.25, 10],
+  maxAudioSeconds: [1, 120],
+  snapshotIntervalSeconds: [0, 10],
   idleSeconds: [1, 3600],
   loadTimeoutMs: [1000, 120000],
   decodeTimeoutMs: [100, 30000],

@@ -1,0 +1,73 @@
+{
+  "version": 1,
+  "provenance": {
+    "kind": "synthetic",
+    "engine": "eSpeak NG",
+    "version": "1.51",
+    "sourceRate": 22050,
+    "resampler": "scipy.signal.resample_poly",
+    "note": "Self-authored scripts; no recorded voices or private content. Not evidence of real microphone quality."
+  },
+  "fixtures": [
+    {
+      "id": "en-short",
+      "file": "en-short.ulaw",
+      "sha256": "a9cb876c0e366c622dd97b2fe81c058d354ac121696754801621fff6af6048b8",
+      "seconds": 3.081125,
+      "reference": "Please open the window and bring a glass of water.",
+      "language": "en",
+      "mic": "synthetic",
+      "split": "development"
+    },
+    {
+      "id": "de-short",
+      "file": "de-short.ulaw",
+      "sha256": "9437da0cd62f8d2e3f77135efe6bf0768a2ebb306223218b23c14ea40ae83396",
+      "seconds": 3.017875,
+      "reference": "Bitte öffne das Fenster und bring ein Glas Wasser.",
+      "language": "de",
+      "mic": "synthetic",
+      "split": "development"
+    },
+    {
+      "id": "en-technical",
+      "file": "en-technical.ulaw",
+      "sha256": "aa7b38b58460c9cb678ac48c3f024173c87b532fbcc2bbb79249805db53738a7",
+      "seconds": 7.35975,
+      "reference": "The new browser plugin runs locally. Review the final message before sending it. We will test three microphones on Friday.",
+      "language": "en",
+      "mic": "synthetic",
+      "split": "development"
+    },
+    {
+      "id": "de-technical",
+      "file": "de-technical.ulaw",
+      "sha256": "b551fdcfec6e484230284c5ba353feeabd55fdbf1a06e8478ea692c866cb61ad",
+      "seconds": 7.41925,
+      "reference": "Das neue Plugin läuft auf diesem Computer. Bitte prüfe den Text vor dem Senden. Am Freitag testen wir drei Mikrofone.",
+      "language": "de",
+      "mic": "synthetic",
+      "split": "development"
+    },
+    {
+      "id": "mixed",
+      "file": "mixed.ulaw",
+      "sha256": "db07a1bd6371234dd8161cd9b176d59260d5c424a1899d800dad8ff357076649",
+      "seconds": 4.35875,
+      "reference": "Bitte starte den Browser. The final message is ready for review.",
+      "language": "de",
+      "mic": "synthetic",
+      "split": "development"
+    },
+    {
+      "id": "silence",
+      "file": "silence.ulaw",
+      "sha256": "2631e15a8bd84545cfc6b8796d03b8b115883be962a78fff46a55dc61c829905",
+      "seconds": 3.0,
+      "reference": "",
+      "language": "none",
+      "mic": "synthetic",
+      "split": "development"
+    }
+  ]
+}

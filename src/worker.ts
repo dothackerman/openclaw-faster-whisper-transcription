@@ -117,7 +117,7 @@ export class Worker implements Decoder {
         new Error("Faster-Whisper worker unavailable or busy"),
       );
     const line = JSON.stringify(payload) + "\n";
-    if (Buffer.byteLength(line) > 330000)
+    if (Buffer.byteLength(line) > 1300000)
       return Promise.reject(new Error("Faster-Whisper request exceeded limit"));
     return new Promise((resolve, reject) => {
       const timer = setTimeout(

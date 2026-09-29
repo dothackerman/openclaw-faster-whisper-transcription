@@ -1,5 +1,7 @@
 """Private bounded stdio protocol. Never log audio, transcripts, or exception text."""
 import base64
+import ctypes
+import signal
 import json
 import logging
 import os
@@ -8,8 +10,8 @@ import sysconfig
 from pathlib import Path
 
 logging.disable(logging.CRITICAL)
-MAX_LINE = 330000
-MAX_AUDIO = 240000
+MAX_LINE = 1300000
+MAX_AUDIO = 960000
 
 
 def decode_mulaw(data):
@@ -80,6 +82,12 @@ def main():
 
 
 if __name__ == "__main__":
+    if sys.platform == "linux":
+        parent = os.getppid()
+        if ctypes.CDLL(None).prctl(1, signal.SIGTERM, 0, 0, 0) != 0:
+            raise SystemExit(1)
+        if os.getppid() != parent or parent == 1:
+            raise SystemExit(1)
     # The environment owns CUDA userspace libraries. Re-exec before loading native
     # code so dlopen resolves split cuDNN libraries without any shared Python env.
     if os.environ.get("FW_CUDA_PATH_READY") != "1":

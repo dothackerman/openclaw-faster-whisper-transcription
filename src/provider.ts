@@ -52,6 +52,7 @@ export class Runtime {
     let lastText = "",
       busy = false,
       speech = false;
+    let limitReached = false;
     let finalTimer: NodeJS.Timeout | undefined,
       lifetime: NodeJS.Timeout | undefined;
     let connectPromise: Promise<void> | undefined;
@@ -77,9 +78,13 @@ export class Runtime {
     const publishFinal = () => {
       const text = lastText;
       finish();
-      // Empty final also clears the provider's pending preview where supported.
-      request.onPartial?.("");
       request.onTranscript?.(text);
+      if (limitReached)
+        request.onError?.(
+          new Error(
+            "Faster-Whisper duration limit reached; text up to the limit was retained. Start a new dictation.",
+          ),
+        );
     };
     const pump = () => {
       if (busy || (state !== "open" && state !== "closing")) return;
@@ -89,7 +94,8 @@ export class Runtime {
       }
       if (
         state === "open" &&
-        length - lastScheduled < this.config.partialIntervalSeconds * 8000
+        (this.config.snapshotIntervalSeconds === 0 ||
+          length - lastScheduled < this.config.snapshotIntervalSeconds * 8000)
       )
         return;
       busy = true;
@@ -106,7 +112,9 @@ export class Runtime {
               speech = true;
               request.onSpeechStart?.();
             }
-            request.onPartial?.(text);
+            // Never emit a partial to the stock composer: Stop commits its
+            // snapshot immediately and then ignores our asynchronous final.
+            // Optional speculative snapshots remain entirely internal.
           }
         })
         .catch((e: unknown) =>
@@ -119,6 +127,24 @@ export class Runtime {
           busy = false;
           pump();
         });
+    };
+    const beginClose = () => {
+      if (state === "done" || state === "closing") return;
+      if (state !== "open") {
+        fail(new Error("Faster-Whisper session closed before ready"));
+        return;
+      }
+      state = "closing";
+      finalTimer = setTimeout(
+        () =>
+          fail(
+            new Error(
+              "Faster-Whisper finalization exceeded the OpenClaw drain budget; final text is unavailable",
+            ),
+          ),
+        this.config.finalTimeoutMs,
+      );
+      pump();
     };
     return {
       connect: () => {
@@ -165,36 +191,19 @@ export class Runtime {
       },
       sendAudio: (audio) => {
         if (state !== "open") return;
-        if (!Buffer.isBuffer(audio) || length + audio.length > buffer.length) {
-          fail(
-            new Error(
-              "Faster-Whisper audio limit exceeded; stop within the configured duration",
-            ),
-          );
+        if (!Buffer.isBuffer(audio)) {
+          fail(new Error("Invalid Faster-Whisper audio frame"));
           return;
         }
-        audio.copy(buffer, length);
-        length += audio.length;
-        pump();
+        const accepted = Math.min(audio.length, buffer.length - length);
+        audio.copy(buffer, length, 0, accepted);
+        length += accepted;
+        if (length === buffer.length) {
+          limitReached = true;
+          beginClose();
+        } else pump();
       },
-      close: () => {
-        if (state === "done" || state === "closing") return;
-        if (state !== "open") {
-          fail(new Error("Faster-Whisper session closed before ready"));
-          return;
-        }
-        state = "closing";
-        finalTimer = setTimeout(
-          () =>
-            fail(
-              new Error(
-                "Faster-Whisper finalization exceeded the OpenClaw drain budget; final text is unavailable",
-              ),
-            ),
-          this.config.finalTimeoutMs,
-        );
-        pump();
-      },
+      close: beginClose,
       isConnected: () => state === "open",
     };
   }
