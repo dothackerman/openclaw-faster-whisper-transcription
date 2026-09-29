@@ -2,6 +2,39 @@
 
 Independent architect notes; do not replace incoming researcher files.
 
+## Current timed-substitution policy (`a24cce4`)
+
+The symmetric exact-token guard was too strict for time-coincident substitutions.
+The saved window at 31.16 seconds contains `for` at 43.72–44.00; the window at
+43.16 contains `four` at 43.72–44.02 before the same later anchor. It is a
+one-for-one recognition disagreement, not an inserted/missing token. The new
+candidate pairs old and fresh prefix words monotonically through the chosen
+anchor, allowing no unmatched slots. Each pair must have midpoint difference
+at most 0.8 seconds. Different normalized tokens additionally need positive
+durations and intersection covering at least half the shorter duration. Same
+tokens retain the existing time tolerance. The old spelling is retained through
+the anchor; the fresh suffix can correct `letter` to `label`. This is an explicit
+choice between disagreeing recognizer hypotheses, not proof the old spelling is
+right. The former equal-time corrected-token rejection tests now assert this
+specified substitution behavior; insertion/deletion adversaries still reject.
+
+Words starting before the fresh audio window are left-clipped context: that
+decode did not receive their whole acoustic span. They may remain before its
+first match. This matters for `behind` at 27.00–27.34 with a fresh start of 27.16,
+and `and` at 43.00–43.20 with fresh start 43.16. Words starting at/after the new
+window, including the exact `phantom@6` case, must all be accounted for through
+the anchor. Tests cover clipped context separately from a fully contained phantom.
+Timestamp estimates can be wrong, and equal-count insertion/deletion combinations
+with coincident timings cannot be proven absent by this heuristic. No semantic
+or real-microphone completeness guarantee is claimed.
+
+All 49 Node and 13 Python tests pass, including the exact saved `for/four` timing
+and corrected suffix. Offline reassembly of the full saved trace passes the first
+12 windows but rejects window 13 at start 108.98: fresh text begins with `We`,
+omitting old `a chair` at 109.32–109.74 within the fresh coverage. That remains an
+unmatched-old ambiguity. This diagnostic uses old hypotheses, not fresh inference
+or paced latency. Current clean paced results are recorded separately.
+
 ## Fresh-prefix deletion correction
 
 Independent QA found that a late overlap anchor could discard a real word that

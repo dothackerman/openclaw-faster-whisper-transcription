@@ -6,7 +6,41 @@ All speech here is self-authored, non-looped eSpeak NG synthesis transported as
 paragraph audio and padding to 300 seconds. Public manifests record every hash.
 No private OG recordings, real microphone, or Swiss-German acceptance is claimed.
 
-## Latest qualification: symmetric prefix proof (`73aaec5`)
+## Latest qualification: timed substitutions (`a24cce4`)
+
+**Five-minute qualification still fails.** Clean
+`a24cce4edbcad07e20dc67d4cfedd7b64c212721` pairs overlap-prefix words monotonically,
+permits time-coincident one-for-one substitutions, and still rejects unmatched
+insertions/deletions. Substitutions keep the old spelling through the anchor;
+fresh corrected suffixes remain eligible. Left-clipped old words are prior
+context, not wholly available in the fresh audio. Exact negation/recovered-word
+and phantom adversaries, genuine repetitions, and corrected-tail tests pass.
+
+- Rapid: **5/5 finals**, WER **14/142 = 9.86%**, CER **29/899 = 3.23%**. These
+  are the same edit counts as the previous successful rapid profile, not a new
+  recognition-quality gain. German has seven substitutions and one insertion;
+  English one substitution; mixed five substitutions and an inexact final-five
+  suffix. Boundary and silence have zero edits. German's first final is 781 ms;
+  boundary/mixed/silence/English finals are 604/488/3/668 ms. No deletions or
+  repeated-phrase insertions were scored. One run per fixture is not a robust
+  latency distribution or real-microphone qualification.
+- Five-minute paced stock-code/real-GPU integration: **0/1 finals**. It passes
+  the earlier for/four conflict but rejects the thirteenth attempted window after
+  **114.176 seconds accepted**, with 12 successful merges. No final, tail score,
+  WER/CER or final latency exists. Queue peak is 17.480 seconds, unprocessed
+  coverage 16.980 seconds including lookahead. GPU memory: 551 MiB baseline,
+  2821 MiB peak, 551 MiB after disposal. Remaining fixture audio is not delivered
+  after the error; this is not a successful five-minute recording.
+
+Offline replay of saved hypotheses separately passes the first 12 windows and
+rejects window 13, where fresh output omits old words within shared audio. That
+diagnostic explains a remaining ambiguity; the paced run records the same window
+failure but does not itself save raw per-window hypotheses. Keep the substitution
+rule as a tested candidate, reject full quality/long-duration acceptance. All
+earlier candidate failures and the old successful `9d27248` result remain in the
+append-only ledger with their original source attribution.
+
+## Previous qualification: symmetric prefix proof (`73aaec5`)
 
 **Reject release and five-minute qualification.** Both overlapping prefixes must
 now be confirmed before the splice: not only discarded fresh words but retained

@@ -43,10 +43,13 @@ is bounded to 160,000 characters / 24,000 words. Queue overload, ambiguous seams
 ceiling or deadline failure return an error and **no successful truncated final**.
 The total Stop drain remains **4.5 seconds**, including in-flight work.
 An overlap match must account for every fresh word discarded and every retained
-old word inside the overlapping audio before its splice;
+old word wholly covered by the overlapping audio before its splice;
 unmatched recovered words cause an explicit session failure rather than silently
 disappearing. This conservative policy can reject ordinary speech and is still
 under qualification; earlier successful five-minute results used a weaker rule.
+Time-coincident one-for-one substitutions may retain the old spelling before
+the anchor; unmatched insertions/deletions still fail. Timestamp alignment does
+not establish which spelling is correct or prove that no speech was missed.
 
 The plugin has a **60-minute wall/audio safety ceiling**. However, stock OpenClaw
 2026.9.6 expires transcription sessions after **30 minutes**; this plugin cannot
@@ -138,8 +141,8 @@ synthetic eSpeak NG audio from self-authored scripts. Hashes are in
 `fixtures/public/manifest.json` and `fixtures/public/long-manifest.json`.
 They do not establish real microphone or dialect quality.
 
-Current rc2 evidence: 3/5 rapid finals; German and boundary clips fail reconciliation.
-The five-minute fixture fails after 32.768 seconds of accepted audio. These
+Current rc2 evidence: 5/5 rapid finals, with German/mixed recognition errors.
+The five-minute fixture fails after 114.176 seconds of accepted audio. These
 commands reproduce evaluation, not a claim of supported five-minute dictation.
 
 After provisioning the dedicated runtime/model and a local profile, build and
