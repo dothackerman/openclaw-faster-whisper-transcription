@@ -5,7 +5,7 @@ plugin-managed Python sidecar and local Faster-Whisper/CTranslate2 inference.
 Default: multilingual **medium**, CUDA float16, automatic language detection.
 German and English need no manual switch; Swiss German quality is unverified.
 
-**Development release candidate.** No production install or real microphone
+**Experimental prototype; not production-qualified.** No production install or real microphone
 acceptance has been performed. MIT licensed. No core or UI patches.
 
 **Live text preview is disabled to prevent lost words.** This stock composer
@@ -94,7 +94,8 @@ smokes additionally require a prepared host checkout. CI itself has not run yet.
 
 ## Evaluate
 
-See [experiment protocol](research/experiment-design.md) and the measured [duration decision](docs/DURATION-DECISION.md). Fixed public fixtures are synthetic eSpeak NG audio generated from
+See [measured results and rejected candidates](research/RESULTS.md),
+[experiment protocol](research/experiment-design.md) and the measured [duration decision](docs/DURATION-DECISION.md). Fixed public fixtures are synthetic eSpeak NG audio generated from
 self-authored scripts; their hashes are in `fixtures/public/manifest.json`. They
 prove transport/benchmark reproducibility, not real microphone or dialect quality.
 

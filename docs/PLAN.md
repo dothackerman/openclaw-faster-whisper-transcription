@@ -18,8 +18,8 @@ All three research notes are inputs to verify, not implementation authority.
   final on stop. No UI partials: the P1 review found that stock Stop commits a
   partial before awaiting the final; see STOCK-COMPOSER.md. Optional speculative
   snapshots are internal only and disabled by default.
-  This small initial design deliberately rejects longer dictation instead of
-  introducing unmeasured chunk-boundary stitching.
+  This small initial design caps recording rather than introducing unmeasured
+  chunk-boundary stitching; longer uninterrupted duration remains unqualified.
 - Python decodes G.711 mu-law/8 kHz and polyphase-resamples once to float32/16 kHz.
   Multilingual medium, automatic language detection, unbatched CUDA float16,
   beam 5, upstream fallback, no VAD/prompt by default: baseline, not optimum.
@@ -28,7 +28,7 @@ All three research notes are inputs to verify, not implementation authority.
   owned-child exit. Crash/OOM/timeouts fail the session with fixed safe messages;
   no implicit CPU fallback or automatic retry of private audio.
 - The actual relay drains for 5 seconds. Use a 4.5-second total stop budget,
-  including any outstanding partial; fail visibly if a final cannot finish.
+  including cold load and any outstanding internal decode; fail visibly if a final cannot finish.
   Never represent partial text as a successful final. Stock UI may itself retain
   partial text on failure; document this existing behavior.
 - Provider settings live in this plugin's config. Validate request model/options;

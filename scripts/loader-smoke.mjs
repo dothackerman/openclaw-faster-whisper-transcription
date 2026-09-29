@@ -19,7 +19,7 @@ const {
 const cfg = {
   plugins: {
     allow: ["faster-whisper-transcription"],
-    load: { paths: [process.cwd()] },
+    load: { paths: [process.env.FW_PLUGIN_ROOT ?? process.cwd()] },
     entries: {
       "faster-whisper-transcription": {
         enabled: true,
