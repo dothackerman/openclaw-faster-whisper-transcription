@@ -36,7 +36,7 @@ do not attribute the full latency difference to retries. DE final3825/837ms,
 EN2967/703ms; remaining boundary1094/644, mixed831/530, silence16/5ms.
 Host VRAM baseline551MiB both, peak2829/2797MiB; not isolated process telemetry.
 
-Decision: default `overlapRetry: false`; retain explicit opt-in true for future
+Decision: provisional load-oriented default `overlapRetry: false`; retain explicit opt-in true for future
 measured research. No measured recognition or human-review benefit justifies the
 extra work in this screen. This does not prove a third reading never helps.
 Preserve both labeled readings and all semantic guards. Proceed with one paced
@@ -53,8 +53,8 @@ final5 exact. Normal decode35512ms; retry decode0ms/count0, skipped8. Queue peak
 peak2829MiB. The modest rapid VRAM difference did not persist at this duration;
 no general VRAM-saving claim. GPU samples remain host-wide.
 
-Keep no-retry default for eliminated extra inference with no rapid word-edit
-penalty. This run validates transport/finalization only: quality/usability
+Keep no-retry provisionally for eliminated extra inference with no word-edit
+penalty on this rapid screen only. Five-minute quality cost is unknown. This run validates transport/finalization only: quality/usability
 acceptance remains rejected. There is no same-format fresh retry-on five-minute
 comparator, so older unlabeled five-minute scores are not a causal comparison.
 A third reading's human-review value remains unmeasured. No claim of real-mic,
@@ -66,3 +66,18 @@ then `node scripts/experiment.mjs PROFILE fixtures/public/rapid-manifest.json
 OUTPUT 1 chunked` and `scripts/score_long.py OUTPUT`. For the paced composer mode,
 use the README's stock-source harness invocation and five-minute manifest. Run
 serially; retain the paired raw outputs privately and ledger hashes publicly.
+
+## QA qualification correction
+
+The no-retry five-minute run uses the labeled renderer:175/611 word edits
+(28.64%), CER24.85%,25 spans/1280 marker characters, final20 edits13. Historical
+retry-on `3eabf11` uses the atomic UNLABELED renderer:131/611 (21.44%),947 marker
+characters. These are not a same-renderer comparison and cannot establish the
+quality cost of disabling retry. Equal rapid WER cannot resolve that uncertainty.
+
+The configurable switch remains. Default off is explicitly provisional for load,
+with a possible quality tradeoff. A same-build, same-renderer paired long retry-on/
+off comparison after the seal and retry-frontier fixes is needed before claiming
+five-minute quality parity. Existing long measurements also predate those P1
+fixes. No additional experiment was run for this qualification correction; no
+historical ledger entry is rewritten.

@@ -136,7 +136,8 @@ provider final924ms and stock insertion5037ms, no Send. Eight joins/25spans/
 3 deletions,138 insertions,5 repeated-phrase inserted words, final20 errors13,
 final5 exact. Zero retry work; normal decode35512ms; host VRAM551/2829MiB
 baseline/peak, queue18.024s, lag17.524s including lookahead. This is not a fresh
-paired five-minute comparison. Keep lower-work default, reject quality acceptance.
+paired five-minute comparison. Keep the lower-work default provisionally, with unknown long-recording quality
+cost; reject quality acceptance.
 See [paired policy evidence](../research/overlap-retry-comparison.md).
 
 ## Experiment and public-data boundary
@@ -199,3 +200,9 @@ integer sample offsets are converted once for the comparison. A touching or
 crossing retry is skipped, preserving two labeled ordinary readings. Tests cover
 the later-conflict/new-negation adversary, direct bypass rejection, and adjacent
 samples/equality. 103 Node/18 Python tests pass. No GPU requalification is claimed.
+
+Retry default qualification: off is a provisional load choice, not validated
+five-minute quality parity. The labeled off run (175/611 edits,1280 marker chars)
+and historical unlabeled on run (131/611,947 chars) are not comparable. Require a
+same-build/same-renderer paired long test after the P1 guards before asserting
+no long quality cost. Configurable true remains available. No new long run here.

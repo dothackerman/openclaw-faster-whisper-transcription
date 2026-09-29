@@ -1,5 +1,12 @@
 # Long dictation: preliminary measured results
 
+Retry-off remains a **provisional load-oriented default**, not a validated
+five-minute quality choice. Labeled off175/611 versus historical unlabeled
+on131/611 is not a fair comparison. Equal rapid WER does not establish no long
+quality cost. A same-build, same-renderer long pair after both P1 seal guards is
+still missing; the switch remains configurable. No new run for this correction.
+
+
 ## Sealed-overlap evidence guard — clean `293c521`
 
 The exact recovered-word P1 now fails explicitly instead of dropping evidence

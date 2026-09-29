@@ -57,7 +57,8 @@ session draft and remains a release limitation. No reading
 is selected as verified. Review and edit these spans before Send; nothing is sent
 automatically.
 
-`overlapRetry` defaults to `false`: two readings, no extra overlap inference.
+`overlapRetry` defaults provisionally to `false` for lower inference load: two
+readings, no extra overlap inference. The five-minute quality tradeoff is unknown.
 Opting in permits one at-most-20-second wider-context decode per ambiguous seam,
 within the existing Stop deadline. A retry touching or crossing a prior seal is
 skipped, leaving the two ordinary readings marked. It may add a third labeled reading; measured
@@ -106,19 +107,19 @@ Remove the obsolete `maxAudioSeconds` and `snapshotIntervalSeconds` keys when
 upgrading; they now fail config validation. Window/queue sizes are internal tested
 constants, not knobs that promise longer support merely by accepting more bytes.
 
-| Setting           | Default   | Meaning                                                              |
-| ----------------- | --------- | -------------------------------------------------------------------- |
-| `python`          | required  | Absolute executable in the dedicated environment                     |
-| `modelPath`       | required  | Absolute provisioned local model directory                           |
-| `model`           | `medium`  | Catalog label matching those model files                             |
-| `device`          | `cuda`    | Explicit `cuda` or `cpu`                                             |
-| `computeType`     | `float16` | Also `int8_float16`, `int8`, `float32`; must be supported            |
-| `beamSize`        | 5         | 1–5; benchmark before changing                                       |
-| `overlapRetry`    | `false`   | Opt-in bounded overlap re-decode; default keeps two labeled readings |
-| `idleSeconds`     | 120       | 1–3600 before child/model eviction                                   |
-| `loadTimeoutMs`   | 90000     | Cold startup budget, at most 120000                                  |
-| `decodeTimeoutMs` | 15000     | Individual chunk decode budget                                       |
-| `finalTimeoutMs`  | 4500      | Total final drain budget, at most 4500                               |
+| Setting           | Default   | Meaning                                                                              |
+| ----------------- | --------- | ------------------------------------------------------------------------------------ |
+| `python`          | required  | Absolute executable in the dedicated environment                                     |
+| `modelPath`       | required  | Absolute provisioned local model directory                                           |
+| `model`           | `medium`  | Catalog label matching those model files                                             |
+| `device`          | `cuda`    | Explicit `cuda` or `cpu`                                                             |
+| `computeType`     | `float16` | Also `int8_float16`, `int8`, `float32`; must be supported                            |
+| `beamSize`        | 5         | 1–5; benchmark before changing                                                       |
+| `overlapRetry`    | `false`   | Provisional load choice; `true` enables bounded re-decode; long quality cost unknown |
+| `idleSeconds`     | 120       | 1–3600 before child/model eviction                                                   |
+| `loadTimeoutMs`   | 90000     | Cold startup budget, at most 120000                                                  |
+| `decodeTimeoutMs` | 15000     | Individual chunk decode budget                                                       |
+| `finalTimeoutMs`  | 4500      | Total final drain budget, at most 4500                                               |
 
 ## Develop and verify
 
@@ -183,7 +184,10 @@ Visible WER/CER are28.64%/24.85%, including labels/alternatives; five repeated-p
 inserted words remain. Final20 errors13, final5 exact. Retry work iszero; peak
 host VRAM2829MiB. This single five-minute run is not a paired retry-quality test.
 
-Keep the lower-work default; **quality/usability acceptance remains rejected**.
+The lower-work default is provisional: equal rapid WER does not establish no
+quality cost on longer speech. A same-build, same-renderer paired retry-on/off
+five-minute test after the seal fixes is required before making that claim.
+**Quality/usability acceptance remains rejected.**
 No real browser/Gateway/microphone or Swiss-German qualification is claimed.
 See the [paired experiment](research/overlap-retry-comparison.md) and historical
 [results](research/LONG-DURATION-RESULTS.md). All drafts still need review.
