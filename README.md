@@ -156,7 +156,7 @@ synthetic eSpeak NG audio from self-authored scripts. Hashes are in
 `fixtures/public/manifest.json` and `fixtures/public/long-manifest.json`.
 They do not establish real microphone or dialect quality.
 
-The measured candidate (`3eabf11`) passes the crossing-word seal, exact NFC
+The previous measured candidate (`3eabf11`) passes the crossing-word seal, exact NFC
 surface and unique/timed-anchor regressions. Rapid screening completed first:
 5/5 finals, two uncertain joins/four spans/123 marker characters, zero repeated-phrase
 insertions, visible WER/CER 18.31% / 10.90%. The subsequent paced five-minute
@@ -172,6 +172,10 @@ five-minute runs resolved its join; five-minute retries add 9209 ms decode wall
 time. Tests use actual stock code with simulated capture/RPC and real local GPU,
 not a real browser, Gateway or microphone. The draft still needs review. Atomic Word surfaces retain their whitespace;
 normalized text and scores are unchanged from the preceding renderer.
+The subsequent labeled-choice format preserves earlier/later/retry identity across
+uncertain spans; the measurements above predate those labels and do not qualify
+that format. Select the same source label across linked spans to recover its
+complete candidate, including omissions; merged labels denote identical choices.
 
 After provisioning the dedicated runtime/model and a local profile, build and
 validate fixture manifests, then run the five approximately 20-second fixtures

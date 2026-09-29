@@ -2,6 +2,25 @@
 
 Independent architect notes; do not replace incoming researcher files.
 
+## Linked source labels across uncertain spans
+
+Unlabeled per-gap choices admitted hybrid combinations that no decoder produced.
+Each rendered alternative now carries its original earlier/later/retry label;
+identical exact NFC alternatives merge labels without losing any source. Labels
+keep their identity across every gap of an overlap. Common timed anchors still
+appear once. Omissions carry labels and explicit `(no words)`. Whole-reading
+fallback and identical/empty disputed readings preserve all labels as well.
+This supersedes the earlier decision to omit repeated source labels.
+
+Tests now reconstruct each named reading by consistently selecting its label,
+including100 seeded cases, the exact adversarial fixtures, and the512/513-word
+fallback boundary. A linked German test rejects an invented cross-source hybrid.
+Atomic Word surfaces, crossing closure, exact punctuation/case and transactionally
+checked caps remain unchanged; cap accounting includes labels. All88 Node/18
+Python tests pass. Plan: clean rapid scoring of the added editorial overhead.
+Prior unlabeled five-minute scores remain historical; no recognition benefit is
+expected or claimed. Avoid another paced run if the short screen regresses.
+
 ## Exact adversarial marker fixtures
 
 Added Sol's exact absolute-time review cases as deterministic API tests: old-only

@@ -217,7 +217,9 @@ test("one bounded retry then marked alternatives preserve ambiguous overlap", as
   f.session.close();
   f.jobs[2].resolve([word("unrelated", 7)]);
   await tick();
-  assert.deepEqual(f.events, [["final", "[uncertain: old | unrelated]"]]);
+  assert.deepEqual(f.events, [
+    ["final", "[uncertain: earlier: old | later/retry: unrelated]"],
+  ]);
   assert.equal(f.runtime.metrics.retries, 1);
   assert.equal(f.runtime.metrics.uncertaintyMarkers, 1);
 });
@@ -279,7 +281,10 @@ test("retry may not silently erase an old negation just because context is wider
   f.jobs[2].resolve([word("context", 2), word("approved", 7)]);
   await tick();
   assert.deepEqual(f.events, [
-    ["final", "context [uncertain: not | (no words)] approved"],
+    [
+      "final",
+      "context [uncertain: earlier: not | later/retry: (no words)] approved",
+    ],
   ]);
 });
 test("short remaining final budget skips retry and preserves a marked final", async (t) => {
@@ -294,7 +299,9 @@ test("short remaining final budget skips retry and preserves a marked final", as
   await tick();
   assert.equal(f.jobs.length, 2);
   assert.equal(f.runtime.metrics.retrySkipped, 1);
-  assert.deepEqual(f.events, [["final", "[uncertain: old | changed]"]]);
+  assert.deepEqual(f.events, [
+    ["final", "[uncertain: earlier: old | later: changed]"],
+  ]);
 });
 test("final deadline also bounds an already running overlap retry", async (t) => {
   t.mock.timers.enable({ apis: ["setTimeout"] });
@@ -420,7 +427,7 @@ test("Do/Don't first-word disagreement reaches final as visible alternatives", a
   await tick();
   assert.equal(f.events.length, 1);
   assert.equal(f.events[0][0], "final");
-  assert.match(f.events[0][1], /Do \| Don't/);
+  assert.match(f.events[0][1], /Do \| later\/retry: Don't/);
   assert.match(f.events[0][1], /\] agree now tail$/);
   assert.equal(f.runtime.metrics.retries, 1);
   assert.equal(f.runtime.metrics.uncertaintyMarkers, 1);
@@ -441,7 +448,10 @@ test("old-only overlap negation survives bounded retry as a marked final", async
   f.jobs[2].resolve([word("Do", 5), word("send", 7), word("tail", 14)]);
   await tick();
   assert.deepEqual(f.events, [
-    ["final", "Do [uncertain: not | (no words)] send tail"],
+    [
+      "final",
+      "Do [uncertain: earlier: not | later/retry: (no words)] send tail",
+    ],
   ]);
   assert.equal(f.runtime.metrics.retries, 1);
   assert.equal(f.runtime.metrics.uncertaintyMarkers, 1);
@@ -461,6 +471,8 @@ test("crossing can/cannot stays in the only final alternative after bounded retr
   f.session.close();
   f.jobs[2].resolve([word("can", 7.6, 8.2), word("tail", 8.3, 8.6)]);
   await tick();
-  assert.deepEqual(f.events, [["final", "[uncertain: cannot | can] tail"]]);
+  assert.deepEqual(f.events, [
+    ["final", "[uncertain: earlier: cannot | later/retry: can] tail"],
+  ]);
   assert.equal(f.runtime.metrics.uncertainJoins, 1);
 });

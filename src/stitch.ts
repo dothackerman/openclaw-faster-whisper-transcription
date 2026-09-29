@@ -24,24 +24,35 @@ export function renderUncertainty(
     throw new Error("Uncertainty timing does not cover each surface token");
   const readings = input.map((r) => r.map((text) => text.normalize("NFC")));
   const first = readings[0]!;
+  const labels = ["earlier", "later", "retry"];
   const show = (words: string[]) => words.join(" ") || "(no words)";
   let markers = 0;
   const output: string[] = [];
   const emit = (chunks: string[][]) => {
     if (chunks.every((r) => !r.length)) return;
-    const choices = new Map<string, string[]>();
-    for (const chunk of chunks) {
+    const choices = new Map<string, { words: string[]; labels: string[] }>();
+    chunks.forEach((chunk, index) => {
       const key = JSON.stringify(chunk);
-      if (!choices.has(key)) choices.set(key, chunk);
-    }
-    output.push(`[uncertain: ${[...choices.values()].map(show).join(" | ")}]`);
+      const choice = choices.get(key);
+      if (choice) choice.labels.push(labels[index]!);
+      else choices.set(key, { words: chunk, labels: [labels[index]!] });
+    });
+    output.push(
+      `[uncertain: ${[...choices.values()]
+        .map((choice) => `${choice.labels.join("/")}: ${show(choice.words)}`)
+        .join(" | ")}]`,
+    );
     markers++;
   };
   const uniqueReadings = new Set(readings.map((r) => JSON.stringify(r)));
   if (uniqueReadings.size === 1 || readings.some((r) => r.length > 512)) {
     emit(readings);
     // Even empty identical hypotheses can arrive via an ambiguous timed join.
-    if (!markers) return { text: "[uncertain: (no words)]", markers: 1 };
+    if (!markers)
+      return {
+        text: `[uncertain: ${labels.slice(0, readings.length).join("/")}: (no words)]`,
+        markers: 1,
+      };
     return { text: output.join(" "), markers };
   }
   const indexes = readings.map((r) => {

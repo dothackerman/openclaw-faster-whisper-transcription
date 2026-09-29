@@ -11,7 +11,7 @@ test("uncertainty retains missing negation and phantom alternatives through late
   s.add([w("tail", 1), w("finish", 3)], 8, 12);
   assert.equal(
     s.text(),
-    "prefix [uncertain: not | (no words)] approved tail finish",
+    "prefix [uncertain: earlier: not | later: (no words)] approved tail finish",
   );
   assert.equal(s.uncertainties, 1);
 });
@@ -116,7 +116,10 @@ test("exact old-only negation repro must be marked, never silently deleted", () 
   assert.equal(s.text(), "Do not send");
   assert.equal(s.anchors, 0);
   s.markUncertain(fresh, 4, 10);
-  assert.equal(s.text(), "Do [uncertain: not | (no words)] send tail");
+  assert.equal(
+    s.text(),
+    "Do [uncertain: earlier: not | later: (no words)] send tail",
+  );
 });
 test("old repeated lexical words each need a distinct fresh match", () => {
   const s = new Stitcher();
@@ -205,7 +208,10 @@ test("leading semantic substitution is ambiguous despite two exact timed words",
     const next = [w(fresh, 0), w("agree", 0.3), w("now", 0.7), w("tail", 3)];
     assert.throws(() => s.add(next, 6, 10), /competing first words/);
     s.markUncertain(next, 6, 10);
-    assert.equal(s.text(), `[uncertain: ${old} | ${fresh}] agree now tail`);
+    assert.equal(
+      s.text(),
+      `[uncertain: earlier: ${old} | later: ${fresh}] agree now tail`,
+    );
   }
 });
 test("exact German trace boundary marks leading Wir/Wie despite timed corroboration", () => {
@@ -229,7 +235,7 @@ test("exact German trace boundary marks leading Wir/Wie despite timed corroborat
   s.markUncertain(next, 156.28, 162.1);
   assert.match(
     s.text(),
-    /\[uncertain: Wir \| Wie\] erklärten ihr, \[uncertain: \(no words\) \| weiter\]/,
+    /\[uncertain: earlier: Wir \| later: Wie\] erklärten ihr, \[uncertain: earlier: \(no words\) \| later: weiter\]/,
   );
 });
 test("saved synthetic trace marks for/four and letter/label alternatives", () => {
@@ -273,7 +279,7 @@ test("saved synthetic trace marks for/four and letter/label alternatives", () =>
   s.markUncertain(next, 43.16, 48.18);
   assert.match(
     s.text(),
-    /the largest \[uncertain: for \| four\] folded instructions/,
+    /the largest \[uncertain: earlier: for \| later: four\] folded instructions/,
   );
   assert.match(s.text(), /letter\./);
   assert.match(s.text(), /label\.$/);
@@ -356,7 +362,7 @@ test("a conflicting old phrase is marked rather than assumed hallucinated", () =
   s.markUncertain(fresh, 6, 10);
   assert.equal(
     s.text(),
-    "These are [uncertain: the final] words [uncertain: on the | of the] recording. The [uncertain: final task was to save the draft report. | orange umbrella.]",
+    "These are [uncertain: earlier/later: the final] words [uncertain: earlier: on the | later: of the] recording. The [uncertain: earlier: final task was to save the draft report. | later: orange umbrella.]",
   );
 });
 
@@ -366,7 +372,7 @@ test("a suffix spelling extension cannot silently change can to cannot", () => {
   const fresh = [w("We", 1), w("cannot", 2), w("send", 5)];
   assert.throws(() => s.add(fresh, 4, 10), /competing overlap words/);
   s.markUncertain(fresh, 4, 10);
-  assert.equal(s.text(), "We [uncertain: can | cannot] send");
+  assert.equal(s.text(), "We [uncertain: earlier: can | later: cannot] send");
 });
 
 test("reviewed marker preserves retry punctuation while sharing exact common text", () => {
@@ -393,34 +399,38 @@ test("reviewed marker preserves retry punctuation while sharing exact common tex
   );
   assert.equal(
     s.text(),
-    "[uncertain: beten die Etmas zu leiten | (no words)] und [uncertain: stellten | schmelzen] den Monitor weiter von der [uncertain: Wand. | (no words) | Wand]",
+    "[uncertain: earlier/retry: beten die Etmas zu leiten | later: (no words)] und [uncertain: earlier/retry: stellten | later: schmelzen] den Monitor weiter von der [uncertain: earlier: Wand. | later: (no words) | retry: Wand]",
   );
   assert.equal(s.uncertainties, 3);
   assert.equal(s.uncertainJoins, 1);
-  assert.ok(s.text().length < 223);
+  assert.ok(s.text().length < 300); // Labels add overhead while agreed words stay single.
 });
-function reconstructs(rendered, reading) {
-  const parts = [];
-  let end = 0;
+function reconstructs(rendered, reading, source) {
   const words = (s) => (s.trim() ? s.trim().split(/\s+/u) : []);
+  const reconstructed = [];
+  let end = 0;
   for (const match of rendered.matchAll(/\[uncertain: ([^\]]*)\]/g)) {
-    parts.push([words(rendered.slice(end, match.index))]);
-    parts.push(
-      match[1].split(" | ").map((s) => (s === "(no words)" ? [] : words(s))),
+    reconstructed.push(...words(rendered.slice(end, match.index)));
+    const choices = match[1].split(" | ").map((choice) => {
+      const separator = choice.indexOf(": ");
+      assert.ok(separator > 0, "every gap alternative has source labels");
+      return {
+        labels: choice.slice(0, separator).split("/"),
+        text: choice.slice(separator + 2),
+      };
+    });
+    const selected = choices.filter((choice) => choice.labels.includes(source));
+    assert.equal(
+      selected.length,
+      1,
+      `${source} must occur exactly once per gap`,
     );
+    if (selected[0].text !== "(no words)")
+      reconstructed.push(...words(selected[0].text));
     end = match.index + match[0].length;
   }
-  parts.push([words(rendered.slice(end))]);
-  let positions = new Set([0]);
-  for (const choices of parts) {
-    const next = new Set();
-    for (const offset of positions)
-      for (const choice of choices)
-        if (choice.every((word, i) => reading[offset + i] === word))
-          next.add(offset + choice.length);
-    positions = next;
-  }
-  return positions.has(reading.length);
+  reconstructed.push(...words(rendered.slice(end)));
+  return JSON.stringify(reconstructed) === JSON.stringify(reading);
 }
 test("word diff reconstruction preserves every reading including negation and repetitions", () => {
   const cases = [
@@ -447,9 +457,13 @@ test("word diff reconstruction preserves every reading including negation and re
   for (const example of cases) {
     const readings = example.map((s) => (s ? s.split(" ") : []));
     const result = renderUncertainty(readings);
-    for (const reading of readings)
+    for (const [index, reading] of readings.entries())
       assert.ok(
-        reconstructs(result.text, reading),
+        reconstructs(
+          result.text,
+          reading,
+          ["earlier", "later", "retry"][index],
+        ),
         JSON.stringify({ example, result }),
       );
     assert.equal(
@@ -468,7 +482,7 @@ test("exact rapid German conflict shares all agreed interior words once", () => 
   );
   assert.equal(
     result.text,
-    "Die Aufnahmen [uncertain: soll | wollen] auf [uncertain: Ihrem | deinem] Computer bleiben. Ich lehne jeden Mats [uncertain: von - | (no words) | vor]",
+    "Die Aufnahmen [uncertain: earlier/retry: soll | later: wollen] auf [uncertain: earlier: Ihrem | later/retry: deinem] Computer bleiben. Ich lehne jeden Mats [uncertain: earlier: von - | later: (no words) | retry: vor]",
   );
   assert.equal(result.markers, 3);
 });
@@ -480,7 +494,8 @@ test("exact rapid English conflict never repeats the shared sentence prefix", ()
   );
   assert.equal(
     result.text,
-    prefix + " [uncertain: with... | (no words) | before]",
+    prefix +
+      " [uncertain: earlier: with... | later: (no words) | retry: before]",
   );
   assert.equal(result.markers, 1);
 });
@@ -493,8 +508,10 @@ test("anchor size boundary and whole-reading fallback preserve all readings", ()
     const retry = old.slice();
     retry[260] = "never";
     const result = renderUncertainty([old, fresh, retry]);
-    for (const words of [old, fresh, retry])
-      assert.ok(reconstructs(result.text, words));
+    for (const [index, words] of [old, fresh, retry].entries())
+      assert.ok(
+        reconstructs(result.text, words, ["earlier", "later", "retry"][index]),
+      );
     assert.equal(result.markers, size === 512 ? 2 : 1);
   }
 });
@@ -502,22 +519,25 @@ test("deduplication never hides uncertainty when timing alone disagrees", () => 
   const s = new Stitcher();
   s.add([w("same words", 5, 7)], 0, 8);
   s.markUncertain([w("same words", 1, 3)], 4, 10);
-  assert.equal(s.text(), "[uncertain: same words]");
+  assert.equal(s.text(), "[uncertain: earlier/later: same words]");
   assert.equal(s.uncertainties, 1);
 });
 
 test("surface dedup preserves Stop punctuation and case alternatives", () => {
   const result = renderUncertainty([["Stop."], ["Stop?"], ["stop."]]);
-  assert.equal(result.text, "[uncertain: Stop. | Stop? | stop.]");
+  assert.equal(
+    result.text,
+    "[uncertain: earlier: Stop. | later: Stop? | retry: stop.]",
+  );
   const nfc = renderUncertainty([["grün"], ["gru\u0308n"], ["Grün"]]);
-  assert.equal(nfc.text, "[uncertain: grün | Grün]");
+  assert.equal(nfc.text, "[uncertain: earlier/later: grün | retry: Grün]");
   const apostrophe = renderUncertainty([
     ["Do", "agree", "now."],
     ["Don't", "agree", "now!"],
   ]);
   assert.equal(
     apostrophe.text,
-    "[uncertain: Do | Don't] agree [uncertain: now. | now!]",
+    "[uncertain: earlier: Do | later: Don't] agree [uncertain: earlier: now. | later: now!]",
   );
 });
 test("crossing contradiction is an alternative, never definite tail or reinserted after seal", () => {
@@ -526,9 +546,12 @@ test("crossing contradiction is an alternative, never definite tail or reinserte
   const fresh = [w("can", 1.6, 2.2), w("tail", 2.3, 2.6)];
   assert.throws(() => s.add(fresh, 6, 10), /align/);
   s.markUncertain(fresh, 6, 10);
-  assert.equal(s.text(), "[uncertain: cannot | can] tail");
+  assert.equal(s.text(), "[uncertain: earlier: cannot | later: can] tail");
   s.add([w("can", 0, 0.2), w("tail", 0.3, 0.6), w("finish", 1, 1.3)], 8, 12);
-  assert.equal(s.text(), "[uncertain: cannot | can] tail finish");
+  assert.equal(
+    s.text(),
+    "[uncertain: earlier: cannot | later: can] tail finish",
+  );
 });
 test("connected crossing group seals once while a separate following tail survives", () => {
   const s = new Stitcher();
@@ -539,7 +562,10 @@ test("connected crossing group seals once while a separate following tail surviv
     10,
     { start: 6, words: [w("cannot", 1.6, 2.3)] },
   );
-  assert.equal(s.text(), "[uncertain: cannot | can link] tail");
+  assert.equal(
+    s.text(),
+    "[uncertain: earlier/retry: cannot | later: can link] tail",
+  );
   s.add(
     [
       w("can", 0, 0.2),
@@ -550,19 +576,28 @@ test("connected crossing group seals once while a separate following tail surviv
     8,
     12,
   );
-  assert.equal(s.text(), "[uncertain: cannot | can link] tail finish");
+  assert.equal(
+    s.text(),
+    "[uncertain: earlier/retry: cannot | later: can link] tail finish",
+  );
 });
 test("repeated or reordered common words stay marked instead of ambiguous anchoring", () => {
   const repeated = renderUncertainty([
     ["same", "same", "old"],
     ["same", "same", "new"],
   ]);
-  assert.equal(repeated.text, "[uncertain: same same old | same same new]");
+  assert.equal(
+    repeated.text,
+    "[uncertain: earlier: same same old | later: same same new]",
+  );
   const reordered = renderUncertainty([
     ["alpha", "beta", "old"],
     ["beta", "alpha", "new"],
   ]);
-  assert.equal(reordered.text, "[uncertain: alpha beta old | beta alpha new]");
+  assert.equal(
+    reordered.text,
+    "[uncertain: earlier: alpha beta old | later: beta alpha new]",
+  );
 });
 test("unique common text requires compatible timing across all original readings", () => {
   const input = [
@@ -577,12 +612,12 @@ test("unique common text requires compatible timing across all original readings
   ];
   assert.equal(
     renderUncertainty(input, aligned).text,
-    "shared [uncertain: old | new]",
+    "shared [uncertain: earlier/retry: old | later: new]",
   );
   aligned[2][0] = w("", 5);
   assert.equal(
     renderUncertainty(input, aligned).text,
-    "[uncertain: shared old | shared new]",
+    "[uncertain: earlier/retry: shared old | later: shared new]",
   );
   assert.throws(() => renderUncertainty(input, [[]]), /timing/);
 });
@@ -591,19 +626,25 @@ test("multi-piece Word surfaces stay atomic with exact internal whitespace", () 
   const s = new Stitcher();
   s.add([w("Do  not send", 5, 7)], 0, 8);
   s.markUncertain([w("Do send", 1, 3)], 4, 10);
-  assert.equal(s.text(), "[uncertain: Do  not send | Do send]");
+  assert.equal(s.text(), "[uncertain: earlier: Do  not send | later: Do send]");
   assert.equal(s.uncertainties, 1);
   const segmented = new Stitcher();
   segmented.add([w("shared phrase", 5, 7)], 0, 8);
   segmented.markUncertain([w("shared", 1, 2), w("phrase", 2, 3)], 4, 10);
-  assert.equal(segmented.text(), "[uncertain: shared phrase | shared phrase]");
+  assert.equal(
+    segmented.text(),
+    "[uncertain: earlier: shared phrase | later: shared phrase]",
+  );
 });
 
 test("atomic marker surfaces preserve case and literal brackets", () => {
   const s = new Stitcher();
   s.add([w("Morgen [A]", 5, 7)], 0, 8);
   s.markUncertain([w("morgen [A]", 1, 3)], 4, 10);
-  assert.equal(s.text(), "[uncertain: Morgen [A] | morgen [A]]");
+  assert.equal(
+    s.text(),
+    "[uncertain: earlier: Morgen [A] | later: morgen [A]]",
+  );
 });
 
 // Review fixtures use absolute times. Convert only at the provider API boundary;
@@ -632,6 +673,7 @@ function assertReviewReadings(stitcher, expected, readings) {
       reconstructs(
         expected,
         words.map((word) => word.text.normalize("NFC")),
+        label === "earlierWithTail" ? "earlier" : label,
       ),
       label,
     );
@@ -641,11 +683,15 @@ test("Sol exact negation alternatives reconstruct earlier/later/retry with commo
   const earlier = [w("Do", 5), w("not", 5.5), w("send", 7)];
   const later = [w("Do", 5), w("send", 7)];
   const s = reviewFixture(earlier, later, earlier);
-  assertReviewReadings(s, "Do [uncertain: not | (no words)] send", {
-    earlier,
-    later,
-    retry: earlier,
-  });
+  assertReviewReadings(
+    s,
+    "Do [uncertain: earlier/retry: not | later: (no words)] send",
+    {
+      earlier,
+      later,
+      retry: earlier,
+    },
+  );
 });
 
 test("Sol exact repetition preserves both very readings", () => {
@@ -653,7 +699,7 @@ test("Sol exact repetition preserves both very readings", () => {
   const later = [w("very", 5), w("clear", 7)];
   assertReviewReadings(
     reviewFixture(earlier, later),
-    "[uncertain: very very | very] clear",
+    "[uncertain: earlier: very very | later: very] clear",
     { earlier, later },
   );
 });
@@ -663,12 +709,12 @@ test("Sol exact case/punctuation and one-versus-two Word alternatives remain dis
     [
       [w("Morgen", 5), w("gehen.", 6)],
       [w("morgen", 5), w("bleiben?", 6)],
-      "[uncertain: Morgen gehen. | morgen bleiben?]",
+      "[uncertain: earlier: Morgen gehen. | later: morgen bleiben?]",
     ],
     [
       [w("cannot", 5)],
       [w("can", 5), w("not", 5.5)],
-      "[uncertain: cannot | can not]",
+      "[uncertain: earlier: cannot | later: can not]",
     ],
   ])
     assertReviewReadings(reviewFixture(earlier, later), expected, {
@@ -681,12 +727,12 @@ test("Sol exact crossing contradiction marks can while send remains definite", (
   const earlier = [w("cannot", 7.6, 7.9)];
   const later = [w("can", 7.6, 8.2), w("send", 8.5, 8.8)];
   const s = reviewFixture(earlier, later, undefined, 6);
-  assertReviewReadings(s, "[uncertain: cannot | can] send", {
+  assertReviewReadings(s, "[uncertain: earlier: cannot | later: can] send", {
     earlierWithTail: [...earlier, later[1]],
     later,
   });
   s.add([w("can", 0, 0.2), w("send", 0.5, 0.8), w("now", 1)], 8, 12);
-  assert.equal(s.text(), "[uncertain: cannot | can] send now");
+  assert.equal(s.text(), "[uncertain: earlier: cannot | later: can] send now");
 });
 
 test("Sol German exact timed interior run appears once between separate disputed gaps", () => {
@@ -699,14 +745,14 @@ test("Sol German exact timed interior run appears once between separate disputed
   const s = reviewFixture(earlier, later, retry);
   assertReviewReadings(
     s,
-    "[uncertain: stellten | schmelzen] den Monitor weiter von der [uncertain: Wand. | (no words) | Wand]",
+    "[uncertain: earlier/retry: stellten | later: schmelzen] den Monitor weiter von der [uncertain: earlier: Wand. | later: (no words) | retry: Wand]",
     { earlier, later, retry },
   );
   assert.equal(s.uncertainties, 2);
 });
 
 test("exact character cap accepts complete alternatives and rejects one extra character transactionally", () => {
-  const suffix = " [uncertain: old | new]";
+  const suffix = " [uncertain: earlier: old | later: new]";
   for (const extra of [0, 1]) {
     const s = new Stitcher();
     const prefix = "x".repeat(160000 - suffix.length + extra);
@@ -736,4 +782,41 @@ test("word cap rejects complete alternatives before changing text or join counte
   assert.equal(s.text(), before);
   assert.equal(s.uncertainties, 0);
   assert.equal(s.uncertainJoins, 0);
+});
+
+test("source labels link German choices across gaps without inventing a hybrid reading", () => {
+  const readings = [
+    ["soll", "auf", "Ihrem", "Computer", "bleiben."],
+    ["wollen", "auf", "deinem", "Computer", "bleiben?"],
+    ["soll", "auf", "deinem", "Computer", "bleiben."],
+  ];
+  const result = renderUncertainty(readings);
+  assert.equal(
+    result.text,
+    "[uncertain: earlier/retry: soll | later: wollen] auf [uncertain: earlier: Ihrem | later/retry: deinem] Computer [uncertain: earlier/retry: bleiben. | later: bleiben?]",
+  );
+  for (const [index, reading] of readings.entries())
+    assert.ok(
+      reconstructs(result.text, reading, ["earlier", "later", "retry"][index]),
+    );
+  assert.equal(
+    reconstructs(
+      result.text,
+      ["wollen", "auf", "Ihrem", "Computer", "bleiben."],
+      "later",
+    ),
+    false,
+  );
+});
+
+test("identical or empty disputed readings retain all source labels", () => {
+  for (const reading of [[], ["same", "words."]]) {
+    const result = renderUncertainty([reading, reading, reading]);
+    assert.equal(
+      result.text,
+      `[uncertain: earlier/later/retry: ${reading.join(" ") || "(no words)"}]`,
+    );
+    for (const source of ["earlier", "later", "retry"])
+      assert.ok(reconstructs(result.text, reading, source));
+  }
 });
