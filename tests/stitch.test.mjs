@@ -54,8 +54,18 @@ test("old words ending before the next audio window remain valid committed conte
   s.add([w("alpha", 1), w("anchor", 3), w("tail", 4)], 4, 10);
   assert.equal(s.text(), "earlier alpha anchor tail");
 });
+test("a left-clipped word is prior context, not wholly observed fresh audio", () => {
+  const edge = new Stitcher();
+  edge.add(
+    [w("behind", 27, 27.34), w("the", 27.34, 27.58), w("table", 27.58, 27.86)],
+    0,
+    31.16,
+  );
+  edge.add([w("the", 0, 0.32), w("table", 0.32, 0.7)], 27.16, 31.66);
+  assert.equal(edge.text(), "behind the table");
+});
 for (const common of [[w("anchor", 7)], [w("in", 6.6), w("the", 7)]]) {
-  test(`a corrected word before later common tokens (${common.map((x) => x.text).join(" ")}) must not revert silently`, () => {
+  test(`a corrected word before later common tokens (${common.map((x) => x.text).join(" ")}) uses the old spelling for a time-coincident substitution`, () => {
     const s = new Stitcher();
     s.add([w("alpha", 5), w("wrong", 5.5), ...common], 0, 8);
     const fresh = [
@@ -64,12 +74,12 @@ for (const common of [[w("anchor", 7)], [w("in", 6.6), w("the", 7)]]) {
       ...common,
       w("tail", 8),
     ].map((word) => ({ ...word, start: word.start - 4, end: word.end - 4 }));
-    assert.throws(() => s.add(fresh, 4, 10), /align all words/);
+    s.add(fresh, 4, 10);
     assert.equal(
       s.text(),
-      ["alpha", "wrong", ...common.map((x) => x.text)].join(" "),
+      ["alpha", "wrong", ...common.map((x) => x.text), "tail"].join(" "),
     );
-    assert.equal(s.anchors, 0);
+    assert.equal(s.anchors, 1);
   });
 }
 test("a later anchor cannot silently delete a newly recovered overlap negation", () => {
@@ -111,6 +121,63 @@ test("timestamp anchors join boundary words and retain final punctuation", () =>
   );
   assert.equal(s.text(), "Hello international cooperation. Finish.");
   assert.equal(s.anchors, 1);
+});
+test("equal word counts do not permit a substitution in a different acoustic span", () => {
+  const s = new Stitcher();
+  s.add([w("alpha", 5), w("old", 5.5), w("anchor", 7)], 0, 8);
+  assert.throws(
+    () =>
+      s.add(
+        [w("alpha", 1), w("new", 2.1), w("anchor", 3), w("tail", 4)],
+        4,
+        10,
+      ),
+    /align all words/,
+  );
+});
+test("saved synthetic trace permits for/four substitution and corrected letter/label tail", () => {
+  const s = new Stitcher();
+  const old = [
+    ["and", 43, 43.2],
+    ["the", 43.2, 43.38],
+    ["largest", 43.38, 43.72],
+    ["for", 43.72, 44],
+    ["folded", 44, 44.32],
+    ["instructions.", 44.32, 45.16],
+    ["Each", 45.16, 45.86],
+    ["box", 45.86, 46.1],
+    ["received", 46.1, 46.52],
+    ["a", 46.52, 46.82],
+    ["handwritten", 46.82, 47.14],
+    ["letter.", 47.14, 47.14],
+  ];
+  const fresh = [
+    ["the", 43.16, 43.32],
+    ["largest", 43.32, 43.72],
+    ["four", 43.72, 44.02],
+    ["folded", 44.02, 44.34],
+    ["instructions.", 44.34, 45.24],
+    ["Each", 45.64, 45.84],
+    ["box", 45.84, 46.06],
+    ["received", 46.06, 46.5],
+    ["a", 46.5, 46.78],
+    ["handwritten", 46.78, 47.16],
+    ["label.", 47.16, 47.6],
+  ];
+  s.add(
+    old.map(([text, start, end]) => w(text, start - 31.16, end - 31.16)),
+    31.16,
+    47.16,
+  );
+  s.add(
+    fresh.map(([text, start, end]) => w(text, start - 43.16, end - 43.16)),
+    43.16,
+    48.18,
+  );
+  assert.equal(
+    s.text(),
+    "and the largest for folded instructions. Each box received a handwritten label.",
+  );
 });
 test("genuine repetitions at different times are not collapsed by token equality", () => {
   const s = new Stitcher();

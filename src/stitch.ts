@@ -61,18 +61,35 @@ export class Stitcher {
         previous = current;
       }
       if (anchor) {
-        // Every fresh word discarded by this splice must belong to the matched
-        // contiguous run. A later anchor alone cannot justify dropping a word
-        // newly recovered earlier in the overlap (including a negation).
-        const firstOldInWindow = this.words.findIndex((w) => w.end > start);
-        const matchedOldStart = anchor[0] - bestRun + 1;
-        // Symmetrically, an old-only word inside this audio window cannot be
-        // retained before the anchor without agreement from the fresh decode.
-        // Words ending before the fresh window remain outside its jurisdiction.
-        if (
-          bestRun !== anchor[1] + 1 ||
-          (firstOldInWindow >= 0 && firstOldInWindow < matchedOldStart)
-        )
+        // Align both prefixes monotonically without insertions or deletions.
+        // A one-for-one substitution is allowed only in the same acoustic span;
+        // keep the old spelling through the anchor, then accept the fresh tail.
+        const oldStart = anchor[0] - anchor[1];
+        // A word starting before the new audio is clipped prior context: the
+        // fresh decode did not receive the whole word and cannot confirm it.
+        const firstOldInWindow = this.words.findIndex((w) => w.start >= start);
+        let aligned =
+          oldStart >= 0 &&
+          !(firstOldInWindow >= 0 && firstOldInWindow < oldStart);
+        for (let j = 0; aligned && j <= anchor[1]; j++) {
+          const old = this.words[oldStart + j]!;
+          const fresh = next[j]!;
+          const delta = Math.abs(
+            (old.start + old.end - fresh.start - fresh.end) / 2,
+          );
+          const intersection =
+            Math.min(old.end, fresh.end) - Math.max(old.start, fresh.start);
+          const shorter = Math.min(
+            old.end - old.start,
+            fresh.end - fresh.start,
+          );
+          aligned =
+            delta <= 0.8 &&
+            Boolean(token(old.text) && token(fresh.text)) &&
+            (token(old.text) === token(fresh.text) ||
+              (shorter > 0 && intersection >= shorter / 2));
+        }
+        if (!aligned)
           throw new Error(
             "Faster-Whisper could not align all words at a chunk boundary; no complete transcript is available",
           );
