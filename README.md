@@ -59,7 +59,7 @@ is selected as verified. Review and edit these spans before Send; nothing is sen
 automatically.
 
 `overlapRetry` defaults provisionally to `false` for lower inference load: two
-readings, no extra overlap inference. The five-minute quality tradeoff is unknown.
+readings, no extra overlap inference. The same-build synthetic pair supports this choice; broader quality remains unqualified.
 Opting in permits one at-most-20-second wider-context decode per ambiguous seam,
 within the existing Stop deadline. A retry touching or crossing a prior seal is
 skipped, leaving the two ordinary readings marked. It may add a third labeled reading; measured
@@ -108,19 +108,19 @@ Remove the obsolete `maxAudioSeconds` and `snapshotIntervalSeconds` keys when
 upgrading; they now fail config validation. Window/queue sizes are internal tested
 constants, not knobs that promise longer support merely by accepting more bytes.
 
-| Setting           | Default   | Meaning                                                                              |
-| ----------------- | --------- | ------------------------------------------------------------------------------------ |
-| `python`          | required  | Absolute executable in the dedicated environment                                     |
-| `modelPath`       | required  | Absolute provisioned local model directory                                           |
-| `model`           | `medium`  | Catalog label matching those model files                                             |
-| `device`          | `cuda`    | Explicit `cuda` or `cpu`                                                             |
-| `computeType`     | `float16` | Also `int8_float16`, `int8`, `float32`; must be supported                            |
-| `beamSize`        | 5         | 1–5; benchmark before changing                                                       |
-| `overlapRetry`    | `false`   | Provisional load choice; `true` enables bounded re-decode; long quality cost unknown |
-| `idleSeconds`     | 120       | 1–3600 before child/model eviction                                                   |
-| `loadTimeoutMs`   | 90000     | Cold startup budget, at most 120000                                                  |
-| `decodeTimeoutMs` | 15000     | Individual chunk decode budget                                                       |
-| `finalTimeoutMs`  | 4500      | Total final drain budget, at most 4500                                               |
+| Setting           | Default   | Meaning                                                                        |
+| ----------------- | --------- | ------------------------------------------------------------------------------ |
+| `python`          | required  | Absolute executable in the dedicated environment                               |
+| `modelPath`       | required  | Absolute provisioned local model directory                                     |
+| `model`           | `medium`  | Catalog label matching those model files                                       |
+| `device`          | `cuda`    | Explicit `cuda` or `cpu`                                                       |
+| `computeType`     | `float16` | Also `int8_float16`, `int8`, `float32`; must be supported                      |
+| `beamSize`        | 5         | 1–5; benchmark before changing                                                 |
+| `overlapRetry`    | `false`   | Synthetic pair supports off; `true` enables retry; broader quality unqualified |
+| `idleSeconds`     | 120       | 1–3600 before child/model eviction                                             |
+| `loadTimeoutMs`   | 90000     | Cold startup budget, at most 120000                                            |
+| `decodeTimeoutMs` | 15000     | Individual chunk decode budget                                                 |
+| `finalTimeoutMs`  | 4500      | Total final drain budget, at most 4500                                         |
 
 ## Develop and verify
 
@@ -172,30 +172,25 @@ synthetic eSpeak NG audio from self-authored scripts. Hashes are in
 `fixtures/public/manifest.json` and `fixtures/public/long-manifest.json`.
 They do not establish real microphone or dialect quality.
 
-The paired rapid retry comparison (`72ca434`) delivered5/5 with both policies.
-Visible WER was unchanged at34/142 (23.94%). Disabling retry reduced marker text
-from211 to178 characters, CER from19.24% to17.02%, and retry decode from4231ms
-tozero. Host peak VRAM was2829/2797MiB (on/off). Latency favored off, but normal
-decode also ran faster; this single pair does not isolate a stable speedup.
+Independent QA on clean `925cf98` supplies a same-build paired retry comparison.
+Rapid off/on both deliver5/5 with visible WER23.94%; marker characters178/211 and
+retry decode0/2332ms. Both paced five-minute runs complete300s/34windows with
+intact audio hashes and no Send.
 
-Previous no-retry candidate `fddd592` then completed300 seconds/34 windows through
-the paced stock-code harness: provider final924ms, composer insertion5037ms,
-no Send, exact audio hashes. Eight joins/25 spans contain1280 marker characters.
-Visible WER/CER are28.64%/24.85%, including labels/alternatives; five repeated-phrase
-inserted words remain. Final20 errors13, final5 exact. Retry work iszero; peak
-host VRAM2829MiB. This single five-minute run is not a paired retry-quality test.
+| Five-minute visible draft           |       Retry off |        Retry on |
+| ----------------------------------- | --------------: | --------------: |
+| WER / CER                           | 28.64% / 24.85% | 29.30% / 28.38% |
+| Marker characters                   |            1280 |            1496 |
+| Retry decode                        |            0 ms |         7086 ms |
+| Provider final / composer insertion |   753 / 5010 ms |  1331 / 5007 ms |
 
-The lower-work default is provisional: equal rapid WER does not establish no
-quality cost on longer speech. A same-build, same-renderer paired retry-on/off
-five-minute test after the seal fixes is required before making that claim.
-**Quality/usability acceptance remains rejected.**
-No real browser/Gateway/microphone or Swiss-German qualification is claimed.
-See the [paired experiment](research/overlap-retry-comparison.md) and historical
-[results](research/LONG-DURATION-RESULTS.md). All drafts still need review.
-The earlier witness guard (`293c521`) passed5/5 rapid finals with identical
-text/scores. The stricter next-window frontier and retry-start gate now pass 111 Node/18 Python
-tests; no new GPU run was performed. Prior recordings do not qualify its
-completion rate.
+Default off is supported **for this synthetic fixture**; retry remains configurable.
+Do not infer general quality/microphone gains or a VRAM benefit from host-wide
+telemetry. Both drafts still have13 final-20 edits and5 repeated inserted words.
+Quality remains experimental; usability, real browser/mic, Swiss German and60-minute
+recording are unqualified. Stock host30-minute expiry remains a blocker.
+See the [paired evidence](research/overlap-retry-comparison.md) and
+[historical results](research/LONG-DURATION-RESULTS.md). All drafts need review.
 
 After provisioning the dedicated runtime/model and a local profile, build and
 validate fixture manifests, then run the five approximately 20-second fixtures

@@ -1,11 +1,24 @@
 # Long dictation: preliminary measured results
 
-Retry-off remains a **provisional load-oriented default**, not a validated
-five-minute quality choice. Labeled off175/611 versus historical unlabeled
-on131/611 is not a fair comparison. Equal rapid WER does not establish no long
-quality cost. A same-build, same-renderer long pair after both P1 seal guards is
-still missing; the switch remains configurable. No new run for this correction.
+## Final paired QA — clean `925cf98`
 
+The same-build/same-renderer comparison is now available after the seal, retry-
+frontier and terminal-window fixes. [Full paired table and caveats](overlap-retry-comparison.md).
+Rapid off/on: 5/5 each, WER34/142 (23.94%) each, marker chars178/211, retry
+work0/2332ms. Paced five-minute off/on: both300s/34windows; visible WER175/611
+(28.64%)/179/611 (29.30%), CER24.85%/28.38%,25 markers each,1280/1496chars.
+Retry work0/7086ms (0/8 retries), normal decode26870/24582ms, provider final
+753/1331ms, stock insertion5010/5007ms. Both have13 final-20 edits and5 repeated
+inserted words, exact audio hashes and no Send. Peak host VRAM2829/2797MiB is
+not isolated; do not infer a VRAM benefit.
+
+Keep default off for this synthetic fixture; preserve opt-in retry. No general
+recognition, human-review or mic gains follow from this pair. Quality remains
+experimental; real browser/mic, Swiss German and60 minutes are unqualified.
+Stock host30-minute expiry remains a blocker. Ledger IDs final-off-rapid,
+final-on-rapid,final-off-five,final-on-five. No new GPU or live changes were made
+to persist this independently supplied evidence. Earlier statuses below describe
+historical builds and do not override this same-build comparison.
 
 ## Sealed-overlap evidence guard — clean `293c521`
 
@@ -18,7 +31,6 @@ CER153/899 (17.02%),four spans/178chars,zero retries,max final799ms.
 Nine stock checks and package/loader checks pass. Keep the guard, reject quality
 acceptance. No five-minute rerun; prior five-minute results do not qualify the
 new conservative failure behavior. Ledger entry: seal-proof-rapid.
-
 
 ## No-retry policy — paired rapid `72ca434`, paced default `fddd592`
 
@@ -36,7 +48,6 @@ No fresh labeled retry-on five-minute comparator: do not interpret older scores
 as a measured ASR gain/loss caused by disabling retry. Keep reduced-work default,
 reject quality/usability acceptance. Ledger: retry-on-rapid, retry-off-rapid,
 retry-off-five. Synthetic fixtures and simulated capture/RPC remain limitations.
-
 
 ## Linked source labels — clean `f558a9a`
 
@@ -60,7 +71,6 @@ No new paced five-minute run after the rapid regression. Historical five-minute
 results below do not qualify this labeled format. Seven actual-stock no-send
 checks and fixture/package/format/extracted native-loader checks pass. No live
 Gateway/core/UI/config changes, no microphone or dialect qualification.
-
 
 ## Atomic Word surfaces — clean `3eabf11`
 
@@ -93,7 +103,6 @@ not real browser/Gateway/microphone or Swiss-German validation. Full local resul
 remain ignored; append-only ledger entries `long-atomic-rapid`/`long-atomic-five`
 contain hashes and metrics. 79 Node/18 Python and seven stock no-send checks pass;
 package/fixture/format and extracted native-loader checks pass.
-
 
 Status: experimental implementation ready for review; not release or microphone acceptance.
 All speech here is self-authored, non-looped eSpeak NG synthesis transported as
@@ -597,11 +606,11 @@ Initial screens are dirty-tree experiments with per-artifact hashes in the
 append-only [ledger](experiments.jsonl). They are development evidence, not a
 clean-release comparison. The same five 20-second fixtures were used throughout.
 
-| Profile | Finals | Pooled WER / CER | Decision |
-| --- | --- | --- | --- |
-| Whole-utterance medium/float16/beam5 | 5/5 | 19.72% / 11.90% | Comparator only; mixed-language omissions |
-| 8-second / 2-second overlap | 4/5 | Incomparable successful subset | Reject: German seam failure |
-| 16-second / 4-second overlap | 5/5 | 19.01% / 11.12% | Retain for exploration, reject quality acceptance |
+| Profile                              | Finals | Pooled WER / CER               | Decision                                          |
+| ------------------------------------ | ------ | ------------------------------ | ------------------------------------------------- |
+| Whole-utterance medium/float16/beam5 | 5/5    | 19.72% / 11.90%                | Comparator only; mixed-language omissions         |
+| 8-second / 2-second overlap          | 4/5    | Incomparable successful subset | Reject: German seam failure                       |
+| 16-second / 4-second overlap         | 5/5    | 19.01% / 11.12%                | Retain for exploration, reject quality acceptance |
 
 The 16/4 profile had 11 deletions in the mixed fixture and failed its final-five-word
 check. German had seven substitutions and one insertion. English had one
@@ -669,7 +678,6 @@ and yields zero last-20-word edits; this is an offline diagnostic, not a new pac
 latency run. A corrected five-minute replay is required before accepting the fix's
 whole-path result. The first debug feeder attempt hit backpressure because it did
 not await an automatically scheduled job; it is recorded as inconclusive.
-
 
 ## Corrected five-minute milestone and final rapid regression
 

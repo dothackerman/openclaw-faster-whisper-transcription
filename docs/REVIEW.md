@@ -1,5 +1,16 @@
 # Kappa review handoff: long dictation
 
+Latest evidence: independent clean `925cf98` same-build retry-off/on rapid and
+paced five-minute pairs are persisted in the append-only ledger. Both long runs
+complete300s/34windows with exact audio hashes and no Send. Visible off/on
+WER28.64%/29.30%, CER24.85%/28.38%, marker characters1280/1496, retry decode
+0/7086ms. Default off is supported on this synthetic fixture; the switch remains.
+This supersedes earlier notes that a same-build long pair was missing. See the
+[paired table](../research/overlap-retry-comparison.md). Historical qualification
+notes below remain tied to their stated commits. No general quality/mic/VRAM gain,
+real-browser or60-minute qualification; stock30-minute expiry remains a blocker.
+This update changes documentation/evidence only and runs no new GPU experiment.
+
 Current branch implements OG's continuous-dictation choice. No short recording
 cap remains. No core/UI patch, live install, host config edit, Gateway restart,
 credential use, or push was performed. This remains an experimental prototype.

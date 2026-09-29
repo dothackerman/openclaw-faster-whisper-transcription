@@ -1,6 +1,60 @@
 # Paired overlap-retry comparison
 
-## Plan
+## Final same-build paired evidence — `925cf98`
+
+Independent QA supplied four clean runs from
+`925cf985884956a47bea726815eb5833aeef3cf4`. Artifact metadata and recorded source
+hashes match; each pair uses identical model, fixture manifest and harness hashes,
+with only `overlapRetry` changed. Scores include the complete visible draft,
+including labels and every alternative. Raw outputs and score files remain local.
+
+| Rapid (five fixtures)        |       Retry off |        Retry on |
+| ---------------------------- | --------------: | --------------: |
+| Successful finals            |             5/5 |             5/5 |
+| Visible word edits / WER     | 34/142 / 23.94% | 34/142 / 23.94% |
+| Visible CER                  |          17.02% |          19.24% |
+| Markers / characters         |         4 / 178 |         4 / 211 |
+| Retry decode                 |            0 ms |         2332 ms |
+| Normal decode                |         6796 ms |         7158 ms |
+| Warm final p95 (exploratory) |          658 ms |         1590 ms |
+| Peak host VRAM               |        2797 MiB |        2797 MiB |
+
+| Paced five-minute stock-source composer  |        Retry off |         Retry on |
+| ---------------------------------------- | ---------------: | ---------------: |
+| Duration / normal windows                |       300 s / 34 |       300 s / 34 |
+| Visible word edits / WER                 | 175/611 / 28.64% | 179/611 / 29.30% |
+| Visible CER                              |           24.85% |           28.38% |
+| Markers / characters                     |        25 / 1280 |        25 / 1496 |
+| Retries / extra decode                   |         0 / 0 ms |      8 / 7086 ms |
+| Normal decode                            |         26870 ms |         24582 ms |
+| Provider final latency                   |           753 ms |          1331 ms |
+| Composer insertion latency               |          5010 ms |          5007 ms |
+| Peak host VRAM                           |         2829 MiB |         2797 MiB |
+| Final-20 edits / repeated inserted words |           13 / 5 |           13 / 5 |
+
+Both long runs preserve fixture/input/relay audio SHA-256
+`e5e30c6d5c59062dcbc52ee7fddf0335e9111fab425ec17fa381db2299da5255`
+and report no Send. Their overall harness final-return times are approximately
+5011/5008 ms (off/on), distinct from the insertion timings above. GPU memory and
+utilization are host-wide, not isolated to the plugin; infer no VRAM win. Decode
+milliseconds measure wall time, not isolated GPU kernel cost. One pair does not
+establish population-level latency or quality differences.
+
+**Decision: keep default off for these synthetic fixtures; retain the configurable
+switch.** Retry adds work and editorial text without a measured benefit here.
+Do not generalize this to ASR or human-review quality gains. Quality remains
+experimental and usability acceptance is not established. This is a paced
+stock-source harness with simulated capture/DOM/RPC, not real browser/Gateway/mic
+validation. Swiss German and 60-minute recording remain unqualified; the stock
+host's 30-minute expiry is still a blocker.
+
+Append-only ledger IDs: `final-off-rapid`, `final-on-rapid`, `final-off-five`,
+`final-on-five`. Local artifacts use those names with `.json` and `-score.json`.
+The evidence update runs no new GPU experiment and changes no runtime or Gateway
+configuration. Earlier nonpaired/other-renderer results below remain historical;
+the missing same-build long pair noted there is now supplied by this section.
+
+## Historical plan
 
 Compare explicit `overlapRetry: true` and `false` on the same clean implementation,
 medium float16 beam5, local dedicated runtime/model, same five synthetic rapid
@@ -67,7 +121,7 @@ OUTPUT 1 chunked` and `scripts/score_long.py OUTPUT`. For the paced composer mod
 use the README's stock-source harness invocation and five-minute manifest. Run
 serially; retain the paired raw outputs privately and ledger hashes publicly.
 
-## QA qualification correction
+## Historical QA qualification correction
 
 The no-retry five-minute run uses the labeled renderer:175/611 word edits
 (28.64%), CER24.85%,25 spans/1280 marker characters, final20 edits13. Historical
