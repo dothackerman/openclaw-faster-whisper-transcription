@@ -1,6 +1,6 @@
 # Long-duration stock-browser dictation contract (OpenClaw 2026.9.6)
 
-Observed 2026-09-29 in the active service target `/home/oriol/openclaw-v2026.9.6-prepared` at commit [`d30287734dee7ab3d86b216777c11ea195a021b8`](https://github.com/openclaw/openclaw/tree/d30287734dee7ab3d86b216777c11ea195a021b8); `openclaw --version` reports 2026.9.6. This is source analysis, not a live microphone test. User requirement: no practical recording cap; if a technical ceiling is unavoidable, 60 minutes; use 20 seconds for rapid tests and five minutes for end-to-end acceptance.
+Observed 2026-09-29 in the locally active OpenClaw 2026.9.6 source checkout at commit [`d30287734dee7ab3d86b216777c11ea195a021b8`](https://github.com/openclaw/openclaw/tree/d30287734dee7ab3d86b216777c11ea195a021b8); `openclaw --version` reports 2026.9.6. This is source analysis, not a live microphone test. User requirement: no practical recording cap; if a technical ceiling is unavoidable, 60 minutes; use 20 seconds for rapid tests and five minutes for end-to-end acceptance.
 
 ## Decisive host limits
 
