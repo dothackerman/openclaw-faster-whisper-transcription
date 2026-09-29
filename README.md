@@ -96,18 +96,19 @@ Remove the obsolete `maxAudioSeconds` and `snapshotIntervalSeconds` keys when
 upgrading; they now fail config validation. Window/queue sizes are internal tested
 constants, not knobs that promise longer support merely by accepting more bytes.
 
-| Setting           | Default   | Meaning                                                   |
-| ----------------- | --------- | --------------------------------------------------------- |
-| `python`          | required  | Absolute executable in the dedicated environment          |
-| `modelPath`       | required  | Absolute provisioned local model directory                |
-| `model`           | `medium`  | Catalog label matching those model files                  |
-| `device`          | `cuda`    | Explicit `cuda` or `cpu`                                  |
-| `computeType`     | `float16` | Also `int8_float16`, `int8`, `float32`; must be supported |
-| `beamSize`        | 5         | 1–5; benchmark before changing                            |
-| `idleSeconds`     | 120       | 1–3600 before child/model eviction                        |
-| `loadTimeoutMs`   | 90000     | Cold startup budget, at most 120000                       |
-| `decodeTimeoutMs` | 15000     | Individual chunk decode budget                            |
-| `finalTimeoutMs`  | 4500      | Total final drain budget, at most 4500                    |
+| Setting           | Default   | Meaning                                                                    |
+| ----------------- | --------- | -------------------------------------------------------------------------- |
+| `python`          | required  | Absolute executable in the dedicated environment                           |
+| `modelPath`       | required  | Absolute provisioned local model directory                                 |
+| `model`           | `medium`  | Catalog label matching those model files                                   |
+| `device`          | `cuda`    | Explicit `cuda` or `cpu`                                                   |
+| `computeType`     | `float16` | Also `int8_float16`, `int8`, `float32`; must be supported                  |
+| `beamSize`        | 5         | 1–5; benchmark before changing                                             |
+| `overlapRetry`    | `true`    | Experimental bounded overlap re-decode; `false` keeps two labeled readings |
+| `idleSeconds`     | 120       | 1–3600 before child/model eviction                                         |
+| `loadTimeoutMs`   | 90000     | Cold startup budget, at most 120000                                        |
+| `decodeTimeoutMs` | 15000     | Individual chunk decode budget                                             |
+| `finalTimeoutMs`  | 4500      | Total final drain budget, at most 4500                                     |
 
 ## Develop and verify
 

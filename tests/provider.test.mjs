@@ -25,10 +25,13 @@ function fixture(t, overrides = {}) {
       stops++;
     },
   };
-  const runtime = new Runtime({ ...config, ...overrides }, (cb) => {
-    crash = cb;
-    return decoder;
-  });
+  const runtime = new Runtime(
+    { ...config, overlapRetry: true, ...overrides },
+    (cb) => {
+      crash = cb;
+      return decoder;
+    },
+  );
   t.after(() => runtime.dispose());
   const session = runtime.provider().createSession({
     providerConfig: {},
@@ -496,4 +499,33 @@ test("wall ceiling loses decoded text and suppresses a late in-flight result", a
   f.session.close();
   assert.equal(f.events.length, 1);
   assert.equal(f.stops, 1);
+});
+
+test("disabled overlap retry preserves negation and provenance without another GPU job", async (t) => {
+  const f = fixture(t, { overlapRetry: false });
+  await f.session.connect();
+  f.session.sendAudio(Buffer.alloc(128000));
+  f.jobs[0].resolve([word("Do", 13), word("not", 13.5), word("send", 15)]);
+  await tick();
+  f.session.sendAudio(Buffer.alloc(96000));
+  f.session.close();
+  f.jobs[1].resolve([word("Do", 1), word("send", 3), word("tail", 10)]);
+  await tick();
+  assert.equal(f.jobs.length, 2);
+  assert.equal(f.runtime.metrics.retries, 0);
+  assert.equal(f.runtime.metrics.retrySkipped, 1);
+  assert.deepEqual(f.runtime.metrics.retryDecodeMs, []);
+  assert.deepEqual(f.events, [
+    ["final", "Do [uncertain: earlier: not | later: (no words)] send tail"],
+  ]);
+});
+
+test("overlapRetry accepts only an explicit boolean", () => {
+  for (const overlapRetry of ["false", 0, 1, null])
+    assert.throws(() => parseConfig({ ...config, overlapRetry }), /boolean/);
+  for (const overlapRetry of [true, false])
+    assert.equal(
+      parseConfig({ ...config, overlapRetry }).overlapRetry,
+      overlapRetry,
+    );
 });

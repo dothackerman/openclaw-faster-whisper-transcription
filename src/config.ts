@@ -9,6 +9,7 @@ export type Config = {
   device: "cuda" | "cpu";
   computeType: "float16" | "int8_float16" | "int8" | "float32";
   beamSize: number;
+  overlapRetry: boolean;
   idleSeconds: number;
   loadTimeoutMs: number;
   decodeTimeoutMs: number;
@@ -19,6 +20,7 @@ export const defaults = {
   device: "cuda",
   computeType: "float16",
   beamSize: 5,
+  overlapRetry: true,
   idleSeconds: 120,
   loadTimeoutMs: 90000,
   decodeTimeoutMs: 15000,
@@ -63,6 +65,8 @@ export function parseConfig(raw: Record<string, unknown>): Config {
     if (typeof n !== "number" || !Number.isFinite(n) || n < min || n > max)
       throw new Error(`Invalid ${key}`);
   }
+  if (typeof c.overlapRetry !== "boolean")
+    throw new Error("overlapRetry must be a boolean");
   if (!Number.isInteger(c.beamSize))
     throw new Error("beamSize must be an integer");
   return c as Config;

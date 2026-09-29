@@ -58,6 +58,11 @@
         "minimum": 100,
         "maximum": 4500,
         "default": 4500
+      },
+      "overlapRetry": {
+        "type": "boolean",
+        "default": true,
+        "description": "One bounded wider-context decode for ambiguous overlaps; false preserves two labeled readings without extra inference."
       }
     }
   }

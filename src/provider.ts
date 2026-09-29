@@ -149,6 +149,7 @@ export class Runtime {
             // One wider-context retry, only when it adds retained audio. During
             // Stop reserve enough of the existing budget; never extend it.
             if (
+              this.config.overlapRetry &&
               previousAudio.length &&
               retryStart < start &&
               previousStart + previousAudio.length >= start &&
