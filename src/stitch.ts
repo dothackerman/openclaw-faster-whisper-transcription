@@ -114,6 +114,11 @@ export class Stitcher {
   uncertainJoins = 0;
   anchors = 0;
   gaps = 0;
+  // Audio starts are derived from integer PCMU sample offsets by the provider.
+  // A retry touching the seal is unsafe too (zero-duration words are valid).
+  canRetryFrom(startSeconds: number): boolean {
+    return Number.isFinite(startSeconds) && startSeconds > this.sealedUntil;
+  }
   // Time coverage alone is never proof that a fresh word was already rendered.
   // Keep bounded witnesses for the last seal. Suppression must reconstruct the
   // covered prefix from ONE labeled reading with exact surfaces and timed order.

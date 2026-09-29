@@ -7,6 +7,27 @@ hypothesis evidence. Exact reproduction: old7.6–7.9, fresh broad7.6–12, then
 recovered11.6–11.8 plus future12.5–12.7. The old filter returned only future.
 This P1 also affects a broad retry word. Passing rapid fixtures did not negate it.
 
+## Retry-start boundary
+
+Ordinary-window monotonicity does not apply to the optional wider-context retry.
+The provider now additionally requires `retryStart / 8000 > sealedUntil` before
+allocating or decoding retry audio. retryStart is an integer PCMU byte/sample
+offset. Equality is rejected too, covering zero-duration words at the frontier.
+A crossing/touching retry is skipped; the ordinary earlier/later readings remain
+labeled. This does not discard observed retry evidence: the unsafe decode is never
+launched. If evidence nevertheless reaches add or marking through a bypass, the
+existing bounded witness guard still rejects any unaccounted recovered word.
+
+Adversary: first seal ends at 23.5, next ordinary window starts at 24 and conflicts at 25;
+its wider retry would start at 20 and could recover not@21. The opt-in provider test
+asserts that this retry is not launched, the ordinary conflict stays marked, and
+only the first safe retry is counted. A direct retry-only not@21 test requires
+both add and markUncertain to throw without mutation. A boundary test checks one
+PCMU sample before, exactly at, and one sample after the seal, plus invalid values
+and reset. 103 Node/18 Python tests pass. Default off is unchanged. No GPU run,
+quality claim, live change or push; prior opt-in retry measurements predate this
+additional eligibility restriction.
+
 ## Strict next-window frontier
 
 The provider now passes `safeNextStart = (start + advance) / 8000`, computed
@@ -21,8 +42,9 @@ check to the existing closure.
 Ordinary subsequent windows begin at or beyond that frontier. Worker validation
 requires nonnegative relative starts and end >= start (zero duration is allowed).
 Their words therefore end strictly after sealedUntil and cannot disappear in its
-time filter. Optional wider-context retry decodes intentionally look backward;
-the bounded single-reading witness guard below remains a second defense for them.
+time filter. Optional wider-context retry decodes can look backward only without reaching
+the seal; the retry-start gate above enforces this. The bounded single-reading
+witness guard below remains a second defense for bypassed or rewound callers.
 An incorrectly rewound caller likewise fails instead of silently discarding words.
 
 Exact 6..12 window/nextStart11.5 cases: broad ending12 or11.5 throws without

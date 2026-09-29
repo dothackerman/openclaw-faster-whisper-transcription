@@ -573,3 +573,35 @@ test("pause endpoint passes its half-second-overlap frontier rather than window 
   assert.equal(f.runtime.metrics.uncertainJoins, 0);
   assert.equal(f.stops, 1);
 });
+
+test("retry opt-in skips a later wider decode crossing a previous marked seal", async (t) => {
+  const f = fixture(t, { overlapRetry: true });
+  await f.session.connect();
+  f.session.sendAudio(Buffer.alloc(128000));
+  f.jobs[0].resolve([word("old", 15.6, 15.9)]);
+  await tick();
+  f.session.sendAudio(Buffer.alloc(96000));
+  f.jobs[1].resolve([word("broad", 3.6, 11.5), word("oldtail", 13, 13.2)]);
+  await tick();
+  assert.equal(f.jobs.length, 3);
+  // First retry starts8 and is allowed; it seals through23.5, below next start24.
+  f.jobs[2].resolve([word("broad", 7.6, 15.5), word("oldtail", 17, 17.2)]);
+  await tick();
+  assert.equal(f.runtime.metrics.uncertainJoins, 1);
+  f.session.sendAudio(Buffer.alloc(96000));
+  f.session.close();
+  f.jobs[3].resolve([word("newtail", 1, 1.2), word("future", 13, 13.2)]);
+  await tick();
+  // The proposed retry would begin20 <= seal23.5. It must never be launched:
+  // a hypothetical new not@21 cannot be decoded and then discarded as sealed.
+  assert.equal(f.jobs.length, 4);
+  assert.equal(f.runtime.metrics.retries, 1);
+  assert.equal(f.runtime.metrics.retrySkipped, 1);
+  assert.equal(f.runtime.metrics.uncertainJoins, 2);
+  assert.deepEqual(f.events, [
+    [
+      "final",
+      "[uncertain: earlier: old | later/retry: broad] [uncertain: earlier: oldtail | later: newtail] future",
+    ],
+  ]);
+});

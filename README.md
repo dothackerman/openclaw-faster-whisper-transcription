@@ -59,7 +59,8 @@ automatically.
 
 `overlapRetry` defaults to `false`: two readings, no extra overlap inference.
 Opting in permits one at-most-20-second wider-context decode per ambiguous seam,
-within the existing Stop deadline. It may add a third labeled reading; measured
+within the existing Stop deadline. A retry touching or crossing a prior seal is
+skipped, leaving the two ordinary readings marked. It may add a third labeled reading; measured
 rapid tests did not justify its GPU work or establish human-review benefit.
 
 Only the initial fresh prefix can anchor an unmarked splice; its full suffix remains fresh,
@@ -187,7 +188,7 @@ No real browser/Gateway/microphone or Swiss-German qualification is claimed.
 See the [paired experiment](research/overlap-retry-comparison.md) and historical
 [results](research/LONG-DURATION-RESULTS.md). All drafts still need review.
 The earlier witness guard (`293c521`) passed5/5 rapid finals with identical
-text/scores. The stricter next-window frontier now passes100 Node/18 Python
+text/scores. The stricter next-window frontier and retry-start gate now pass 103 Node/18 Python
 tests; no new GPU run was performed. Prior recordings do not qualify its
 completion rate.
 

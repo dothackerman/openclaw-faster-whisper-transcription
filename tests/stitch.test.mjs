@@ -959,3 +959,39 @@ test("frontier closure includes long retry and pause-window half-second overlap"
   );
   assert.equal(pause.text(), "old");
 });
+
+test("retry start must be strictly after the seal at PCMU sample precision", () => {
+  const s = new Stitcher();
+  s.add([w("old", 7.6, 7.9)], 0, 8);
+  s.markUncertain([w("broad", 1.6, 2.25)], 6, 12, 11.5);
+  const boundarySample = 8.25 * 8000;
+  assert.equal(s.canRetryFrom((boundarySample - 1) / 8000), false);
+  assert.equal(s.canRetryFrom(boundarySample / 8000), false);
+  assert.equal(s.canRetryFrom((boundarySample + 1) / 8000), true);
+  assert.equal(s.canRetryFrom(Infinity), false);
+  assert.equal(s.canRetryFrom(NaN), false);
+  s.clear();
+  assert.equal(s.canRetryFrom(0), true);
+});
+
+test("retry-only recovered negation in a prior seal cannot become a successful omission", () => {
+  const s = new Stitcher();
+  s.add([w("old", 15.6, 15.9)], 0, 16);
+  s.markUncertain([w("broad", 3.6, 11.5), w("oldtail", 13, 13.2)], 12, 28, 24);
+  const later = [w("newtail", 1, 1.2), w("future", 13, 13.2)];
+  assert.throws(() => s.add(later, 24, 40), /align/);
+  const retry = [w("not", 1, 1.2), w("newtail", 5, 5.2), w("future", 17, 17.2)];
+  assert.equal(s.canRetryFrom(20), false);
+  const before = s.text();
+  // Even a caller bypassing the skip cannot add or mark this observed evidence
+  // while filtering out not@21 inside the prior sealed interval.
+  assert.throws(
+    () => s.add(retry, 20, 40),
+    /conflicting words inside a sealed overlap/,
+  );
+  assert.throws(
+    () => s.markUncertain(later, 24, 40, 36, { words: retry, start: 20 }),
+    /conflicting words inside a sealed overlap/,
+  );
+  assert.equal(s.text(), before);
+});

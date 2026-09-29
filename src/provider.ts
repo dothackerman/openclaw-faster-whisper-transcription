@@ -152,6 +152,7 @@ export class Runtime {
               this.config.overlapRetry &&
               previousAudio.length &&
               retryStart < start &&
+              stitch.canRetryFrom(retryStart / AUDIO_BYTES_PER_SECOND) &&
               previousStart + previousAudio.length >= start &&
               finalDeadline - performance.now() >= Math.max(500, decodeMs * 1.5)
             ) {

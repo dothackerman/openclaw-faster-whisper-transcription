@@ -1,7 +1,9 @@
 # Long dictation implementation and experiment plan
 
 Sealing additionally requires strict `seamEnd < (start + advance) / 8000` using
-actual provider advance, after crossing closure and before mutation. This covers
+actual provider advance, after crossing closure and before mutation.
+Opt-in wider retries additionally require their integer-sample start to be
+strictly after sealedUntil; otherwise skip the decode and mark ordinary readings. This covers
 fixed and pause windows, including zero-duration words at the next start. A
 violation fails explicitly; final windows receive no exemption. Optional retries
 that look backward still require bounded single-reading witnesses before filtering

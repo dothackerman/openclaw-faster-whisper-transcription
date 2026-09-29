@@ -45,7 +45,7 @@ See [source evidence](../research/long-duration-implementation.md),
 
 ## Verification
 
-- 100 Node and 18 Python deterministic tests pass, including maximum worker framing,
+- 103 Node and 18 Python deterministic tests pass, including maximum worker framing,
   independent audio/time ceilings at 60 minutes, serial overlap/tail draining,
   queue overload, pre-ready frames, cancellation, timeout, OOM/crash, disposal,
   invalid word timestamps, repeated-word seams, silence endpoints, and edit scoring.
@@ -193,3 +193,9 @@ chosen advance; connected seal must end strictly before it, including retry
 words. Exact11.49/11.5/12 cases, zero-duration words and the actual pause endpoint
 pass. Non-AlignmentError rejects before mutation. Backward-retry witnesses remain
 as a second defense.100 Node/18 Python tests pass; no new GPU qualification.
+
+Retry frontier correction: opt-in retry starts must be strictly after the seal;
+integer sample offsets are converted once for the comparison. A touching or
+crossing retry is skipped, preserving two labeled ordinary readings. Tests cover
+the later-conflict/new-negation adversary, direct bypass rejection, and adjacent
+samples/equality. 103 Node/18 Python tests pass. No GPU requalification is claimed.
