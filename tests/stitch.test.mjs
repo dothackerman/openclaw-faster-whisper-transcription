@@ -605,3 +605,135 @@ test("atomic marker surfaces preserve case and literal brackets", () => {
   s.markUncertain([w("morgen [A]", 1, 3)], 4, 10);
   assert.equal(s.text(), "[uncertain: Morgen [A] | morgen [A]]");
 });
+
+// Review fixtures use absolute times. Convert only at the provider API boundary;
+// keep each candidate's exact surface and original Word boundaries intact.
+function reviewFixture(earlier, later, retry, start = 4) {
+  const relative = (words) =>
+    words.map((word) => ({
+      ...word,
+      start: word.start - start,
+      end: word.end - start,
+    }));
+  const stitcher = new Stitcher();
+  stitcher.add(earlier, 0, 8);
+  stitcher.markUncertain(
+    relative(later),
+    start,
+    10,
+    retry ? { words: relative(retry), start } : undefined,
+  );
+  return stitcher;
+}
+function assertReviewReadings(stitcher, expected, readings) {
+  assert.equal(stitcher.text(), expected);
+  for (const [label, words] of Object.entries(readings))
+    assert.ok(
+      reconstructs(
+        expected,
+        words.map((word) => word.text.normalize("NFC")),
+      ),
+      label,
+    );
+}
+
+test("Sol exact negation alternatives reconstruct earlier/later/retry with common words once", () => {
+  const earlier = [w("Do", 5), w("not", 5.5), w("send", 7)];
+  const later = [w("Do", 5), w("send", 7)];
+  const s = reviewFixture(earlier, later, earlier);
+  assertReviewReadings(s, "Do [uncertain: not | (no words)] send", {
+    earlier,
+    later,
+    retry: earlier,
+  });
+});
+
+test("Sol exact repetition preserves both very readings", () => {
+  const earlier = [w("very", 5), w("very", 5.5), w("clear", 7)];
+  const later = [w("very", 5), w("clear", 7)];
+  assertReviewReadings(
+    reviewFixture(earlier, later),
+    "[uncertain: very very | very] clear",
+    { earlier, later },
+  );
+});
+
+test("Sol exact case/punctuation and one-versus-two Word alternatives remain distinct", () => {
+  for (const [earlier, later, expected] of [
+    [
+      [w("Morgen", 5), w("gehen.", 6)],
+      [w("morgen", 5), w("bleiben?", 6)],
+      "[uncertain: Morgen gehen. | morgen bleiben?]",
+    ],
+    [
+      [w("cannot", 5)],
+      [w("can", 5), w("not", 5.5)],
+      "[uncertain: cannot | can not]",
+    ],
+  ])
+    assertReviewReadings(reviewFixture(earlier, later), expected, {
+      earlier,
+      later,
+    });
+});
+
+test("Sol exact crossing contradiction marks can while send remains definite", () => {
+  const earlier = [w("cannot", 7.6, 7.9)];
+  const later = [w("can", 7.6, 8.2), w("send", 8.5, 8.8)];
+  const s = reviewFixture(earlier, later, undefined, 6);
+  assertReviewReadings(s, "[uncertain: cannot | can] send", {
+    earlierWithTail: [...earlier, later[1]],
+    later,
+  });
+  s.add([w("can", 0, 0.2), w("send", 0.5, 0.8), w("now", 1)], 8, 12);
+  assert.equal(s.text(), "[uncertain: cannot | can] send now");
+});
+
+test("Sol German exact timed interior run appears once between separate disputed gaps", () => {
+  const common = ["den", "Monitor", "weiter", "von", "der"].map((text, i) =>
+    w(text, 5.5 + i * 0.3, 5.7 + i * 0.3),
+  );
+  const earlier = [w("stellten", 5), ...common, w("Wand.", 7.2)];
+  const later = [w("schmelzen", 5), ...common];
+  const retry = [w("stellten", 5), ...common, w("Wand", 7.2)];
+  const s = reviewFixture(earlier, later, retry);
+  assertReviewReadings(
+    s,
+    "[uncertain: stellten | schmelzen] den Monitor weiter von der [uncertain: Wand. | (no words) | Wand]",
+    { earlier, later, retry },
+  );
+  assert.equal(s.uncertainties, 2);
+});
+
+test("exact character cap accepts complete alternatives and rejects one extra character transactionally", () => {
+  const suffix = " [uncertain: old | new]";
+  for (const extra of [0, 1]) {
+    const s = new Stitcher();
+    const prefix = "x".repeat(160000 - suffix.length + extra);
+    s.add([w(prefix, 1), w("old", 7)], 0, 8);
+    const before = s.text();
+    if (extra) {
+      assert.throws(
+        () => s.markUncertain([w("new", 1)], 6, 10),
+        /safety limit/,
+      );
+      assert.equal(s.text(), before);
+      assert.equal(s.uncertainties, 0);
+      assert.equal(s.uncertainJoins, 0);
+    } else {
+      s.markUncertain([w("new", 1)], 6, 10);
+      assert.equal(s.text(), prefix + suffix);
+      assert.equal(s.text().length, 160000);
+    }
+  }
+});
+
+test("word cap rejects complete alternatives before changing text or join counters", () => {
+  const s = new Stitcher();
+  s.add([w("x ".repeat(23998).trim(), 1), w("old", 7)], 0, 8);
+  const before = s.text();
+  assert.throws(() => s.markUncertain([w("new", 1)], 6, 10), /safety limit/);
+  assert.equal(s.text(), before);
+  assert.equal(s.uncertainties, 0);
+  assert.equal(s.uncertainJoins, 0);
+});

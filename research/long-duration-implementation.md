@@ -2,6 +2,25 @@
 
 Independent architect notes; do not replace incoming researcher files.
 
+## Exact adversarial marker fixtures
+
+Added Sol's exact absolute-time review cases as deterministic API tests: old-only
+negation with a duplicate retry, repeated `very`, case/punctuation disagreements,
+one `cannot` Word versus separate `can`/`not` Words, crossing `can` with definite
+`send` tail, and the identical German interior run with terminal `Wand.`/omission/
+`Wand` alternatives. Each asserts the exact rendered string and reconstruction
+of every named source reading from common text and choices. For the crossing
+case, the earlier reading is reconstructed with the newly accepted definite tail;
+a subsequent window proves the sealed contradiction does not duplicate or drop it.
+Earlier/later/retry label the test readings; the existing compact UI choice format
+is retained without repeating these labels in every marker.
+
+Character-cap tests accept exactly160000 characters and reject one more before
+mutation. Word-cap rejection also preserves text and both uncertainty counters.
+All86 Node/18 Python tests pass. This is test-only coverage of production commit
+`3eabf11`, with no semantic relaxation and no new GPU measurements. Its existing
+rapid/five-minute scores and rejected quality acceptance remain unchanged.
+
 ## Atomic ASR word rendering follow-up
 
 The review against the historical 37.64% five-minute result correctly identifies
