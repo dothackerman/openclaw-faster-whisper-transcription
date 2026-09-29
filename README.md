@@ -124,8 +124,9 @@ The GitHub workflow runs deterministic checks; these exact-source integration
 smokes additionally require a prepared host checkout. The first public CI run
 failed because an ad-hoc npm install omitted the optional host peer. The locked
 development dependency fixed that failure; Kappa confirmed public CI passed for
-rc1. The newer rc2 chunked implementation has local validation and awaits Kappa's
-review/push and its own public CI result. See [SDK development](docs/SDK-DEVELOPMENT.md).
+rc1. **rc2 has not been pushed and has no public CI result yet.** Its deterministic
+checks pass locally, but current GPU qualification fails (details below).
+Kappa reviews before publication. See [SDK development](docs/SDK-DEVELOPMENT.md).
 
 ## Evaluate
 
@@ -136,10 +137,27 @@ synthetic eSpeak NG audio from self-authored scripts. Hashes are in
 `fixtures/public/manifest.json` and `fixtures/public/long-manifest.json`.
 They do not establish real microphone or dialect quality.
 
+Current rc2 evidence: 4/5 rapid finals; the German clip fails reconciliation.
+The five-minute fixture fails after 49.152 seconds of accepted audio. These
+commands reproduce evaluation, not a claim of supported five-minute dictation.
+
+After provisioning the dedicated runtime/model and a local profile, build and
+validate fixture manifests, then run the five approximately 20-second fixtures
+through the current chunked provider:
+
 ```sh
+npm run build
+npm run fixtures:check
 node scripts/experiment.mjs /absolute/local/profile.json fixtures/public/rapid-manifest.json .local/rapid.json 1 chunked
-node scripts/experiment.mjs /absolute/local/profile.json fixtures/public/rapid-manifest.json .local/whole.json 1 whole
 .venv/bin/python scripts/score_long.py .local/rapid.json
+```
+
+For a matched short-fixture comparator, use the evaluation-only whole-utterance
+decoder. It accepts at most 30 seconds and is not the production provider:
+
+```sh
+node scripts/experiment.mjs /absolute/local/profile.json fixtures/public/rapid-manifest.json .local/whole.json 1 whole
+.venv/bin/python scripts/score_long.py .local/whole.json
 ```
 
 For the five-minute in-process stock-composer/relay replay, export
@@ -150,9 +168,13 @@ node --import "$OPENCLAW_SOURCE/node_modules/tsx/dist/loader.mjs" scripts/experi
 .venv/bin/python scripts/score_long.py .local/five.json
 ```
 
-The `whole` comparator is limited to 30-second fixtures and uses the same model
-without word timestamps or stitching. The old looping `duration-screen.mjs` is
-retired; historical results remain reproducible from their ledger commits.
+The `whole` comparator uses the same model without word timestamps or stitching.
+The five-minute `composer` mode is paced source-level integration with simulated
+DOM, microphone and RPC transport, real stock encoding/relay/controller and real
+inference. It does not test a browser engine, listening Gateway or physical mic.
+The old looping `duration-screen.mjs` deliberately throws and must not be used on
+this revision. Its [duration report](docs/DURATION-DECISION.md) is archived evidence;
+reproducing those old experiments requires their exact ledger commits.
 `scripts/trace-windows.mjs PROFILE AUDIO OUTPUT` is an unpaced diagnostic only;
 never report its timing as real-time latency. Output files refuse overwriting.
 
@@ -160,7 +182,7 @@ A profile contains the plugin config, including dedicated absolute runtime/model
 paths. Provider mode replays 100 ms frames; composer mode uses stock-sized 4096-sample
 frames with mocked capture/RPC transport and actual stock relay/controller code.
 Both run in real time, record latency and
-GPU samples, and writes detailed output **locally**. Scoring reports micro WER/CER,
+GPU samples, and write detailed output **locally**. Scoring reports micro WER/CER,
 per-language results, silence hallucinations, and exploratory percentiles. Its
 NFC/lowercase normalization preserves `ß` versus `ss`; punctuation is removed.
 First-partial latency is intentionally absent in final-only mode. Provider-final
