@@ -1,5 +1,8 @@
 # Evaluation results — 2026-09-29
 
+Historical full-utterance implementation results. Current chunked evaluation and
+acceptance limits are in [LONG-DURATION-RESULTS.md](LONG-DURATION-RESULTS.md).
+
 **Not production-qualified. No real microphone or held-out quality evaluation.**
 The append-only [ledger](experiments.jsonl) retains completed, rejected, and
 interrupted experiments with hashes, settings, runtime versions, and reasons.
@@ -67,7 +70,10 @@ These are repeated synthetic loops, not representative quality recordings. The
 beam-1 duration run had a dirty tree and is not release-selection evidence.
 See [exact lengths, timing ranges, and the chunking decision](../docs/DURATION-DECISION.md).
 Longer uninterrupted dictation is not supported merely because a buffer can hold
-it. The user's duration requirement remains pending.
+it. OG has since decided on continuous dictation with no short recording cap and
+a 60-minute technical safety ceiling if needed. That decision supersedes this
+full-utterance screen's provisional duration policy; see the
+[chunked implementation results and remaining host limitations](LONG-DURATION-RESULTS.md).
 
 ## Resource lifetime
 
@@ -80,8 +86,9 @@ of every host GPU sample to the plugin.
 
 ## Remaining acceptance work
 
-- Resolve required uninterrupted duration; implement and compare internal chunking
-  if reliable longer dictation is required.
+- Duration is decided and internal chunking implemented and compared. Safe
+  hour-long recording still requires separately scoped host lifecycle changes
+  and qualification; it is not supported by the stock host.
 - Real browser capture and editable insertion with each actual mic; this cannot
   be replaced by the mocked-capture stock-controller regression.
 - Consented private English/German/mixed and Swiss German recordings, with held-out

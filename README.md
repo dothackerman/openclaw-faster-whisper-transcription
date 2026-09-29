@@ -119,8 +119,9 @@ managed disposal, actual relay final drain, and stock composer insertion/no-send
 The GitHub workflow runs deterministic checks; these exact-source integration
 smokes additionally require a prepared host checkout. The first public CI run
 failed because an ad-hoc npm install omitted the optional host peer. The locked
-development dependency fixes the locally reproduced failure; the updated public
-workflow awaits Kappa's review and push. See [SDK development](docs/SDK-DEVELOPMENT.md).
+development dependency fixed that failure; Kappa confirmed public CI passed for
+rc1. The newer rc2 chunked implementation has local validation and awaits Kappa's
+review/push and its own public CI result. See [SDK development](docs/SDK-DEVELOPMENT.md).
 
 ## Evaluate
 

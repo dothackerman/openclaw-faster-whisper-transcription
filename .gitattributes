@@ -1,0 +1,11 @@
+# Audio is binary: never apply text normalization, textual diffs, or text merges.
+*.ulaw binary
+*.wav binary
+*.mp3 binary
+*.ogg binary
+*.flac binary
+*.m4a binary
+*.webm binary
+*.aac binary
+*.pcm binary
+*.raw binary
