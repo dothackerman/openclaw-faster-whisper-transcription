@@ -156,6 +156,13 @@ synthetic eSpeak NG audio from self-authored scripts. Hashes are in
 `fixtures/public/manifest.json` and `fixtures/public/long-manifest.json`.
 They do not establish real microphone or dialect quality.
 
+Current labeled-choice candidate (`f558a9a`) completes 5/5 rapid fixtures, with
+four spans/211 marker characters. Visible WER/CER are 23.94%/19.24%, versus
+18.31%/10.90% before labels. Removing only source labels reproduces the preceding
+texts exactly: added editorial overhead, not a recognition change. Both retries
+remain marked. Keep the source-identity safeguard, but quality acceptance remains
+rejected. No new five-minute run was performed after this short-screen regression.
+
 The previous measured candidate (`3eabf11`) passes the crossing-word seal, exact NFC
 surface and unique/timed-anchor regressions. Rapid screening completed first:
 5/5 finals, two uncertain joins/four spans/123 marker characters, zero repeated-phrase

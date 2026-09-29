@@ -44,7 +44,7 @@ See [source evidence](../research/long-duration-implementation.md),
 
 ## Verification
 
-- 86 Node and 18 Python deterministic tests pass, including maximum worker framing,
+- 88 Node and 18 Python deterministic tests pass, including maximum worker framing,
   independent audio/time ceilings at 60 minutes, serial overlap/tail draining,
   queue overload, pre-ready frames, cancellation, timeout, OOM/crash, disposal,
   invalid word timestamps, repeated-word seams, silence endpoints, and edit scoring.
@@ -71,7 +71,7 @@ See [source evidence](../research/long-duration-implementation.md),
   tests cover nonempty insertion, silence and exact uncertainty-marker text with no send through the actual
   relay and stock encoding/controller. The fake-clock TTL test proves the 30-minute
   host obstacle. Native loader/catalog/disposal passes on the extracted npm artifact.
-  After the atomic-Word candidate `3eabf11`, package build/check and extracted-artifact loader were rerun
+  After the labeled-choice candidate `f558a9a`, package build/check and extracted-artifact loader were rerun
   sequentially and passed; no concurrent `dist` rebuild occurred during loading.
   Source was read-only.
 - Published SDK remains an exact locked development dependency; no stub or vendored
@@ -93,7 +93,7 @@ See [source evidence](../research/long-duration-implementation.md),
   failed at window #24 after 212.480 seconds. Subsequent `036514b` and `565b9d1`
   completed with one/two markers but still silently discarded old-only words
   after a valid first anchor. `a6911b9` protects old-only words; `ab6422c` adds
-  localized choices. Current clean `3eabf11` additionally seals crossing words
+  localized choices. Previous clean `3eabf11` additionally seals crossing words
   into the alternative, retains atomic NFC Word surfaces and punctuation/case choices and hoists
   only unique, monotone, time-compatible common text. Rapid passed first: 5/5,
   two joins/four spans/123 characters, zero repeated-phrase insertions, visible
@@ -111,6 +111,17 @@ See [source evidence](../research/long-duration-implementation.md),
   normal decode (29.7% extra wall time). Host GPU samples cannot isolate retry
   cost. A third reading may aid review, but its value remains unvalidated; no
   quality, latency or default-policy improvement is inferred.
+
+Current `f558a9a` preserves source labels across every disputed gap; exact
+alternatives merge labels instead of losing source identity. Reconstruction tests
+select a consistent label, including omissions and fallback. Rapid5/5 delivered;
+four spans/211 characters; visible WER34/142 (23.94%), CER173/899 (19.24%).
+Removing labels yields the preceding `3eabf11` texts exactly. German23/35 edits,
+English6/74 (boundary exact), mixed5/33, silence0 words. No repeated-phrase
+insertions. Both retries remain marked, costing3555ms. Maximum final latency3016ms.
+This is extra editorial overhead, not a quality gain. Keep semantic safeguard,
+reject quality acceptance; no new paced five-minute run after rapid regression.
+The five-minute numbers above are historical and do not qualify this format.
 
 ## Experiment and public-data boundary
 

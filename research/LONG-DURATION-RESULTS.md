@@ -1,5 +1,29 @@
 # Long dictation: preliminary measured results
 
+## Linked source labels — clean `f558a9a`
+
+Every disputed gap now preserves earlier/later/retry identity; identical exact
+alternatives merge their labels. This prevents independent gap choices from
+masquerading as one decoder's full hypothesis. Tests reconstruct all readings by
+consistent source selection, including omissions and bounded fallback. This
+supersedes the unlabeled editorial format below;88 Node/18 Python tests pass.
+
+Fresh rapid result:5/5 finals, two joins/four spans/211 marker characters;
+WER34/142 (23.94%), CER173/899 (19.24%). The preceding atomic-surface format
+scored26/142 and98/899. Removing only labels reproduces all five preceding texts
+exactly; the difference is editorial overhead, not ASR quality. German23/35 edits,
+English6/74 including an exact boundary fixture, mixed5/33, silence0 words.
+Zero repeated-phrase insertions; two retries, neither resolving, total3555ms;
+maximum final3016ms. Detailed metrics and hashes are in append-only ledger entry
+`long-labeled-rapid`; raw run remains local.
+
+**Keep the source-identity safeguard, reject quality/usability acceptance.**
+No new paced five-minute run after the rapid regression. Historical five-minute
+results below do not qualify this labeled format. Seven actual-stock no-send
+checks and fixture/package/format/extracted native-loader checks pass. No live
+Gateway/core/UI/config changes, no microphone or dialect qualification.
+
+
 ## Atomic Word surfaces — clean `3eabf11`
 
 The renderer now treats each timed ASR Word as one exact NFC surface, preserving

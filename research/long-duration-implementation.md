@@ -21,6 +21,14 @@ Python tests pass. Plan: clean rapid scoring of the added editorial overhead.
 Prior unlabeled five-minute scores remain historical; no recognition benefit is
 expected or claimed. Avoid another paced run if the short screen regresses.
 
+Completed clean `f558a9a`: rapid5/5, two joins/four spans/211 characters.
+Visible WER34/142 and CER173/899 regress from26/142 and98/899. Removing only
+source labels reproduces each of the five previous drafts exactly. Both retries
+remain marked (3555ms total); maximum final3016ms. Keep source identity, reject
+quality acceptance. No additional five-minute run after short-screen regression.
+Seven stock no-send checks and format/fixtures/package/extracted-loader checks
+pass. No core/UI/live changes; results logged in `long-labeled-rapid`.
+
 ## Exact adversarial marker fixtures
 
 Added Sol's exact absolute-time review cases as deterministic API tests: old-only
