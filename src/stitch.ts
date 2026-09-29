@@ -125,6 +125,16 @@ export class Stitcher {
   // Missing proof is a fatal conflict, not an AlignmentError eligible for marking
   // over immutable text (which would otherwise discard the fresh evidence again).
   private unsealed(words: Word[]): Word[] {
+    // A straddling word is neither proven replay nor definite new tail. Even
+    // matching spelling cannot justify appending it after competing sealed text.
+    if (
+      words.some(
+        (word) => word.start < this.sealedUntil && word.end > this.sealedUntil,
+      )
+    )
+      throw new Error(
+        "Faster-Whisper word straddles a sealed overlap; no complete transcript is available",
+      );
     const covered = words.filter((word) => word.end <= this.sealedUntil);
     if (
       covered.length &&

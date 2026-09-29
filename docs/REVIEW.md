@@ -45,7 +45,7 @@ See [source evidence](../research/long-duration-implementation.md),
 
 ## Verification
 
-- 103 Node and 18 Python deterministic tests pass, including maximum worker framing,
+- 105 Node and 18 Python deterministic tests pass, including maximum worker framing,
   independent audio/time ceilings at 60 minutes, serial overlap/tail draining,
   queue overload, pre-ready frames, cancellation, timeout, OOM/crash, disposal,
   invalid word timestamps, repeated-word seams, silence endpoints, and edit scoring.
@@ -206,3 +206,8 @@ five-minute quality parity. The labeled off run (175/611 edits,1280 marker chars
 and historical unlabeled on run (131/611,947 chars) are not comparable. Require a
 same-build/same-renderer paired long test after the P1 guards before asserting
 no long quality cost. Configurable true remains available. No new long run here.
+
+Straddling-word defense: a later word starting before and ending after a seal
+fails before replay filtering or tail append, including no-tail, conflicting
+negation and retry bypass cases. Exact repeated can is not printed as definite
+after its marker.105 Node/18 Python tests pass; no GPU qualification added.

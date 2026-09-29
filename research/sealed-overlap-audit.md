@@ -7,6 +7,26 @@ hypothesis evidence. Exact reproduction: old7.6–7.9, fresh broad7.6–12, then
 recovered11.6–11.8 plus future12.5–12.7. The old filter returned only future.
 This P1 also affects a broad retry word. Passing rapid fixtures did not negate it.
 
+## Straddling-word defense
+
+The prior witness predicate covered only words ending at/before sealedUntil.
+A rewound caller could supply can@8.1–8.5 after a cannot/can marker sealed
+through8.2; with no active tail the word was appended as definite can. Provider
+normal-window and retry-start gates prevent that scheduling path, but the stitcher
+must reject the evidence itself too. Before either replay filtering or tail
+selection, unsealed now throws a non-AlignmentError whenever
+`word.start < sealedUntil && word.end > sealedUntil`. Matching spelling alone
+cannot prove that appending a straddling word is safe. This check covers add,
+markUncertain and its retry alternatives before state changes.
+
+Exact no-tail can/cannot/not regressions assert error and unchanged text/counters.
+Additional tests cover active tail, direct marking and retry bypasses, followed
+by valid future-tail insertion. Existing fully covered, witnessed replay tests
+continue to pass.105 Node/18 Python tests pass. No GPU run or quality acceptance;
+conservative failure can still lose the current session draft. The original
+review's three-argument mark call is adapted to the now-required explicit next-
+window frontier; this does not weaken either scheduling guard.
+
 ## Retry-start boundary
 
 Ordinary-window monotonicity does not apply to the optional wider-context retry.

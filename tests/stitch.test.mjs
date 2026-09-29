@@ -995,3 +995,49 @@ test("retry-only recovered negation in a prior seal cannot become a successful o
   );
   assert.equal(s.text(), before);
 });
+
+test("exact no-tail straddling duplicate or contradiction fails before appending definite text", () => {
+  for (const text of ["can", "cannot", "not"]) {
+    const s = new Stitcher();
+    s.add([w("cannot", 7.6, 7.9)], 0, 8);
+    // Explicit frontier argument added since the review's older API.
+    s.markUncertain([w("can", 1.6, 2.2)], 6, 10, 10);
+    const before = "[uncertain: earlier: cannot | later: can]";
+    assert.equal(s.text(), before);
+    assert.throws(
+      () => s.add([w(text, 0.1, 0.5)], 8, 12),
+      /word straddles a sealed overlap/,
+    );
+    assert.equal(s.text(), before);
+    assert.equal(s.uncertainJoins, 1);
+    assert.equal(s.uncertainties, 1);
+  }
+});
+
+test("straddling evidence cannot bypass rejection through marking or retry alternatives", () => {
+  const s = new Stitcher();
+  s.add([w("cannot", 7.6, 7.9)], 0, 8);
+  s.markUncertain([w("can", 1.6, 2.2), w("tail", 2.5, 2.8)], 6, 10, 10);
+  const before = s.text();
+  assert.throws(
+    () => s.add([w("can", 0.1, 0.5), w("future", 2)], 8, 12),
+    /straddles/,
+  );
+  assert.throws(
+    () => s.markUncertain([w("not", 0.1, 0.5)], 8, 12, 11.5),
+    /straddles/,
+  );
+  assert.throws(
+    () =>
+      s.markUncertain([w("future", 1)], 10, 14, 13, {
+        start: 8,
+        words: [w("not", 0.1, 0.5), w("future", 3)],
+      }),
+    /straddles/,
+  );
+  assert.equal(s.text(), before);
+  assert.equal(s.uncertainJoins, 1);
+  // A distinct word strictly beyond the frontier is still ordinary new audio.
+  s.add([w("tail", 0.5, 0.8), w("future", 2)], 8, 12);
+  assert.equal(s.text(), before + " future");
+});
