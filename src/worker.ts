@@ -1,6 +1,7 @@
 import { spawn, type ChildProcessWithoutNullStreams } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import type { Config } from "./config.js";
+import { MAX_AUDIO_BYTES, MAX_REQUEST_BYTES } from "./limits.js";
 
 export interface Decoder {
   start(): Promise<void>;
@@ -106,6 +107,10 @@ export class Worker implements Decoder {
     );
   }
   decode(audio: Buffer): Promise<string> {
+    if (!audio.length || audio.length > MAX_AUDIO_BYTES)
+      return Promise.reject(
+        new Error("Faster-Whisper audio exceeded limit or was empty"),
+      );
     return this.request(
       { op: "decode", audio: audio.toString("base64") },
       this.config.decodeTimeoutMs,
@@ -117,7 +122,7 @@ export class Worker implements Decoder {
         new Error("Faster-Whisper worker unavailable or busy"),
       );
     const line = JSON.stringify(payload) + "\n";
-    if (Buffer.byteLength(line) > 1300000)
+    if (Buffer.byteLength(line) > MAX_REQUEST_BYTES)
       return Promise.reject(new Error("Faster-Whisper request exceeded limit"));
     return new Promise((resolve, reject) => {
       const timer = setTimeout(

@@ -2,6 +2,7 @@ import { existsSync } from "node:fs";
 import type { RealtimeTranscriptionProviderPlugin } from "openclaw/plugin-sdk/plugin-entry";
 import { PROVIDER, type Config } from "./config.js";
 import { Worker, type Decoder } from "./worker.js";
+import { AUDIO_BYTES_PER_SECOND } from "./limits.js";
 
 type Request = Parameters<
   RealtimeTranscriptionProviderPlugin["createSession"]
@@ -159,7 +160,9 @@ export class Runtime {
         state = "connecting";
         this.active = owner;
         clearTimeout(this.idle);
-        buffer = Buffer.alloc(Math.ceil(this.config.maxAudioSeconds * 8000));
+        buffer = Buffer.alloc(
+          Math.ceil(this.config.maxAudioSeconds * AUDIO_BYTES_PER_SECOND),
+        );
         connectPromise = (async () => {
           try {
             await this.stopping;

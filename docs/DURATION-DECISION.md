@@ -6,6 +6,24 @@ bounded short-dictation prototype, **not qualified for 30–120 second dictation
 The provisional 15-second default is a conservative engineering setting supported
 only by the limited synthetic timing screen below, not accepted microphone usability.
 
+## Technical capacity regression check
+
+The schema/runtime ceiling is experimental transport capacity, not a duration
+recommendation. At that ceiling, 120 × 8000 = **960,000 mu-law bytes** become
+**1,280,027 bytes** in the Node JSON decode line, including its newline. Both
+workers bound framing at **1,284,096 bytes** (base64 capacity plus 4096 bytes for
+JSON overhead); Python independently rejects audio beyond 960,000 bytes. Node
+rejects oversized audio before base64 encoding. The earlier 330,000-byte frame
+and 240,000-byte audio limits are no longer present.
+
+`tests/bounds.test.mjs` sends the full maximum through the production provider,
+Node subprocess transport, and Python request parser/base64 validation, checking
+the final byte count and SHA-256. It also tests a frame crossing the cap by one
+byte. `tests/test_worker_protocol.py` independently tests Python's exact maximum,
+one-byte overflow before audio decoding, and oversized framing. The inference
+backend is substituted in these tests: they prove transport acceptance and bounds,
+**not decoding quality, GPU latency, or 120-second dictation support**.
+
 ## Measured counterexample
 
 Medium CUDA float16, full-utterance final decode, automatic language detection,

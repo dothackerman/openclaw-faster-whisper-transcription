@@ -10,8 +10,11 @@ import sysconfig
 from pathlib import Path
 
 logging.disable(logging.CRITICAL)
-MAX_LINE = 1300000
-MAX_AUDIO = 960000
+# Transport capacity, not a qualified dictation duration. Mirrored in src/limits.ts.
+AUDIO_BYTES_PER_SECOND = 8000
+MAX_AUDIO_SECONDS = 120
+MAX_AUDIO = MAX_AUDIO_SECONDS * AUDIO_BYTES_PER_SECOND
+MAX_LINE = 4 * ((MAX_AUDIO + 2) // 3) + 4096
 
 
 def decode_mulaw(data):

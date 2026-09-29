@@ -36,7 +36,9 @@ There is no automatic CPU fallback or private-audio retry. Linux parent-death
 signaling also terminates the worker if its Gateway parent exits unexpectedly.
 
 **Uninterrupted duration is not yet qualified.** The provisional audio cap is
-15 seconds, with an experimental buffer bound configurable up to 120. At the cap, accepted
+15 seconds. The schema's higher values are experimental buffer capacity only;
+**English 30/60/120-second synthetic stress cases fail the final deadline (3/3 each)**.
+At the cap, accepted
 audio is finalized and a duration notice stops capture. Longer limits do not
 imply reliable completion: the provider has only **4.5 seconds** to finalize within
 OpenClaw's five-second drain. See the [duration decision and exact stress failures](docs/DURATION-DECISION.md)
@@ -50,7 +52,7 @@ before choosing settings. Longer dictation is not claimed as supported.
 | `device`                  | `cuda`    | Explicit `cuda` or `cpu`                                         |
 | `computeType`             | `float16` | Also `int8_float16`, `int8`, `float32`; must be supported        |
 | `beamSize`                | 5         | 1–5; benchmark before changing                                   |
-| `maxAudioSeconds`         | 15        | 1–120; cap finalizes accepted audio                              |
+| `maxAudioSeconds`         | 15        | 1–120 experimental buffer cap; not a supported-duration range    |
 | `snapshotIntervalSeconds` | 0         | Disabled; experimental internal precomputation, never UI preview |
 | `idleSeconds`             | 120       | 1–3600 before child/model eviction                               |
 | `loadTimeoutMs`           | 90000     | Cold startup budget, at most 120000                              |

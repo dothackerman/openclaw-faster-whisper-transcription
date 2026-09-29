@@ -1,4 +1,5 @@
 import { isAbsolute } from "node:path";
+import { MAX_AUDIO_SECONDS } from "./limits.js";
 
 export const ID = "faster-whisper-transcription";
 export const PROVIDER = "faster-whisper";
@@ -30,7 +31,7 @@ export const defaults = {
 } as const;
 const bounds: Record<string, [number, number]> = {
   beamSize: [1, 5],
-  maxAudioSeconds: [1, 120],
+  maxAudioSeconds: [1, MAX_AUDIO_SECONDS],
   snapshotIntervalSeconds: [0, 10],
   idleSeconds: [1, 3600],
   loadTimeoutMs: [1000, 120000],

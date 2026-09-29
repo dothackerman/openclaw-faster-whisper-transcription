@@ -1,4 +1,5 @@
 import importlib.util
+import base64
 import io
 import json
 from pathlib import Path
@@ -12,6 +13,40 @@ spec.loader.exec_module(worker)
 
 
 class ProtocolTests(unittest.TestCase):
+    def decode_request(self, length):
+        load = {'op': 'load', 'config': {'modelPath': '/tmp', 'device': 'cuda',
+                                       'computeType': 'float16', 'beamSize': 5}}
+        decode = {'op': 'decode', 'audio': base64.b64encode(bytes(length)).decode()}
+        payload = ''.join(json.dumps(r) + '\n' for r in (load, decode)).encode()
+        stdin = SimpleNamespace(buffer=io.BytesIO(payload))
+        stdout = io.StringIO()
+        modules = {'faster_whisper': SimpleNamespace(WhisperModel=lambda *a, **kw: object()),
+                   'ctranslate2': SimpleNamespace(get_supported_compute_types=lambda _: {'float16'})}
+        with patch.dict('sys.modules', modules), patch('sys.stdin', stdin), patch('sys.stdout', stdout), \
+                patch.object(worker, 'decode_mulaw', return_value=SimpleNamespace(any=lambda: False)) as decode_audio:
+            worker.main()
+        return [json.loads(line) for line in stdout.getvalue().splitlines()], decode_audio
+
+    def test_python_accepts_manifest_maximum(self):
+        manifest = json.loads((Path(__file__).resolve().parents[1] / 'openclaw.plugin.json').read_text())
+        seconds = manifest['configSchema']['properties']['maxAudioSeconds']['maximum']
+        self.assertEqual(worker.MAX_AUDIO, seconds * 8000)
+        replies, decode = self.decode_request(seconds * 8000)
+        self.assertEqual(replies, [{'ok': True, 'text': ''}] * 2)
+        self.assertEqual(len(decode.call_args.args[0]), worker.MAX_AUDIO)
+
+    def test_python_rejects_one_byte_over_capacity_before_audio_decode(self):
+        replies, decode = self.decode_request(worker.MAX_AUDIO + 1)
+        self.assertEqual(replies[-1], {'ok': False, 'error': 'worker_failed'})
+        decode.assert_not_called()
+
+    def test_python_rejects_oversized_frame(self):
+        stdout = io.StringIO()
+        stdin = SimpleNamespace(buffer=io.BytesIO(b' ' * worker.MAX_LINE + b'\n'))
+        with patch('sys.stdin', stdin), patch('sys.stdout', stdout):
+            worker.main()
+        self.assertEqual(json.loads(stdout.getvalue()), {'ok': False, 'error': 'worker_failed'})
+
     def failure(self, message):
         def load(*args, **kwargs):
             raise RuntimeError(message)

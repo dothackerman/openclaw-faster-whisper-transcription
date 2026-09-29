@@ -24,14 +24,18 @@ A duration cap finalizes accepted audio before reporting a visible limit notice.
 
 ## Exact checks performed
 
-- `npm test`: **19 Node tests pass** (about 0.4 s) and **7 Python tests pass**
-  (about 0.9 s), plus strict TypeScript compilation. Tests cover final-tail bytes,
+- `npm test`: **23 Node tests pass** and **10 Python tests pass**,
+  plus strict TypeScript compilation. Tests cover final-tail bytes,
   coalescing internal snapshots, repeated close, concurrent admission, duration cap,
   final timeout, warm reuse/idle eviction, disposal, crash/OOM, cancelled connect,
   model/config validation, cold pre-ready audio/Stop, cold drain deadline,
   real subprocess IPC/backpressure/oversized response/load timeout/missing executable,
   all 256 mu-law codewords against an independent decoder, silence/sample count,
   a 1 kHz tone, scorer normalization/edit distance, and safe Python error responses.
+  Maximum-capacity tests cross the actual provider/Node/Python protocol with all
+  960,000 bytes, verify the payload digest, retain the exact capped prefix on
+  overflow, and reject excessive audio/framing. Inference is substituted; this
+  proves technical acceptance only and does not qualify longer dictation.
 - `scripts/composer-smoke.mjs`: **3 tests pass using unmodified stock controller and
   session code** with mocked microphone/RPC. Reproduces pre-P1 stale partial insertion;
   proves full late-tail insertion/no send after the fix; proves accepted-prefix
