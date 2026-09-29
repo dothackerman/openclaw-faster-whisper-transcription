@@ -10,7 +10,11 @@ readings, emits agreed words once, and puts only intervening disputes in
 `[uncertain: option | option]` spans. Duplicate local choices disappear; missing
 text stays `(no words)`. Decoder labels are removed from this editable user text.
 All original readings remain reconstructible in order; repeated words get distinct
-positions. Multiple local choices are not a claim that every combination was
+positions. Reconstruction is lexical: case/punctuation use the first spelling,
+not byte-exact preservation of each punctuation variant. An explicit regression
+keeps `Please, do [uncertain: not | (no words)] send.` while deduplicating case and
+terminal-punctuation variants; `Do` versus `Don't` remains a disputed lexical choice.
+Multiple local choices are not a claim that every combination was
 observed by ASR, and none is selected as the correct reading.
 
 Alignment is deterministic progressive LCS, bounded to three readings/512 tokens

@@ -493,3 +493,20 @@ test("deduplication never hides uncertainty when timing alone disagrees", () => 
   assert.equal(s.text(), "[uncertain: same words]");
   assert.equal(s.uncertainties, 1);
 });
+
+test("punctuation and case share one spelling while lexical negation stays disputed", () => {
+  const result = renderUncertainty(
+    ["Please, do not send.", "Please do send!", "please, do not send?"].map(
+      (s) => s.split(" "),
+    ),
+  );
+  assert.equal(result.text, "Please, do [uncertain: not | (no words)] send.");
+  assert.equal(result.markers, 1);
+  const apostrophe = renderUncertainty([
+    ["Do", "agree", "now."],
+    ["Don't", "agree", "now!"],
+    ["don't", "agree", "now?"],
+  ]);
+  assert.equal(apostrophe.text, "[uncertain: Do | Don't] agree now.");
+  assert.equal(apostrophe.markers, 1);
+});

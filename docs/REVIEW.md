@@ -43,7 +43,7 @@ See [source evidence](../research/long-duration-implementation.md),
 
 ## Verification
 
-- 71 Node and 18 Python deterministic tests pass, including maximum worker framing,
+- 72 Node and 18 Python deterministic tests pass, including maximum worker framing,
   independent audio/time ceilings at 60 minutes, serial overlap/tail draining,
   queue overload, pre-ready frames, cancellation, timeout, OOM/crash, disposal,
   invalid word timestamps, repeated-word seams, silence endpoints, and edit scoring.
