@@ -45,8 +45,9 @@ ceiling or deadline failure return an error and **no successful truncated final*
 The total Stop drain remains **4.5 seconds**, including in-flight work.
 An ambiguous seam gets at most one bounded local overlap re-decode. If it remains
 ambiguous, final text includes localized `[uncertain: option | option]` spans
-with competing word choices; review and edit it before Send. Lexically duplicate
-readings are omitted, and agreed words appear once outside localized spans.
+with competing word choices; review and edit it before Send. Exact NFC duplicate
+readings are omitted. Only identical, unique, monotone, time-compatible words
+are hoisted outside localized spans; punctuation and case differences remain.
 A span shows word choices, e.g. `[uncertain: soll | wollen]`, without decoder labels.
 An absent reading remains explicit as `(no words)`; this never chooses a winner. Markers are never sent
 automatically and are not verified transcription. The retry shares the existing
@@ -155,7 +156,7 @@ synthetic eSpeak NG audio from self-authored scripts. Hashes are in
 `fixtures/public/manifest.json` and `fixtures/public/long-manifest.json`.
 They do not establish real microphone or dialect quality.
 
-The current candidate (`ab6422c`) first passed the rapid screen: 5/5 completions,
+The previous candidate (`ab6422c`) first passed the rapid screen: 5/5 completions,
 two uncertain joins rendered as four localized choice spans (132 characters versus
 527 in the verbose format), zero repeated-phrase insertions, visible WER/CER
 23.94% / 14.57%. Only then was the paced five-minute stock-code run performed.
@@ -170,6 +171,9 @@ Final five words are exact; the visible final-20 metric has 12 errors, affected 
 marker placement. No verified tail, general usability or release acceptance is
 claimed. Tests use actual stock code with simulated capture/RPC and real local
 GPU, not a real browser, Gateway or microphone. The draft still needs review.
+
+The crossing-word seal and exact-surface renderer require fresh screening; those
+previous measurements do not qualify the changed boundary semantics.
 
 After provisioning the dedicated runtime/model and a local profile, build and
 validate fixture manifests, then run the five approximately 20-second fixtures

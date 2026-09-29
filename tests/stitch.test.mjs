@@ -356,7 +356,7 @@ test("a conflicting old phrase is marked rather than assumed hallucinated", () =
   s.markUncertain(fresh, 6, 10);
   assert.equal(
     s.text(),
-    "These are the final words [uncertain: on | of] the recording. The [uncertain: final task was to save the draft report. | orange umbrella.]",
+    "These are [uncertain: the final] words [uncertain: on the | of the] recording. The [uncertain: final task was to save the draft report. | orange umbrella.]",
   );
 });
 
@@ -369,7 +369,7 @@ test("a suffix spelling extension cannot silently change can to cannot", () => {
   assert.equal(s.text(), "We [uncertain: can | cannot] send");
 });
 
-test("exact reviewed marker omits the lexically duplicate retry", () => {
+test("reviewed marker preserves retry punctuation while sharing exact common text", () => {
   const earlier =
     "beten die Etmas zu leiten und stellten den Monitor weiter von der Wand.";
   const later = "und schmelzen den Monitor weiter von der";
@@ -381,7 +381,7 @@ test("exact reviewed marker omits the lexically duplicate retry", () => {
   });
   assert.equal(
     s.text(),
-    "[uncertain: beten die Etmas zu leiten | (no words)] und [uncertain: stellten | schmelzen] den Monitor weiter von der [uncertain: Wand. | (no words)]",
+    "[uncertain: beten die Etmas zu leiten | (no words)] und [uncertain: stellten | schmelzen] den Monitor weiter von der [uncertain: Wand. | (no words) | Wand]",
   );
   assert.equal(s.uncertainties, 3);
   assert.equal(s.uncertainJoins, 1);
@@ -472,7 +472,7 @@ test("exact rapid English conflict never repeats the shared sentence prefix", ()
   );
   assert.equal(result.markers, 1);
 });
-test("DP boundary and linear fallback both preserve all readings", () => {
+test("anchor size boundary and whole-reading fallback preserve all readings", () => {
   assert.throws(() => renderUncertainty([[], [], [], []]), /one to three/);
   for (const size of [512, 513]) {
     const old = Array.from({ length: size }, (_, i) => `word${i}`);
@@ -494,19 +494,83 @@ test("deduplication never hides uncertainty when timing alone disagrees", () => 
   assert.equal(s.uncertainties, 1);
 });
 
-test("punctuation and case share one spelling while lexical negation stays disputed", () => {
-  const result = renderUncertainty(
-    ["Please, do not send.", "Please do send!", "please, do not send?"].map(
-      (s) => s.split(" "),
-    ),
-  );
-  assert.equal(result.text, "Please, do [uncertain: not | (no words)] send.");
-  assert.equal(result.markers, 1);
+test("surface dedup preserves Stop punctuation and case alternatives", () => {
+  const result = renderUncertainty([["Stop."], ["Stop?"], ["stop."]]);
+  assert.equal(result.text, "[uncertain: Stop. | Stop? | stop.]");
+  const nfc = renderUncertainty([["grün"], ["gru\u0308n"], ["Grün"]]);
+  assert.equal(nfc.text, "[uncertain: grün | Grün]");
   const apostrophe = renderUncertainty([
     ["Do", "agree", "now."],
     ["Don't", "agree", "now!"],
-    ["don't", "agree", "now?"],
   ]);
-  assert.equal(apostrophe.text, "[uncertain: Do | Don't] agree now.");
-  assert.equal(apostrophe.markers, 1);
+  assert.equal(
+    apostrophe.text,
+    "[uncertain: Do | Don't] agree [uncertain: now. | now!]",
+  );
+});
+test("crossing contradiction is an alternative, never definite tail or reinserted after seal", () => {
+  const s = new Stitcher();
+  s.add([w("cannot", 7.6, 7.9)], 0, 8);
+  const fresh = [w("can", 1.6, 2.2), w("tail", 2.3, 2.6)];
+  assert.throws(() => s.add(fresh, 6, 10), /align/);
+  s.markUncertain(fresh, 6, 10);
+  assert.equal(s.text(), "[uncertain: cannot | can] tail");
+  s.add([w("can", 0, 0.2), w("tail", 0.3, 0.6), w("finish", 1, 1.3)], 8, 12);
+  assert.equal(s.text(), "[uncertain: cannot | can] tail finish");
+});
+test("connected crossing group seals once while a separate following tail survives", () => {
+  const s = new Stitcher();
+  s.add([w("cannot", 7.6, 7.9)], 0, 8);
+  s.markUncertain(
+    [w("can", 1.6, 2.2), w("link", 2.1, 2.4), w("tail", 2.5, 2.8)],
+    6,
+    10,
+    { start: 6, words: [w("cannot", 1.6, 2.3)] },
+  );
+  assert.equal(s.text(), "[uncertain: cannot | can link] tail");
+  s.add(
+    [
+      w("can", 0, 0.2),
+      w("link", 0.1, 0.4),
+      w("tail", 0.5, 0.8),
+      w("finish", 1, 1.3),
+    ],
+    8,
+    12,
+  );
+  assert.equal(s.text(), "[uncertain: cannot | can link] tail finish");
+});
+test("repeated or reordered common words stay marked instead of ambiguous anchoring", () => {
+  const repeated = renderUncertainty([
+    ["same", "same", "old"],
+    ["same", "same", "new"],
+  ]);
+  assert.equal(repeated.text, "[uncertain: same same old | same same new]");
+  const reordered = renderUncertainty([
+    ["alpha", "beta", "old"],
+    ["beta", "alpha", "new"],
+  ]);
+  assert.equal(reordered.text, "[uncertain: alpha beta old | beta alpha new]");
+});
+test("unique common text requires compatible timing across all original readings", () => {
+  const input = [
+    ["shared", "old"],
+    ["shared", "new"],
+    ["shared", "old"],
+  ];
+  const aligned = [
+    [w("", 1), w("", 2)],
+    [w("", 1.1), w("", 2.1)],
+    [w("", 1.2), w("", 2.2)],
+  ];
+  assert.equal(
+    renderUncertainty(input, aligned).text,
+    "shared [uncertain: old | new]",
+  );
+  aligned[2][0] = w("", 5);
+  assert.equal(
+    renderUncertainty(input, aligned).text,
+    "[uncertain: shared old | shared new]",
+  );
+  assert.throws(() => renderUncertainty(input, [[]]), /timing/);
 });

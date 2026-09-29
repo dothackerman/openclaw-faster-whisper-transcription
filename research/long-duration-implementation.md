@@ -2,6 +2,36 @@
 
 Independent architect notes; do not replace incoming researcher files.
 
+## Crossing-word sealing and exact-surface anchors
+
+The old `end <= seamEnd` alternative partition wrongly made a fresh word crossing
+the old boundary definite tail. For old `cannot@7.6–7.9` (window end8) and fresh
+`can@7.6–8.2`, this manufactured a definite `can` after the marker. The new partition
+uses start time and extends the sealed boundary to the end of the connected
+old/fresh/retry overlap. Any word starting before the resulting boundary remains
+in an alternative; a following disjoint tail stays active. The seal suppresses
+already committed crossing words in the next window. Exact and connected-overlap
+regressions assert alternatives, following tail, no duplicate/drop, and provider
+one-final behavior through bounded retry.
+
+Renderer deduplication is now exact NFC surface, not punctuation/case-stripped
+lexical comparison. `Stop.` and `Stop?` remain separate; canonically equivalent
+Unicode strings can share a spelling. Hoisted anchors must occur exactly once in
+each original reading, occur in the same order, and have midpoint range <=0.8s
+across all original timed readings (including a surface-duplicate retry). Both
+participants in a reordered anchor pair are rejected, not arbitrarily selected
+by LCS. Repeated or incompatible common text stays visibly uncertain even when
+its spelling matches. Multi-piece ASR word objects retain their original broad
+timing; the renderer does not invent narrower spans. Standalone text-only tests
+can omit timings; the production caller always supplies them.
+
+Work is bounded to at most three readings of 512 tokens and 512² pairwise order
+checks; larger readings remain whole marked alternatives. No DP table or unbounded
+alignment is used. This supersedes prior first-spelling/LCS presentation policy;
+older measurements remain historical. Plan: 77 Node/18 Python tests, unchanged
+stock no-send checks, clean rapid screening, then decide whether a paced rerun is
+justified. Keep existing worker coverage/negation safeguards and loss disclosures.
+
 ## Localized word-choice markers
 
 Prefix/suffix-only factoring left agreed interior words repeated. The new

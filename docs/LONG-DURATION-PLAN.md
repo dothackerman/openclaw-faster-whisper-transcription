@@ -1,16 +1,20 @@
 # Long dictation implementation and experiment plan
 
-Current editorial screen: render localized word choices, with common ordered
-words shared once and no decoder labels. At most three readings of at most 512
-words use progressive longest-common-subsequence factoring; at most two 513×513
-Uint16 tables are allocated (~1 MiB total). Larger readings fall back to linear
-prefix/suffix factoring, never truncation. This is presentation only; all original
-readings must remain reconstructible. Local choices do not imply confidence or
-that every combination was produced by the decoder. Counts distinguish uncertain
-joins from actual visible spans. Run deterministic reconstruction/bounds tests and
-20-second fixtures before another paced run. Proceed to the paced run only if all
-rapid cases complete, exact omissions remain visible, and repeated agreed text is
-reduced; completion is not a quality or release gate.
+Current boundary/editorial screen: fresh words starting before the old seam end
+belong to its alternative even when they end after it. Extend sealing through
+the connected overlap of old/fresh/retry words; only words starting beyond that
+region remain tail. This avoids a crossing contradiction appearing as definite
+speech or reappearing in the next window.
+
+Render exact NFC surface choices, retaining punctuation/case distinctions. Hoist
+only words unique in each reading, monotone across every reading, and within
+0.8 seconds midpoint range across every supplied word span. Repeated, reordered
+or time-incompatible candidates stay marked. There are at most three readings,
+512 tokens each and 512² pairwise order checks; larger inputs remain as whole
+alternatives, never truncated. All production rendering receives timed words.
+Run deterministic seal/render tests and rapid fixtures first. Only consider a
+paced rerun after complete rapid finals and review of visible burden; do not
+inherit qualification from the earlier seam partition.
 
 Current uncertainty experiment: retain the preceding 16-second audio window and
 attempt at most one wider-context decode (20-second cap) per ambiguous boundary
@@ -19,8 +23,8 @@ on the same serial GPU lane. During Stop, retry only if the remaining original
 extends the deadline. A retry is unmarked only if both prior word sequences
 survive monotonically with timed matches, followed by successful reconciliation.
 Otherwise seal localized `[uncertain: option | option]` spans and continue.
-Presentation keeps each agreed ordered word once; punctuation/case follow the
-first reading. Empty choices stay `(no words)`. No preferred reading is selected.
+Presentation keeps safely agreed exact NFC surfaces once; punctuation/case
+alternatives remain distinct. Empty choices stay `(no words)`. No preferred reading is selected.
 A sole deduplicated reading still carries a marker because timing may be ambiguous.
 A skipped retry supplies no third reading. Sealed markers cannot be rewritten by
 later windows; subsequent fresh tail words remain editable.

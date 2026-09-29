@@ -6,103 +6,89 @@ const token = (s: string) =>
     .normalize("NFC")
     .toLowerCase()
     .replace(/[\p{P}\s]/gu, "");
-// Editorial alignment only, never evidence for accepting an ASR splice.
-// At most two 513×513 Uint16 DP tables (~514 KiB each, allocated sequentially).
-// Larger readings use linear prefix/suffix factoring rather than unbounded DP.
-export function renderUncertainty(input: string[][]): {
-  text: string;
-  markers: number;
-} {
+// Editorial anchors never establish which ASR reading is correct. Hoist only
+// exact NFC surfaces unique in each reading, monotone in every reading, and
+// (when supplied) within 0.8 s midpoint tolerance across ALL original readings.
+// At most 3×512 token positions and 512² pair checks; larger input stays marked.
+export function renderUncertainty(
+  input: string[][],
+  timings?: { start: number; end: number }[][],
+): { text: string; markers: number } {
   if (input.length < 1 || input.length > 3)
     throw new Error("Uncertainty rendering requires one to three readings");
-  const distinct = new Map<string, string[]>();
-  for (const words of input) {
-    const key = JSON.stringify(words.map(token));
-    if (!distinct.has(key)) distinct.set(key, words);
-  }
-  const readings = [...distinct.values()];
-  const first = readings[0] ?? [];
+  if (
+    timings &&
+    (timings.length !== input.length ||
+      timings.some((r, i) => r.length !== input[i]!.length))
+  )
+    throw new Error("Uncertainty timing does not cover each surface token");
+  const readings = input.map((r) => r.map((text) => text.normalize("NFC")));
+  const first = readings[0]!;
   const show = (words: string[]) => words.join(" ") || "(no words)";
-  if (readings.length <= 1)
-    return { text: `[uncertain: ${show(first)}]`, markers: 1 };
   let markers = 0;
   const output: string[] = [];
   const emit = (chunks: string[][]) => {
+    if (chunks.every((r) => !r.length)) return;
     const choices = new Map<string, string[]>();
     for (const chunk of chunks) {
-      const key = JSON.stringify(chunk.map(token));
+      const key = JSON.stringify(chunk);
       if (!choices.has(key)) choices.set(key, chunk);
     }
-    const unique = [...choices.values()];
-    if (unique.length === 1) output.push(unique[0]!.join(" "));
-    else {
-      output.push(`[uncertain: ${unique.map(show).join(" | ")}]`);
-      markers++;
-    }
+    output.push(`[uncertain: ${[...choices.values()].map(show).join(" | ")}]`);
+    markers++;
   };
-  if (readings.some((r) => r.length > 512)) {
-    const shortest = Math.min(...readings.map((r) => r.length));
-    let prefix = 0,
-      suffix = 0;
-    while (
-      prefix < shortest &&
-      readings.every((r) => token(r[prefix]!) === token(first[prefix]!))
-    )
-      prefix++;
-    while (
-      suffix < shortest - prefix &&
-      readings.every(
-        (r) =>
-          token(r[r.length - 1 - suffix]!) ===
-          token(first[first.length - 1 - suffix]!),
-      )
-    )
-      suffix++;
-    output.push(first.slice(0, prefix).join(" "));
-    emit(readings.map((r) => r.slice(prefix, r.length - suffix)));
-    if (suffix) output.push(first.slice(-suffix).join(" "));
-  } else {
-    const lcs = (a: string[], b: string[]) => {
-      const width = b.length + 1;
-      const table = new Uint16Array((a.length + 1) * width);
-      for (let i = a.length - 1; i >= 0; i--)
-        for (let j = b.length - 1; j >= 0; j--)
-          table[i * width + j] =
-            a[i] === b[j]
-              ? 1 + table[(i + 1) * width + j + 1]!
-              : Math.max(
-                  table[(i + 1) * width + j]!,
-                  table[i * width + j + 1]!,
-                );
-      const common: string[] = [];
-      let i = 0,
-        j = 0;
-      while (i < a.length && j < b.length) {
-        if (a[i] === b[j]) {
-          common.push(a[i]!);
-          i++;
-          j++;
-        } else if (table[(i + 1) * width + j]! >= table[i * width + j + 1]!)
-          i++;
-        else j++;
-      }
-      return common;
-    };
-    let common = first.map(token);
-    for (const r of readings.slice(1)) common = lcs(common, r.map(token));
-    const offsets = readings.map(() => 0);
-    for (const anchor of common) {
-      const positions = readings.map((r, i) =>
-        r.findIndex((w, j) => j >= offsets[i]! && token(w) === anchor),
-      );
-      emit(readings.map((r, i) => r.slice(offsets[i], positions[i])));
-      output.push(first[positions[0]!]!);
-      positions.forEach((position, i) => {
-        offsets[i] = position + 1;
-      });
-    }
-    emit(readings.map((r, i) => r.slice(offsets[i])));
+  const uniqueReadings = new Set(readings.map((r) => JSON.stringify(r)));
+  if (uniqueReadings.size === 1 || readings.some((r) => r.length > 512)) {
+    emit(readings);
+    // Even empty identical hypotheses can arrive via an ambiguous timed join.
+    if (!markers) return { text: "[uncertain: (no words)]", markers: 1 };
+    return { text: output.join(" "), markers };
   }
+  const indexes = readings.map((r) => {
+    const counts = new Map<string, number[]>();
+    r.forEach((word, i) => counts.set(word, [...(counts.get(word) ?? []), i]));
+    return counts;
+  });
+  const candidates: { positions: number[]; valid: boolean }[] = [];
+  first.forEach((word) => {
+    const occurrences = indexes.map((index) => index.get(word));
+    if (occurrences.some((positions) => positions?.length !== 1)) return;
+    const positions = occurrences.map((p) => p![0]!);
+    if (timings) {
+      const midpoints = positions.map((pos, i) => {
+        const w = timings[i]![pos]!;
+        return (w.start + w.end) / 2;
+      });
+      if (
+        midpoints.some((v) => !Number.isFinite(v)) ||
+        Math.max(...midpoints) - Math.min(...midpoints) > 0.8
+      )
+        return;
+    }
+    candidates.push({ positions, valid: true });
+  });
+  // Reject BOTH anchors participating in a reorder, rather than arbitrarily
+  // choosing one LCS tie and presenting it as agreed surrounding text.
+  for (let i = 0; i < candidates.length; i++)
+    for (let j = i + 1; j < candidates.length; j++) {
+      if (
+        candidates[i]!.positions.some(
+          (position, r) => position >= candidates[j]!.positions[r]!,
+        )
+      ) {
+        candidates[i]!.valid = false;
+        candidates[j]!.valid = false;
+      }
+    }
+  const offsets = readings.map(() => 0);
+  for (const candidate of candidates.filter((c) => c.valid)) {
+    emit(readings.map((r, i) => r.slice(offsets[i], candidate.positions[i])));
+    output.push(first[candidate.positions[0]!]!);
+    candidate.positions.forEach((position, i) => {
+      offsets[i] = position + 1;
+    });
+  }
+  emit(readings.map((r, i) => r.slice(offsets[i])));
   return { text: output.filter(Boolean).join(" "), markers };
 }
 // Only the bounded overlap can revise prior words; nothing is published early.
@@ -266,40 +252,49 @@ export class Stitcher {
       start: w.start + start,
       end: w.end + start,
     }));
-    const seamEnd = this.end;
     const uncertainStart = Math.max(start, this.sealedUntil);
     const before = this.words.filter((w) => w.end <= uncertainStart);
     const old = this.words.filter((w) => w.end > uncertainStart);
-    const fresh = absolute.filter(
-      (w) => w.end > this.sealedUntil && w.end <= seamEnd,
+    const active = absolute.filter((w) => w.end > this.sealedUntil);
+    const retryAbsolute = retry?.words
+      .map((w) => ({
+        ...w,
+        start: w.start + retry.start,
+        end: w.end + retry.start,
+      }))
+      .filter((w) => w.end > uncertainStart);
+    // Crossing words belong to the alternative, never to a definite suffix.
+    // Extend the sealed region through the connected overlap (including retry)
+    // so later windows cannot reinsert a word already committed in that marker.
+    let seamEnd = this.end;
+    const connected = [...old, ...active, ...(retryAbsolute ?? [])].sort(
+      (a, b) => a.start - b.start,
     );
-    const tail = absolute.filter(
-      (w) => w.end > Math.max(seamEnd, this.sealedUntil),
-    );
+    for (const w of connected) {
+      if (w.start >= seamEnd) break;
+      seamEnd = Math.max(seamEnd, w.end);
+    }
+    const fresh = active.filter((w) => w.start < seamEnd);
+    const tail = active.filter((w) => w.start >= seamEnd);
     const render = (words: Word[]) =>
       words
         .map((w) => w.text.trim())
         .filter(Boolean)
         .join(" ");
-    // Brackets remain reserved for editorial markers, not literal ASR text.
-    const reading = (words: Word[]) => {
-      const text = render(words).replaceAll("[", "(").replaceAll("]", ")");
-      return text ? text.split(/\s+/u) : [];
-    };
-    const readings = [reading(old), reading(fresh)];
-    if (retry)
-      readings.push(
-        reading(
-          retry.words
-            .map((w) => ({
-              ...w,
-              start: w.start + retry.start,
-              end: w.end + retry.start,
-            }))
-            .filter((w) => w.end > uncertainStart && w.start < seamEnd),
-        ),
-      );
-    const compact = renderUncertainty(readings);
+    // Word objects occasionally contain multiple surface pieces. Keep the
+    // originating span for each piece; never fabricate narrower timestamps.
+    const split = (words: Word[]) =>
+      words.flatMap((w) => {
+        const text = w.text.trim().replaceAll("[", "(").replaceAll("]", ")");
+        return text ? text.split(/\s+/u).map((text) => ({ ...w, text })) : [];
+      });
+    const readings = [split(old), split(fresh)];
+    if (retryAbsolute)
+      readings.push(split(retryAbsolute.filter((w) => w.start < seamEnd)));
+    const compact = renderUncertainty(
+      readings.map((r) => r.map((w) => w.text)),
+      readings,
+    );
     const sealed = [this.sealed, render(before), compact.text]
       .filter(Boolean)
       .join(" ");

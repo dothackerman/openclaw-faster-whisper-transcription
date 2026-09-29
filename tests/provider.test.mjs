@@ -446,3 +446,21 @@ test("old-only overlap negation survives bounded retry as a marked final", async
   assert.equal(f.runtime.metrics.retries, 1);
   assert.equal(f.runtime.metrics.uncertaintyMarkers, 1);
 });
+
+test("crossing can/cannot stays in the only final alternative after bounded retry", async (t) => {
+  const f = fixture(t);
+  await f.session.connect();
+  f.session.sendAudio(Buffer.alloc(128000));
+  f.jobs[0].resolve([word("cannot", 15.6, 15.9)]);
+  await tick();
+  f.session.sendAudio(Buffer.alloc(96000));
+  f.jobs[1].resolve([word("can", 3.6, 4.2), word("tail", 4.3, 4.6)]);
+  await tick();
+  assert.equal(f.jobs.length, 3);
+  assert.deepEqual(f.events, []);
+  f.session.close();
+  f.jobs[2].resolve([word("can", 7.6, 8.2), word("tail", 8.3, 8.6)]);
+  await tick();
+  assert.deepEqual(f.events, [["final", "[uncertain: cannot | can] tail"]]);
+  assert.equal(f.runtime.metrics.uncertainJoins, 1);
+});
