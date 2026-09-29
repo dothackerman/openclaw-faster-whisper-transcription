@@ -32,6 +32,17 @@ older measurements remain historical. Plan: 77 Node/18 Python tests, unchanged
 stock no-send checks, clean rapid screening, then decide whether a paced rerun is
 justified. Keep existing worker coverage/negation safeguards and loss disclosures.
 
+Completed clean `5b3c399`: 77 Node/18 Python tests and seven stock composer/relay
+checks pass. Rapid 5/5, two joins/four spans/114 characters, visible WER/CER
+18.31%/10.90%, zero repeated-phrase insertions supported proceeding to paced
+validation. The five-minute run completes all 300 seconds/34 windows with exact
+audio hashes, eight joins/25 spans/877 characters, provider final 1611 ms and stock
+insertion 5012 ms, no Send. Visible WER/CER 21.44%/16.39%; final-20 errors 14,
+final five exact. No real GPU retry resolves (rapid 0/2, five-minute 0/8); latter
+costs 8911 ms extra decode work. [Results](LONG-DURATION-RESULTS.md) retain the
+limits: correctness regression fixes are not ASR quality or usability acceptance.
+
+
 ## Localized word-choice markers
 
 Prefix/suffix-only factoring left agreed interior words repeated. The new

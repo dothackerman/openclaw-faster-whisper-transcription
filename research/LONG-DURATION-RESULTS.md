@@ -6,7 +6,64 @@ All speech here is self-authored, non-looped eSpeak NG synthesis transported as
 paragraph audio and padding to 300 seconds. Public manifests record every hash.
 No private OG recordings, real microphone, or Swiss-German acceptance is claimed.
 
-## Latest evidence: localized word choices (`ab6422c`)
+## Latest evidence: crossing-word seal and exact surfaces (`5b3c399`)
+
+Clean `5b3c399de796e58ce7cc3964f44ed1fd645b1421` keeps a word crossing the old
+seam inside the alternative, extends sealing through the connected overlap, and
+retains a following disjoint tail. Exact `cannot@7.6–7.9` versus `can@7.6–8.2`
+now renders `[uncertain: cannot | can] tail`; the next window cannot reinsert that
+same sealed crossing word. Dedup is exact NFC surface: `Stop.`/`Stop?` and case
+variants remain distinct. Hoisted words must be unique in every original reading,
+monotone, and within a 0.8-second midpoint range across all supplied timings.
+Repeated/reordered/incompatible words stay marked. Larger than 512-token inputs
+stay whole marked alternatives, bounded to three readings; no arbitrary LCS tie.
+
+**Rapid screening passed before the paced rerun.** Same public synthetic fixtures,
+medium/float16/beam5 and repo-local RTX 3060 Laptop runtime:
+
+- **Rapid 5/5**, two uncertain joins/four spans/**114 marker characters**, zero
+  repeated-phrase insertions. Visible WER **26/142 (18.31%)**, CER **98/899 (10.90%)**.
+  German seven substitutions/ten insertions, English one substitution/three
+  insertions; mixed five substitutions and inexact final five. Boundary/silence
+  zero errors; no scored deletions. Two retries cost **2844 ms**, neither resolves.
+  Longest final **2448 ms** (German), English **2105 ms**, boundary **729 ms**,
+  mixed **617 ms**; all within the unchanged 4500 ms provider budget.
+- **Paced five-minute:** 299999.263 ms audio delivery, 300 seconds / 2,400,000 bytes,
+  fixture/input/relay hashes identical. **34 normal windows, eight anchors,
+  15 gaps, eight uncertain joins/25 visible spans/877 marker characters**.
+  Changes in seal partition mean older rendering-only comparisons cannot qualify
+  this revision. Crossing words may join a connected ambiguity region rather
+  than incorrectly appearing as a definite suffix.
+- **Visible five-minute WER 131/611 (21.44%), CER 626/3819 (16.39%)**: 25
+  substitutions, eight deletions, 98 insertions, zero adjacent duplicates, five
+  repeated-phrase inserted words. All choice/marker text counts. **Final-20
+  errors 14; final five exact.** These edit metrics cannot establish acoustic
+  quality, lexical completeness or verified tail preservation. Strict punctuation
+  differences are preserved in the draft even though lexical-v1 scoring normalizes
+  punctuation/case; the metrics are not a complete measure of editing burden.
+- **Stop:** provider final **1611 ms**, stock editable insertion **5012 ms**,
+  no auto-send. Queue peak **17.480 s**, maximum unprocessed coverage **17.408 s**
+  includes lookahead, not solely GPU waiting time.
+- **Retry resolution:** five-minute **0/8**, rapid **0/2**. Every attempt still
+  leads to a marked join; no skips. Five-minute retry clips 16.94–18.66 seconds
+  cost **8910.545 ms** extra decode wall time on top of **30164.123 ms** normal
+  decoding (**29.5% extra**). As in the prior audit, complete successful-run
+  resolution is `retries - (uncertainJoins - retrySkipped)`, not rendered spans.
+  A third reading's editorial value remains unvalidated; no retry benefit claimed.
+- **GPU:** baseline **551 MiB**, peak **2829 MiB**, post-disposal **551 MiB**;
+  mean sampled host utilization **21.33%**. No isolated retry GPU/kernel profiling
+  or efficiency gain can be inferred from these host-wide samples and one run.
+
+**Keep** the P1 seal fix and exact-surface/unique-anchor safeguards. **Do not claim**
+ASR quality gain, verified final/tail, general usability/release, real-mic,
+Swiss-German or hour-long acceptance. Twenty-five choice spans still require
+review. This uses actual stock encoding/controller/relay with simulated DOM,
+capture and RPC plus a real local GPU worker, not a browser/Gateway/mic session.
+The 300-second fixture contains 218.332 seconds synthesized speech plus padding.
+Host expiry and other documented loss risks remain. Ledger IDs:
+`long-crossing-rapid`, `long-crossing-five`.
+
+## Previous evidence: localized word choices (`ab6422c`)
 
 Clean `ab6422c0f931ed262e1f04f1fde359ded36fd71e` replaces paragraph alternatives
 with ordered shared words and localized `[uncertain: option | option]` spans.

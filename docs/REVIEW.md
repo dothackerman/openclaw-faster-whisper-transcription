@@ -71,7 +71,7 @@ See [source evidence](../research/long-duration-implementation.md),
   tests cover nonempty insertion, silence and exact uncertainty-marker text with no send through the actual
   relay and stock encoding/controller. The fake-clock TTL test proves the 30-minute
   host obstacle. Native loader/catalog/disposal passes on the extracted npm artifact.
-  After the retry/marker candidate `ab6422c`, package build/check and extracted-artifact loader were rerun
+  After the retry/marker candidate `5b3c399`, package build/check and extracted-artifact loader were rerun
   sequentially and passed; no concurrent `dist` rebuild occurred during loading.
   Source was read-only.
 - Published SDK remains an exact locked development dependency; no stub or vendored
@@ -92,28 +92,25 @@ See [source evidence](../research/long-duration-implementation.md),
   and do not qualify the current implementation. The stricter unmarked `1a3f6fc`
   failed at window #24 after 212.480 seconds. Subsequent `036514b` and `565b9d1`
   completed with one/two markers but still silently discarded old-only words
-  after a valid first anchor. `a6911b9` prevents that omission; `e0157ce` deduplicates
-  and factors shared boundaries. Current clean `ab6422c` factors interior agreed
-  words into localized choices. The rapid gate passed first: 5/5, two uncertain
-  joins/four spans/132 marker characters (versus 527), zero repeated-phrase inserted
-  words, visible WER/CER 23.94% / 14.57%. The subsequent paced 300-second run
-  preserves all 2,400,000 audio bytes and completes 34 windows. Eight retries cost
-  8439 ms; eight joins render as 23 spans/813 characters versus 2050. Provider final
-  1452 ms, stock insertion 5006 ms, no Send. Visible WER 147/611 (24.06%), CER
-  672/3819 (17.60%): 34 substitutions, three deletions, 110 insertions, including
-  choices/labels. Nine repeated-phrase inserted words remain; visible final-20
-  errors 12, final five exact. Marker relocation affects that tail metric; no tail
-  completeness claim. Re-rendering prior readings reproduces all six fresh drafts
-  exactly, proving presentation change, not ASR improvement. Keep the editorial
-  format, but do not claim general usability, release or microphone acceptance.
-  These tests use actual stock code with simulated capture/DOM/RPC and real GPU.
-- Audit of those same complete runs finds **0/10 real GPU retries resolved a join**
-  (rapid 0/2, five-minute 0/8). Five-minute retry decode work is 8439 ms on top of
-  28427 ms normal decode, a 29.7% increment. This is wall time; host GPU samples
-  cannot isolate retry cost. Mock resolution tests are not quality evidence.
-  A third reading may aid review, but its value is unvalidated. No retry benefit
-  or policy improvement is claimed; a short no-retry comparator should precede
-  changing the default or spending another long recording on that question.
+  after a valid first anchor. `a6911b9` protects old-only words; `ab6422c` adds
+  localized choices. Current clean `5b3c399` additionally seals crossing words
+  into the alternative, retains exact NFC punctuation/case choices and hoists
+  only unique, monotone, time-compatible common text. Rapid passed first: 5/5,
+  two joins/four spans/114 characters, zero repeated-phrase insertions, visible
+  WER/CER 18.31% / 10.90%. The subsequent paced 300-second stock-code run preserves
+  all 2,400,000 audio bytes and completes 34 windows. Eight joins yield 25 spans/
+  877 characters; provider final 1611 ms, stock insertion 5012 ms, no Send.
+  Visible WER 131/611 (21.44%), CER 626/3819 (16.39%): 25 substitutions, eight
+  deletions and 98 insertions, including choices/labels. Five repeated-phrase
+  inserted words remain; visible final-20 errors 14, final five exact. Keep the
+  correctness fixes; do not claim verified quality, tail completeness, general
+  usability or microphone acceptance. This is actual stock code with simulated
+  capture/DOM/RPC and real GPU.
+- Retry audit on these completed clean runs: **0/10 real GPU retries resolved**
+  (rapid 0/2, five-minute 0/8). Five-minute retries cost 8911 ms on top of 30164 ms
+  normal decode (29.5% extra wall time). Host GPU samples cannot isolate retry
+  cost. A third reading may aid review, but its value remains unvalidated; no
+  quality, latency or default-policy improvement is inferred.
 
 ## Experiment and public-data boundary
 

@@ -156,24 +156,21 @@ synthetic eSpeak NG audio from self-authored scripts. Hashes are in
 `fixtures/public/manifest.json` and `fixtures/public/long-manifest.json`.
 They do not establish real microphone or dialect quality.
 
-The previous candidate (`ab6422c`) first passed the rapid screen: 5/5 completions,
-two uncertain joins rendered as four localized choice spans (132 characters versus
-527 in the verbose format), zero repeated-phrase insertions, visible WER/CER
-23.94% / 14.57%. Only then was the paced five-minute stock-code run performed.
-It completes 300 seconds / 34 windows with eight uncertain joins, 23 short spans
-and 813 marker characters versus 2050 previously. Visible WER/CER are 24.06% /
-17.60%, with nine repeated-phrase inserted words versus 137. These scores include
-all choices and labels. Re-rendering the old readings reproduces every fresh text
-exactly: **less editorial overhead, not better ASR recognition**.
+The current candidate (`5b3c399`) passes the crossing-word seal, exact NFC
+surface and unique/timed-anchor regressions. Rapid screening completed first:
+5/5 finals, two uncertain joins/four spans/114 marker characters, zero repeated-phrase
+insertions, visible WER/CER 18.31% / 10.90%. The subsequent paced five-minute
+stock-code run completes 300 seconds / 34 windows with eight uncertain joins,
+25 spans and 877 marker characters. Visible WER/CER are 21.44% / 16.39%, including
+all choices; five repeated-phrase inserted words remain. These are draft-editing
+metrics, not ASR quality gains or usability acceptance.
 
-Provider finalization took 1452 ms; stock insertion 5006 ms, with no auto-send.
-Final five words are exact; the visible final-20 metric has 12 errors, affected by
-marker placement. No verified tail, general usability or release acceptance is
-claimed. Tests use actual stock code with simulated capture/RPC and real local
-GPU, not a real browser, Gateway or microphone. The draft still needs review.
-
-The crossing-word seal and exact-surface renderer require fresh screening; those
-previous measurements do not qualify the changed boundary semantics.
+Provider finalization took 1611 ms; stock insertion 5012 ms, with no auto-send.
+Final five words are exact; visible final-20 errors are 14. No verified tail or
+general reliability is claimed. None of the ten retries across the rapid and
+five-minute runs resolved its join; five-minute retries add 8911 ms decode wall
+time. Tests use actual stock code with simulated capture/RPC and real local GPU,
+not a real browser, Gateway or microphone. The draft still needs review.
 
 After provisioning the dedicated runtime/model and a local profile, build and
 validate fixture manifests, then run the five approximately 20-second fixtures
