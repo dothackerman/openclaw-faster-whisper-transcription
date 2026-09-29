@@ -61,6 +61,13 @@ export class Stitcher {
         previous = current;
       }
       if (anchor) {
+        // Every fresh word discarded by this splice must belong to the matched
+        // contiguous run. A later anchor alone cannot justify dropping a word
+        // newly recovered earlier in the overlap (including a negation).
+        if (bestRun !== anchor[1] + 1)
+          throw new Error(
+            "Faster-Whisper could not align all words at a chunk boundary; no complete transcript is available",
+          );
         merged = [
           ...this.words.slice(0, anchor[0] + 1),
           ...next.slice(anchor[1] + 1),

@@ -3,6 +3,7 @@
 import assert from "node:assert/strict";
 import { readFile, readdir } from "node:fs/promises";
 import { createHash } from "node:crypto";
+import { checkSubset } from "./fixture-subsets.mjs";
 const root = new URL("../fixtures/public/", import.meta.url),
   known = new Set();
 for (const name of ["manifest.json", "long-manifest.json"]) {
@@ -23,11 +24,33 @@ for (const name of ["manifest.json", "long-manifest.json"]) {
     assert.equal(fixture.mic, "synthetic");
   }
 }
+const canonical = JSON.parse(
+  await readFile(new URL("long-manifest.json", root), "utf8"),
+);
+for (const [name, ids] of [
+  [
+    "rapid-manifest.json",
+    [
+      "long-en20",
+      "long-de20",
+      "long-mixed20",
+      "long-boundary20",
+      "long-silence20",
+    ],
+  ],
+  ["five-minute-manifest.json", ["long-five-minute"]],
+]) {
+  checkSubset(
+    canonical,
+    JSON.parse(await readFile(new URL(name, root), "utf8")),
+    ids,
+  );
+}
 for (const name of await readdir(root))
   assert.ok(
     name.endsWith(".json") || known.has(name),
     `Unmanifested public file: ${name}`,
   );
 console.log(
-  `PASS: ${known.size} generated public audio files match declared hashes and durations`,
+  `PASS: ${known.size} generated public audio files match hashes/durations; both subsets match canonical references and metadata`,
 );

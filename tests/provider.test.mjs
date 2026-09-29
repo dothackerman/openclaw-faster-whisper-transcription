@@ -213,6 +213,26 @@ test("ambiguous overlap is an explicit failure rather than a guessed complete fi
   await tick();
   assert.match(f.events[0][1], /align a chunk/);
 });
+test("new overlap words before an anchor fail without publishing the old prefix", async (t) => {
+  const f = fixture(t);
+  await f.session.connect();
+  f.session.sendAudio(Buffer.alloc(128000, 1));
+  f.jobs[0].resolve([word("Do", 13), word("send", 14), word("this", 15)]);
+  await tick();
+  f.session.sendAudio(Buffer.alloc(96000, 1));
+  f.session.close();
+  f.jobs[1].resolve([
+    word("Do", 1),
+    word("not", 1.5),
+    word("send", 2),
+    word("this", 3),
+  ]);
+  await tick();
+  assert.equal(f.events.length, 1);
+  assert.equal(f.events[0][0], "error");
+  assert.match(f.events[0][1], /align all words/);
+  assert.equal(f.session.isConnected(), false);
+});
 test("assembled final exceeds worker per-window text limit without truncation", async (t) => {
   const f = fixture(t);
   const expected = [];

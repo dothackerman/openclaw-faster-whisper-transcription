@@ -2,6 +2,35 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { Stitcher } from "../dist/stitch.js";
 const w = (text, start, end = start + 0.3) => ({ text, start, end });
+test("a later anchor cannot silently delete a newly recovered overlap negation", () => {
+  const s = new Stitcher();
+  s.add([w("Do", 6), w("send", 7), w("this", 7.4)], 0, 8);
+  assert.throws(
+    () =>
+      s.add(
+        [
+          w("Do", 0),
+          w("not", 0.5),
+          w("send", 1),
+          w("this", 1.4),
+          w("message", 3),
+        ],
+        6,
+        10,
+      ),
+    /align all words/,
+  );
+  assert.equal(s.text(), "Do send this");
+  assert.equal(s.anchors, 0);
+});
+test("an unmatched fresh leading word cannot disappear at a one-word anchor", () => {
+  const s = new Stitcher();
+  s.add([w("approved", 7)], 0, 8);
+  assert.throws(
+    () => s.add([w("not", 0.5), w("approved", 1)], 6, 10),
+    /align all words/,
+  );
+});
 test("timestamp anchors join boundary words and retain final punctuation", () => {
   const s = new Stitcher();
   s.add([w("Hello", 1), w("international", 6.8), w("cooper", 7.6)], 0, 8);
