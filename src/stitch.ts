@@ -78,9 +78,17 @@ export class Stitcher {
         }
       }
       if (anchor !== undefined) {
-        // A clipped old word began before the fresh audio and may be retained.
-        // A whole old-only word before the first fresh anchor is ambiguous.
-        if (this.words.slice(0, anchor).some((w) => w.start >= start))
+        // Whisper may stretch the first fresh token across earlier words.
+        // Reject an isolated old-only word fully in the new audio, separated
+        // from that first token by at least 200 ms. Overlapping/near-boundary
+        // timestamps are not precise enough to establish a missing word.
+        if (
+          this.words
+            .slice(0, anchor)
+            .some(
+              (w) => w.start >= start && next[0]!.start - w.end >= 0.2 - 1e-9,
+            )
+        )
           throw new Error(
             "Faster-Whisper could not align all words at a chunk boundary; no complete transcript is available",
           );

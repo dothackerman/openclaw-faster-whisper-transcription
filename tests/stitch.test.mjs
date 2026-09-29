@@ -26,6 +26,67 @@ test("exact symmetric repro: phantom@6 cannot survive fresh coverage starting at
   assert.equal(s.anchors, 0);
   assert.equal(s.text(), "phantom anchor"); // Failed add is transactional, not a final.
 });
+test("isolation guard includes exactly 200 ms but tolerates imprecise nearer timing", () => {
+  for (const [oldEnd, rejects] of [
+    [6.8, true],
+    [6.81, false],
+  ]) {
+    const s = new Stitcher();
+    s.add([w("prior", 6, oldEnd), w("anchor", 7)], 0, 8);
+    const add = () => s.add([w("anchor", 1), w("tail", 2)], 6, 10);
+    if (rejects) assert.throws(add, /align all words/);
+    else {
+      add();
+      assert.equal(s.text(), "prior anchor tail");
+    }
+  }
+});
+test("exact trace #13 retains chair under a broad fresh first-word timestamp", () => {
+  const s = new Stitcher();
+  const old = [
+    ["repairing", 108.88, 109.32],
+    ["a", 109.32, 109.56],
+    ["chair.", 109.56, 109.74],
+    ["We", 110.04, 110.28],
+    ["agreed", 110.28, 110.5],
+    ["to", 110.5, 110.8],
+    ["keep", 110.8, 111.02],
+    ["a", 111.02, 111.2],
+    ["separate", 111.2, 111.52],
+    ["work", 111.52, 111.84],
+    ["area", 111.84, 112.04],
+    ["for", 112.04, 112.32],
+    ["each", 112.32, 112.58],
+    ["task.", 112.58, 112.86],
+  ];
+  const fresh = [
+    ["We", 108.98, 110.08],
+    ["agreed", 110.08, 110.52],
+    ["to", 110.52, 110.82],
+    ["keep", 110.82, 111.02],
+    ["a", 111.02, 111.18],
+    ["separate", 111.18, 111.5],
+    ["work", 111.5, 111.82],
+    ["area", 111.82, 112.04],
+    ["for", 112.04, 112.3],
+    ["each", 112.3, 112.58],
+    ["task.", 112.58, 112.86],
+  ];
+  s.add(
+    old.map(([text, start, end]) => w(text, start - 96.98, end - 96.98)),
+    96.98,
+    112.98,
+  );
+  s.add(
+    fresh.map(([text, start, end]) => w(text, start - 108.98, end - 108.98)),
+    108.98,
+    113.48,
+  );
+  assert.equal(
+    s.text(),
+    "repairing a chair. We agreed to keep a separate work area for each task.",
+  );
+});
 test("old suffix after the initial anchor is replaced by the fresh hypothesis", () => {
   const s = new Stitcher();
   s.add([w("alpha", 5), w("old-only", 5.5), w("anchor", 7)], 0, 8);
