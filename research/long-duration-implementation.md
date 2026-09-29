@@ -27,6 +27,17 @@ complete and the exact examples show less repeated agreed text while preserving
 all conflict choices. Record visible score, characters, joins/spans, retries and
 tail errors; no presentation score improvement establishes ASR quality.
 
+Completed clean `ab6422c`: 71 Node / 18 Python and seven stock composer/relay
+checks pass. Rapid gate completed first: 5/5, two joins/four localized spans,
+132 marker characters, zero repeated-phrase insertions, visible WER/CER 23.94% /
+14.57%. Only then ran paced five-minute: all 300 seconds/34 windows and audio hashes
+match; eight joins/23 spans/813 marker characters, retry work 8439 ms, provider
+final 1452 ms, stock insertion 5006 ms, no Send. Visible WER/CER 24.06% / 17.60%,
+nine repeated-phrase insertions; final-20 errors 12, final five exact. Every fresh text
+matches a deterministic re-rendering of the old readings. Keep editorial format;
+no ASR gain, verified tail or general usability acceptance. See [results](LONG-DURATION-RESULTS.md).
+
+
 ## Compact uncertainty presentation
 
 `Stitcher.markUncertain` now deduplicates readings using the same normalized

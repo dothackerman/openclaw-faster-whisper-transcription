@@ -6,7 +6,68 @@ All speech here is self-authored, non-looped eSpeak NG synthesis transported as
 paragraph audio and padding to 300 seconds. Public manifests record every hash.
 No private OG recordings, real microphone, or Swiss-German acceptance is claimed.
 
-## Latest evidence: compact alternatives (`e0157ce`)
+## Latest evidence: localized word choices (`ab6422c`)
+
+Clean `ab6422c0f931ed262e1f04f1fde359ded36fd71e` replaces paragraph alternatives
+with ordered shared words and localized `[uncertain: option | option]` spans.
+No decoder reading is chosen as correct; omissions stay `(no words)`. Dynamic
+programming is bounded to three readings/512 tokens; larger inputs use linear
+prefix/suffix factoring without truncation. All P1 safeguards remain active.
+Counts now distinguish uncertain joins from rendered spans.
+
+**Rapid was measured first; the paced run was gated on that result.** Same fixed
+fixtures, medium/float16/beam5, repo-local RTX 3060 Laptop environment:
+
+- **Rapid 5/5**, two uncertain joins, four localized spans (German three, English
+  one), **132 marker characters versus 527** verbose / 280 prefix-suffix-only.
+  **Zero repeated-phrase insertions**, versus 24 verbose. Visible WER **34/142
+  (23.94%)**, CER **131/899 (14.57%)**. German seven substitutions/14 insertions;
+  English one substitution/seven insertions; mixed five substitutions and inexact
+  final five; boundary and silence zero errors. No scored deletions. Two retries
+  cost **2533 ms**. German final **2383 ms**, English **1758 ms**, boundary **696 ms**,
+  mixed **558 ms**, silence **3 ms**. All completion/control tests pass, conflict
+  choices remain reconstructible, and agreed text no longer repeats in the exact
+  rapid examples: **proceed to paced measurement**, not quality acceptance.
+- **Five-minute:** 300000.209 ms paced audio delivery, 300 seconds / 2,400,000 bytes,
+  fixture/input/relay hashes identical. **34 normal windows, eight anchors,
+  17 gaps, eight uncertain joins, 23 visible spans**. Marker characters **813 versus
+  2050** verbose / 1888 prefix-suffix-only. Eight retries on 16.94–18.66-second
+  retained clips cost **8438.563 ms** total decode wall time; none skipped.
+- **Visible five-minute WER 147/611 (24.06%), CER 672/3819 (17.60%)**. 34
+  substitutions, three deletions, 110 insertions, five adjacent duplicates and
+  **nine repeated-phrase inserted words**, versus 137 verbose. Choices and
+  `uncertain`/`no words` text remain in scoring. **Final-20 errors 12, final five
+  exact**. Relocating markers changes the last-20 visible tokens; do not infer
+  acoustic degradation or verified tail completeness from this metric alone.
+- **Stop:** provider final **1452 ms**, stock editable insertion **5006 ms**,
+  only Talk RPCs and no Send. Provider's 4500 ms deadline remains unchanged.
+  Queue peak **17.512 s**, maximum unprocessed coverage **17.012 s**, including
+  lookahead rather than only GPU waiting time.
+- **GPU:** baseline **551 MiB**, peak **2947 MiB**, post-disposal **551 MiB**;
+  sampled mean host utilization **22.96%**. These host-wide samples and one run
+  do not establish a latency/GPU-efficiency improvement. Decoder policy is unchanged.
+
+Presentation replay parses each saved `a6911b9` marker into its earlier/later/retry
+word arrays (with `(no words)` as empty), calls `renderUncertainty`, and replaces
+only that marker. **All five rapid drafts and the five-minute draft exactly match
+fresh outputs after this transformation.** This establishes presentation change,
+not ASR recognition gain, and especially not a quality gain against the old unsafe
+5.73% result. The deterministic suite tests reconstruction of every original
+reading, including negation, repetitions and the 512/513-token fallback boundary.
+Local choices are review options; not every combination need have appeared in a
+single decoder hypothesis, and no combination is endorsed automatically.
+
+**Keep** localized editorial choices and bounded completion. **Do not claim**
+verified transcript, tail completeness, general usability/release, real-microphone,
+Swiss-German or hour-long acceptance. Twenty-three choice spans over this synthetic
+recording still require editorial work. Actual stock code uses simulated
+DOM/capture/RPC and a real local GPU; this is not a real browser/Gateway/mic test.
+The fixture has 218.332 seconds synthetic speech plus padding to 300 seconds.
+Host expiry and other documented loss risks remain.
+
+Ledger IDs: `long-diff-rapid`, `long-diff-five`, `diff-presentation-replay`.
+
+## Previous evidence: compact alternatives (`e0157ce`)
 
 **Keep compact presentation; usability/release acceptance remains rejected.** Clean
 `e0157ce5a8553206a45a7d6a928991a22e95dc5e` removes lexically duplicate readings

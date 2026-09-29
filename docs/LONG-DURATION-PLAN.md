@@ -18,14 +18,12 @@ on the same serial GPU lane. During Stop, retry only if the remaining original
 4.5-second budget exceeds max(500 ms, 1.5 × last decode time); this estimate never
 extends the deadline. A retry is unmarked only if both prior word sequences
 survive monotonically with timed matches, followed by successful reconciliation.
-Otherwise seal an inline `[uncertain: earlier: ... | later: ... | retry: ...]`
-span and continue. Presentation keeps one copy of lexically identical readings,
-then moves common prefix/suffix words outside the marker; punctuation/case follow
-the first reading. Empty alternatives stay explicit as `(no words)`. No interior
-alignment or preferred-reading selection is inferred. A sole deduplicated reading
-still carries a marker because timing may be ambiguous. A skipped retry omits
-that alternative. Sealed markers cannot
-be rewritten by later windows; subsequent fresh tail words remain editable.
+Otherwise seal localized `[uncertain: option | option]` spans and continue.
+Presentation keeps each agreed ordered word once; punctuation/case follow the
+first reading. Empty choices stay `(no words)`. No preferred reading is selected.
+A sole deduplicated reading still carries a marker because timing may be ambiguous.
+A skipped retry supplies no third reading. Sealed markers cannot be rewritten by
+later windows; subsequent fresh tail words remain editable.
 
 Peak retained PCMU is bounded by the 32-second rolling queue, 16-second previous
 window, 16-second current snapshot and 20-second retry: 672,000 bytes, excluding

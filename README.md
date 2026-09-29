@@ -44,8 +44,8 @@ uncertainty alternatives, is bounded to 160,000 characters / 24,000 words. Queue
 ceiling or deadline failure return an error and **no successful truncated final**.
 The total Stop drain remains **4.5 seconds**, including in-flight work.
 An ambiguous seam gets at most one bounded local overlap re-decode. If it remains
-ambiguous, final text includes `[uncertain: earlier: ... | later: ... | retry: ...]`
-with competing readings; review and edit it before Send. Lexically duplicate
+ambiguous, final text includes localized `[uncertain: option | option]` spans
+with competing word choices; review and edit it before Send. Lexically duplicate
 readings are omitted, and agreed words appear once outside localized spans.
 A span shows word choices, e.g. `[uncertain: soll | wollen]`, without decoder labels.
 An absent reading remains explicit as `(no words)`; this never chooses a winner. Markers are never sent
@@ -155,20 +155,21 @@ synthetic eSpeak NG audio from self-authored scripts. Hashes are in
 `fixtures/public/manifest.json` and `fixtures/public/long-manifest.json`.
 They do not establish real microphone or dialect quality.
 
-The previous candidate (`e0157ce`) completes 5/5 rapid fixtures and a paced
-five-minute stock-code integration replay with compact marked alternatives.
-**Usability and release acceptance remain rejected:** the rapid set has two markers,
-and the five-minute run has eight. Five-minute marker text is 1888 characters
-versus 2050 in the previous verbose presentation. Visible WER/CER are 37.64% /
-34.30%, including labels and all alternatives, versus 42.06% / 38.02% previously.
-Reformatting the previous draft reproduces the fresh text exactly: this is less
-presentation overhead, **not better ASR recognition**. Eight retries cost 8120 ms;
-provider final takes 1651 ms and stock insertion 5009 ms, with no auto-send. Final
-five words are exact; final-20 errors remain three. Actual stock code uses simulated
-capture/RPC, not a real browser, Gateway or microphone. The draft remains unverified.
+The current candidate (`ab6422c`) first passed the rapid screen: 5/5 completions,
+two uncertain joins rendered as four localized choice spans (132 characters versus
+527 in the verbose format), zero repeated-phrase insertions, visible WER/CER
+23.94% / 14.57%. Only then was the paced five-minute stock-code run performed.
+It completes 300 seconds / 34 windows with eight uncertain joins, 23 short spans
+and 813 marker characters versus 2050 previously. Visible WER/CER are 24.06% /
+17.60%, with nine repeated-phrase inserted words versus 137. These scores include
+all choices and labels. Re-rendering the old readings reproduces every fresh text
+exactly: **less editorial overhead, not better ASR recognition**.
 
-Word-diff presentation is being screened on 20-second fixtures first; no fresh
-five-minute qualification is claimed until that screen supports proceeding.
+Provider finalization took 1452 ms; stock insertion 5006 ms, with no auto-send.
+Final five words are exact; the visible final-20 metric has 12 errors, affected by
+marker placement. No verified tail, general usability or release acceptance is
+claimed. Tests use actual stock code with simulated capture/RPC and real local
+GPU, not a real browser, Gateway or microphone. The draft still needs review.
 
 After provisioning the dedicated runtime/model and a local profile, build and
 validate fixture manifests, then run the five approximately 20-second fixtures

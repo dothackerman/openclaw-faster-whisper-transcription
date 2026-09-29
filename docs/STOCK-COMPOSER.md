@@ -20,8 +20,9 @@ preview for correct final-tail insertion without modifying OpenClaw.
 The provider decodes bounded overlapping windows during capture. All transcript
 assembly remains internal until Stop. The stock activity meter still works.
 
-Unresolved seams can now produce an inline `[uncertain: earlier: ... | later: ...
-| retry: ...]` span after one bounded local re-decode. It is ordinary text in the
+Unresolved seams can produce localized `[uncertain: option | option]` spans
+after one bounded local re-decode. Agreed words appear once outside these spans.
+A missing option stays explicit as `(no words)`. This is ordinary text in the
 official `onTranscript` callback, not a new provider event or UI extension.
 The exact stock relay/controller integration test confirms it reaches the editable
 composer unchanged, only after Stop, with no chat-send RPC. A marker is a visible
