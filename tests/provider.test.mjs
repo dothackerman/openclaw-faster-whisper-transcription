@@ -213,6 +213,24 @@ test("ambiguous overlap is an explicit failure rather than a guessed complete fi
   await tick();
   assert.match(f.events[0][1], /align a chunk/);
 });
+test("assembled final exceeds worker per-window text limit without truncation", async (t) => {
+  const f = fixture(t);
+  const expected = [];
+  await f.session.connect();
+  for (let i = 0; i < 20; i++) {
+    f.session.sendAudio(Buffer.alloc(i === 0 ? 128000 : 96000, 1));
+    const text = String(i).padStart(2, "0") + "x".repeat(898);
+    expected.push(text);
+    assert.equal(f.jobs.length, i + 1);
+    f.jobs[i].resolve([word(text, 5)]);
+    await tick();
+    assert.deepEqual(f.events, []);
+  }
+  f.session.close();
+  const final = expected.join(" ");
+  assert.ok(final.length > 16000);
+  assert.deepEqual(f.events, [["final", final]]);
+});
 test("60-minute audio ceiling is independent of queue size and fails without final", async (t) => {
   const f = fixture(t);
   f.decoder.decodeWindow = async () => [];

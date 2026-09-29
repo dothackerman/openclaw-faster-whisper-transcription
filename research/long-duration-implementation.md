@@ -2,6 +2,27 @@
 
 Independent architect notes; do not replace incoming researcher files.
 
+## Exact-source TTL and transcript-bound recheck
+
+Rechecked for Kappa on 2026-09-29 against the same prepared source commit.
+`transcription-relay.ts:34` sets 30 minutes; creation fixes `expiresAtMs` and
+installs a deadline timer. Both append and Stop call `getTranscriptionSession`,
+which delegates to `requireActiveTalkRelaySession` in `relay-session-lifecycle.ts`.
+The helper's expiry comparison is strictly `now > expiresAtMs`; the independent
+timer closes at the deadline. Neither audio nor Stop extends the lifetime.
+Expiry closes/removes the relay without retaining it for the ordinary Stop drain,
+so a late provider final cannot repair this. A plugin-only hour-long claim is false.
+
+The current worker is window-local: Python emits at most 16,000 text characters
+per decode; Node independently bounds each reply to 64 KiB including JSON and
+timestamped words. These are independent limits (JSON escaping/metadata can reach
+the byte bound first), not a guarantee that every 16,000-character reply fits.
+Production windows are at most 16 seconds. TypeScript accumulates the session's
+words, up to 160,000 characters / 24,000 words, and sends the final directly through
+the provider callback, never through worker stdout. A deterministic provider test
+joins 20 window results into exactly 18,019 characters. This verifies aggregation,
+not ASR quality, a real long-duration decode, or host/browser message acceptance.
+
 ## Primary-source checks
 
 - Prepared OpenClaw `src/gateway/talk/transcription-relay.ts`, source commit

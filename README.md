@@ -46,9 +46,18 @@ The total Stop drain remains **4.5 seconds**, including in-flight work.
 The plugin has a **60-minute wall/audio safety ceiling**. However, stock OpenClaw
 2026.9.6 expires transcription sessions after **30 minutes**; this plugin cannot
 extend that host limit. Neither 30 nor 60 minutes is qualified recording support.
+On stock OpenClaw, stop well before expiry and start another recording manually;
+this does not satisfy uninterrupted hour-long dictation. That requirement needs a
+separately reviewed host change for a longer/configurable TTL and safe expiry drain.
+The plugin cannot promise a recoverable final when the host expires its session.
 See [long-duration design and host limitations](docs/LONG-DURATION-PLAN.md) and
 [measured long-duration results](research/LONG-DURATION-RESULTS.md). Synthetic
 replay cannot qualify real microphones or Swiss German.
+
+Worker replies are bounded separately: 16,000 text characters and 64 KiB of framed
+stdout per decoded window. The complete transcript never traverses that worker
+reply: TypeScript assembles it under the 160,000-character / 24,000-word bounds.
+These limits fail explicitly; raising them alone cannot establish duration support.
 
 Remove the obsolete `maxAudioSeconds` and `snapshotIntervalSeconds` keys when
 upgrading; they now fail config validation. Window/queue sizes are internal tested

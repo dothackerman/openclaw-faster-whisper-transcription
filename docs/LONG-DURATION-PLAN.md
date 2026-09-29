@@ -39,6 +39,17 @@ our independent evidence in research/long-duration-implementation.md.
 
 Host obstacle verified: stock relay expires at 30 minutes without renewal. A full
 60-minute browser session needs an approved host change; none is made here.
+
+Available paths: keep the stock host and manually finish/restart recordings well
+before expiry, accepting that this does not meet uninterrupted hour-long dictation;
+or separately authorize an upstream host change with configurable lifetime and
+expiry final-drain semantics. Changing only the timer constant would not resolve
+the current expiry path's loss of late finals. Neither path is deployed here.
+
+The worker's 16,000-character text and 64-KiB stdout limits apply to individual
+windows. The complete transcript is assembled in TypeScript, separately bounded
+to 160,000 characters / 24,000 words. A provider regression assembles 20 bounded
+window responses into an exact 18,019-character final without partial callbacks.
 Current queue capacity is 32 seconds, transcript cap 160,000 characters / 24,000
 words, and per-worker request ceiling 30 seconds (also used by short offline
 comparators). These are distinct bounds. Browser RPC backpressure and its own

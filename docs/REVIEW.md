@@ -35,7 +35,7 @@ See [source evidence](../research/long-duration-implementation.md),
 
 ## Verification
 
-- 34 Node and 13 Python deterministic tests pass, including maximum worker framing,
+- 35 Node and 13 Python deterministic tests pass, including maximum worker framing,
   independent audio/time ceilings at 60 minutes, serial overlap/tail draining,
   queue overload, pre-ready frames, cancellation, timeout, OOM/crash, disposal,
   invalid word timestamps, repeated-word seams, silence endpoints, and edit scoring.
@@ -48,9 +48,11 @@ See [source evidence](../research/long-duration-implementation.md),
   host obstacle. Native loader/catalog/disposal passes on the extracted npm artifact.
   Source was read-only.
 - Published SDK remains an exact locked development dependency; no stub or vendored
-  declaration. The updated clean-clone CI-equivalent checks pass (34 Node, 13 Python,
+  declaration. The prior clean-clone CI-equivalent checks pass (34 Node, 13 Python,
   formatting, 12 fixture hashes and the 33-file package allowlist). Public CI of this
   new chunked milestone is pending review/push.
+  The subsequent local 35th Node regression proves exact 18,019-character final
+  assembly across 20 windows, exceeding the worker's per-window text limit.
 - A 20-second synthetic replay through stock capture encoding/controller, actual
   relay, and real GPU worker passed exact audio hashes and editable late insertion
   with no chat-send RPC. The first five-minute run completed transport/insertion but exposed a
