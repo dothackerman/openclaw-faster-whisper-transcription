@@ -45,7 +45,7 @@ See [source evidence](../research/long-duration-implementation.md),
 
 ## Verification
 
-- 95 Node and 18 Python deterministic tests pass, including maximum worker framing,
+- 96 Node and 18 Python deterministic tests pass, including maximum worker framing,
   independent audio/time ceilings at 60 minutes, serial overlap/tail draining,
   queue overload, pre-ready frames, cancellation, timeout, OOM/crash, disposal,
   invalid word timestamps, repeated-word seams, silence endpoints, and edit scoring.
@@ -182,3 +182,8 @@ the preceding no-retry rapid run; WER34/142,CER153/899,four spans/178chars,
 zero retries,max final799ms. Nine stock checks and package/native loader pass.
 No five-minute rerun; the conservative guard remains a possible completion
 failure and quality acceptance remains rejected.
+
+Exact A/B/C provenance regression: `A x B y`, `A z B t`, `A x B t`
+retain merged source labels at both islands. Following any single label
+reconstructs its source and cannot produce the unsupported `A z B y` hybrid.
+All 96 Node and 18 Python tests pass; production code is unchanged.

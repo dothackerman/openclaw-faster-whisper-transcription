@@ -875,3 +875,26 @@ test("sealed replay proof preserves surface, repetition and single-source proven
     /sealed overlap/,
   );
 });
+
+test("exact A/B/C review preserves linked choices and rejects the unsupported hybrid", () => {
+  const readings = [
+    ["A", "x", "B", "y"],
+    ["A", "z", "B", "t"],
+    ["A", "x", "B", "t"],
+  ];
+  const timings = readings.map((reading) =>
+    reading.map((text, i) => w(text, 5 + i, 5.3 + i)),
+  );
+  const result = renderUncertainty(readings, timings);
+  assert.equal(
+    result.text,
+    "A [uncertain: earlier/retry: x | later: z] B [uncertain: earlier: y | later/retry: t]",
+  );
+  for (const [index, source] of ["earlier", "later", "retry"].entries()) {
+    assert.ok(reconstructs(result.text, readings[index], source));
+    assert.equal(
+      reconstructs(result.text, ["A", "z", "B", "y"], source),
+      false,
+    );
+  }
+});
