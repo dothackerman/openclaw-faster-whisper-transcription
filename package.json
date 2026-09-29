@@ -42,7 +42,8 @@
     "format": "prettier --write src tests/*.mjs scripts/*.mjs *.json docs/*.md README.md",
     "format:check": "prettier --check src tests/*.mjs scripts/*.mjs *.json docs/*.md README.md",
     "prepack": "npm run build",
-    "package:check": "npm run build && mkdir -p .local && npm pack --dry-run --json --ignore-scripts > .local/package-manifest.json && node scripts/check-package.mjs .local/package-manifest.json"
+    "package:check": "npm run build && mkdir -p .local && npm pack --dry-run --json --ignore-scripts > .local/package-manifest.json && node scripts/check-package.mjs .local/package-manifest.json",
+    "fixtures:check": "node scripts/check-fixtures.mjs"
   },
   "devDependencies": {
     "openclaw": "2026.9.6",

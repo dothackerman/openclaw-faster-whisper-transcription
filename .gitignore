@@ -14,3 +14,9 @@ __pycache__/
 *.flac
 *.ulaw
 !fixtures/public/*.ulaw
+
+*.m4a
+*.webm
+*.aac
+*.pcm
+*.raw

@@ -19,5 +19,6 @@ jobs:
       - run: python -m venv .venv
       - run: .venv/bin/python -m pip install -r python/requirements.lock
       - run: npm run format:check
+      - run: npm run fixtures:check
       - run: npm test
       - run: npm run package:check
