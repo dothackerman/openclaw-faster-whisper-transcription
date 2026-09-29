@@ -150,17 +150,16 @@ synthetic eSpeak NG audio from self-authored scripts. Hashes are in
 `fixtures/public/manifest.json` and `fixtures/public/long-manifest.json`.
 They do not establish real microphone or dialect quality.
 
-The previous candidate (`036514b`) completes 5/5 rapid fixtures and a paced
-five-minute stock-code integration replay. One bounded retry took 865 ms and
-left one visible uncertainty span requiring review. Provider finalization took
-581 ms; stock editable insertion took 5008 ms, with no auto-send. Verbatim marked
-text scores 10.64% WER / 6.44% CER, including labels and competing alternatives;
-this is not verified transcript quality. The replay uses simulated capture/RPC,
-not a real browser, Gateway or microphone. These commands reproduce evaluation,
-not general five-minute reliability or real-microphone acceptance.
-
-The text/word-coverage and leading-substitution fixes require fresh measurements;
-the result above does not qualify those changes.
+The current candidate (`565b9d1`) completes 5/5 rapid fixtures and a paced
+five-minute stock-code integration replay with both text/word coverage checks and
+marked leading-word disagreements. Two bounded retries took 1617 ms in total and
+left two visible uncertainty spans requiring review. Provider finalization took
+528 ms; stock editable insertion took 5008 ms, with no auto-send. Verbatim marked
+text scores 14.40% WER / 9.58% CER, including labels and competing alternatives;
+this higher edit burden is not a quality gain over the previous one-marker run.
+The final 20 words are exact, but the transcript is not verified. The replay uses
+simulated capture/RPC, not a real browser, Gateway or microphone. These commands
+reproduce evaluation, not general five-minute reliability or microphone acceptance.
 
 After provisioning the dedicated runtime/model and a local profile, build and
 validate fixture manifests, then run the five approximately 20-second fixtures

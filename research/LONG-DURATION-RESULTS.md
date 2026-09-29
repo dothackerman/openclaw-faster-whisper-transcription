@@ -6,7 +6,49 @@ All speech here is self-authored, non-looped eSpeak NG synthesis transported as
 paragraph audio and padding to 300 seconds. Public manifests record every hash.
 No private OG recordings, real microphone, or Swiss-German acceptance is claimed.
 
-## Latest evidence: bounded retry and marked draft (`036514b`)
+## Latest evidence: coverage and semantic first-word safeguards (`565b9d1`)
+
+Clean `565b9d1e1207c1505c4901308400969a3012b608` fails closed if any timed
+segment's text lacks word coverage, with an independent Node total-coverage check.
+Leading substitutions now enter retry/marking even when two subsequent timed
+words agree. Old `Do` versus fresh `Don't`, and the recorded `Wir`/`Wie`, no
+longer silently choose the old first word. Fixed-fixture reruns use the same
+medium/float16/beam5, repo-local environment and RTX 3060 Laptop 6 GB as before.
+
+- **Rapid 5/5:** no retries or markers; WER 15/142 (10.56%), CER 32/899 (3.56%).
+  Same errors as `036514b`: German eight substitutions/one insertion, English
+  one substitution, mixed five substitutions with inexact final five. Boundary
+  and silence remain error-free. No scored deletions or repeated-phrase insertions.
+- **Paced five-minute completion:** 299999.823 ms audio delivery; 300 seconds /
+  2,400,000 bytes, fixture/input/relay hashes identical. 34 normal windows,
+  14 anchors, 17 gaps, **two review-required markers** and two retries. Retry audio
+  17.82 s / 16.94 s; decode wall time 833.057 ms / 784.418 ms (**1617.474 ms total**).
+  Neither retry extends the final deadline. Both original competing readings are
+  preserved instead of silently resolving the changed first word.
+- **Stop:** provider final **528 ms**, stock editable insertion **5008 ms**;
+  only Talk RPCs, no automatic Send. Queue peak **17.028 s**, maximum unprocessed
+  coverage **16.896 s**, including lookahead rather than only GPU waiting time.
+- **GPU:** baseline **551 MiB**, peak **2797 MiB**, post-disposal **551 MiB**;
+  sampled mean host utilization **7.84%**. These are host-wide samples, not isolated
+  kernel measurements. One run does not show improved GPU efficiency.
+- **Verbatim marked scoring:** WER **88/611 (14.40%)**, CER **366/3819 (9.58%)**;
+  38 substitutions, two deletions, 48 insertions, one adjacent duplicate and
+  26 repeated-phrase inserted words. Marker labels and all alternatives count;
+  no best-reading selection or marker stripping. Final 20 words have zero edits,
+  final five exact. The higher edit burden than `036514b`'s one-marker output is
+  **not a quality improvement**; marked draft text is not verified transcription.
+
+**Keep** both P1 safeguards and bounded marked-draft completion. **Reject** quality
+improvement, general reliability, real-mic/Swiss-German or hour-long acceptance.
+No valid measured fixture failed representation coverage, but an incomplete
+future decoder response will fail explicitly rather than insert a truncated
+success. Stock expiry at 30 minutes and other hardware/deadline/cap loss risks
+remain. This is actual stock code with simulated DOM/capture/RPC and a real GPU
+worker, not a real browser/Gateway/mic test. The 300-second fixture includes
+218.332 seconds synthesized speech plus pauses/padding. Ledger entries:
+`long-coverage-rapid`, `long-coverage-five`.
+
+## Previous evidence: bounded retry and marked draft (`036514b`)
 
 Clean `036514beb5a86e26ef3b1d102c36f039e528b028`, medium/float16/beam5 on
 RTX 3060 Laptop 6 GB, completes the rapid and paced five-minute reruns. Decisions

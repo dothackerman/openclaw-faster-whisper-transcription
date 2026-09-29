@@ -5,8 +5,8 @@ Independent architect notes; do not replace incoming researcher files.
 ## Text coverage and leading semantic disagreement review
 
 The runtime assembles only timed words. Reviewing `python/worker.py` against
-Faster-Whisper's segment/word objects showed that checking merely a nonempty
-aggregate array could lose an entire later segment. `collect_segments` now
+Faster-Whisper 1.2.1's `transcribe.py` (`Segment.words` is explicitly optional)
+showed that checking merely a nonempty aggregate array could lose an entire later segment. `collect_segments` now
 requires every timestamped segment's lexical content to equal its words; mixed
 complete/missing-word segments fail before any successful reply. Node's worker
 also independently checks total coverage on timestamped requests (the evaluation
@@ -27,6 +27,14 @@ no-send tests, commit a clean candidate, then rerun the rapid set and paced
 five-minute stock-code replay. Record additional markers/retries, GPU/decode cost,
 verbatim WER/CER and repeated-tail/tail completeness. Prior `036514b` completion
 is historical evidence, not qualification of these changed semantics.
+
+Completed clean `565b9d1` results: 62 Node / 18 Python tests, three stock relay-path
+cases and four composer regressions pass. Rapid 5/5 has unchanged scores and no
+markers. The paced five-minute run completes all 34 normal windows and byte
+integrity with two markers/two retries (1617 ms total), 528 ms provider final and
+5008 ms stock insertion, no Send. Verbatim marked WER/CER 14.40% / 9.58% include
+all alternatives; final 20 words are exact. The extra marker increases edit burden.
+See [full measured evidence](LONG-DURATION-RESULTS.md); no quality gain is claimed.
 
 ## Bounded retry and visible uncertainty experiment
 

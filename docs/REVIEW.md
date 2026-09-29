@@ -63,7 +63,7 @@ See [source evidence](../research/long-duration-implementation.md),
   tests cover nonempty insertion, silence and exact uncertainty-marker text with no send through the actual
   relay and stock encoding/controller. The fake-clock TTL test proves the 30-minute
   host obstacle. Native loader/catalog/disposal passes on the extracted npm artifact.
-  After the retry/marker candidate `036514b`, package build/check and extracted-artifact loader were rerun
+  After the retry/marker candidate `565b9d1`, package build/check and extracted-artifact loader were rerun
   sequentially and passed; no concurrent `dist` rebuild occurred during loading.
   Source was read-only.
 - Published SDK remains an exact locked development dependency; no stub or vendored
@@ -82,16 +82,18 @@ See [source evidence](../research/long-duration-implementation.md),
   this is not complete-transcript quality acceptance.
   These completion metrics predate the stricter fresh-prefix proof at `94bda99`
   and do not qualify the current implementation. The stricter unmarked `1a3f6fc`
-  failed at window #24 after 212.480 seconds. Current clean `036514b` reruns
+  failed at window #24 after 212.480 seconds. The subsequent `036514b` completed
+  with one marker but had two reviewed P1 gaps. Current clean `565b9d1` reruns
   complete 5/5 rapid fixtures (10.56% WER / 3.56% CER, no retries/markers) and
-  the full paced 300-second stock-code replay: all 2,400,000 audio bytes match,
-  34 normal windows, one 16.94-second retry costing 865 ms, one uncertainty marker.
-  Provider final is 581 ms; stock insertion is 5008 ms with no auto-send.
-  Verbatim marked WER is 65/611 (10.64%), CER 246/3819 (6.44%): 29 substitutions,
-  eight deletions and 28 insertions including labels/alternatives. Final 20 words
-  are exact. Keep marked editable-draft completion; reject verified quality or
-  general reliability claims. This uses actual stock code with simulated capture,
-  DOM and RPC, not a live browser/Gateway/microphone test.
+  the full paced 300-second stock-code replay with both safeguards: all 2,400,000
+  audio bytes match, 34 normal windows, two retries (17.82 s / 16.94 s audio)
+  costing 833 ms / 784 ms, two uncertainty markers. Provider final is 528 ms;
+  stock insertion is 5008 ms with no auto-send. Verbatim marked WER is 88/611
+  (14.40%), CER 366/3819 (9.58%): 38 substitutions, two deletions and 48 insertions
+  including labels/alternatives. The scorer counts 26 repeated-phrase inserted
+  words; final 20 words are exact. Keep marked editable-draft completion; reject
+  quality gain, verified quality or general reliability claims. This uses actual
+  stock code with simulated capture, DOM and RPC, not a live browser/Gateway/mic.
 
 ## Experiment and public-data boundary
 
