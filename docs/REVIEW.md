@@ -42,14 +42,23 @@ See [source evidence](../research/long-duration-implementation.md),
 - Four tests through the unmodified stock composer pass: reproduce stale partial
   insertion, retain the asynchronous final tail, insert no prefix on overload,
   and suppress late insertion after composer disposal.
-- Actual host relay/manifest/SDK contract smoke passes. Source was read-only.
+- Actual host relay/manifest/SDK contract smoke passes. Two deterministic whole-path
+  tests cover nonempty insertion and silent no-insertion/no-send through the actual
+  relay and stock encoding/controller. The fake-clock TTL test proves the 30-minute
+  host obstacle. Native loader/catalog/disposal passes on the extracted npm artifact.
+  Source was read-only.
 - Published SDK remains an exact locked development dependency; no stub or vendored
-  declaration. Public CI of this new chunked milestone is pending review/push.
+  declaration. The updated clean-clone CI-equivalent checks pass (34 Node, 13 Python,
+  formatting, 12 fixture hashes and the 33-file package allowlist). Public CI of this
+  new chunked milestone is pending review/push.
 - A 20-second synthetic replay through stock capture encoding/controller, actual
   relay, and real GPU worker passed exact audio hashes and editable late insertion
   with no chat-send RPC. The first five-minute run completed transport/insertion but exposed a
   repeated-tail stitching bug, now covered by a regression and fixed. A corrected
-  five-minute run follows; see the append-only results.
+  five-minute run passed byte integrity and tail regression: 551 ms provider final,
+  5008 ms stock commit, zero final-20-word edits, 5.73% WER / 2.59% CER. Model
+  recognition still has 26 substitutions, eight deletions and one insertion;
+  this is not complete-transcript quality acceptance.
 
 ## Experiment and public-data boundary
 

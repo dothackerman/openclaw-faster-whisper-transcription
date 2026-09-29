@@ -11,6 +11,8 @@ for line in sys.stdin:
         if mode == 'load-hang':
             time.sleep(60)
         print(json.dumps({'ok': True, 'text': '', 'words': []}), flush=True)
+    elif mode == 'silence':
+        print(json.dumps({'ok':True,'text':'','words':[]}),flush=True)
     elif mode == 'crash':
         sys.exit(9)
     elif mode == 'oom':

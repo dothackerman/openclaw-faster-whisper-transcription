@@ -107,19 +107,37 @@ workflow awaits Kappa's review and push. See [SDK development](docs/SDK-DEVELOPM
 
 ## Evaluate
 
-See [measured results and rejected candidates](research/RESULTS.md),
-[experiment protocol](research/experiment-design.md) and the measured [duration decision](docs/DURATION-DECISION.md). Fixed public fixtures are synthetic eSpeak NG audio generated from
-self-authored scripts; their hashes are in `fixtures/public/manifest.json`. They
-prove transport/benchmark reproducibility, not real microphone or dialect quality.
+See [long-duration results and decisions](research/LONG-DURATION-RESULTS.md),
+[historical full-utterance results](research/RESULTS.md), and the
+[experiment protocol](research/experiment-design.md). Fixed public fixtures are
+synthetic eSpeak NG audio from self-authored scripts. Hashes are in
+`fixtures/public/manifest.json` and `fixtures/public/long-manifest.json`.
+They do not establish real microphone or dialect quality.
 
 ```sh
-node scripts/experiment.mjs /absolute/local/profile.json fixtures/public/manifest.json .local/run.json 3
-.venv/bin/python scripts/score.py .local/run.json
-node scripts/duration-screen.mjs /absolute/local/profile.json .local/duration.json
+node scripts/experiment.mjs /absolute/local/profile.json fixtures/public/rapid-manifest.json .local/rapid.json 1 chunked
+node scripts/experiment.mjs /absolute/local/profile.json fixtures/public/rapid-manifest.json .local/whole.json 1 whole
+.venv/bin/python scripts/score_long.py .local/rapid.json
 ```
 
+For the five-minute in-process stock-composer/relay replay, export
+`OPENCLAW_SOURCE` and `TSX_TSCONFIG_PATH` as for the source integration smokes:
+
+```sh
+node --import "$OPENCLAW_SOURCE/node_modules/tsx/dist/loader.mjs" scripts/experiment.mjs /absolute/local/profile.json fixtures/public/five-minute-manifest.json .local/five.json 1 composer
+.venv/bin/python scripts/score_long.py .local/five.json
+```
+
+The `whole` comparator is limited to 30-second fixtures and uses the same model
+without word timestamps or stitching. The old looping `duration-screen.mjs` is
+retired; historical results remain reproducible from their ledger commits.
+`scripts/trace-windows.mjs PROFILE AUDIO OUTPUT` is an unpaced diagnostic only;
+never report its timing as real-time latency. Output files refuse overwriting.
+
 A profile contains the plugin config, including dedicated absolute runtime/model
-paths. The provider harness replays 100 ms frames in real time, logs latency and
+paths. Provider mode replays 100 ms frames; composer mode uses stock-sized 4096-sample
+frames with mocked capture/RPC transport and actual stock relay/controller code.
+Both run in real time, record latency and
 GPU samples, and writes detailed output **locally**. Scoring reports micro WER/CER,
 per-language results, silence hallucinations, and exploratory percentiles. Its
 NFC/lowercase normalization preserves `ß` versus `ss`; punctuation is removed.

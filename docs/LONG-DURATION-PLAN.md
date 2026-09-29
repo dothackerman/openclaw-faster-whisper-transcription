@@ -9,7 +9,8 @@ Implementation: one serial GPU lane, bounded rolling PCMU audio, overlapping
 bounded windows during capture, timestamped words and token/time seam alignment.
 Retain only a short uncommitted transcript/audio tail; accumulated final text has
 an independent size bound. No full-recording audio retention. The initial 8-second / 2-second candidate failed a German seam. The next candidate
-uses 16-second windows / 4-second overlap; this is not a latency guarantee. At Stop,
+uses pause-aware endpoints with a 16-second maximum / 4-second forced overlap;
+this is not a latency guarantee. At Stop,
 drain the in-flight window and remaining tail under one deadline. If backlog,
 model/worker failure, ambiguous seam, text bound, or lifetime ceiling prevents a
 complete final, fail closed with an explicit error and no successful transcript.
@@ -42,3 +43,10 @@ Current queue capacity is 32 seconds, transcript cap 160,000 characters / 24,000
 words, and per-worker request ceiling 30 seconds (also used by short offline
 comparators). These are distinct bounds. Browser RPC backpressure and its own
 pre-creation 10-second buffer remain host limitations.
+
+Completed evaluation and rejected alternatives are recorded in
+[LONG-DURATION-RESULTS.md](../research/LONG-DURATION-RESULTS.md). The corrected
+five-minute synthetic integration meets its measured final budget and final-word
+check but retains model recognition errors. Real microphone/Swiss-German acceptance
+and the host change needed for an actual 60-minute session remain outside this
+prototype's verified support.

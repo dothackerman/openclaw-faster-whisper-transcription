@@ -109,6 +109,7 @@ export class ComposerPathRuntime {
           active = false,
           sid,
           finalAt,
+          finalText,
           stoppedAt,
           failed = false,
           readyResolve,
@@ -134,7 +135,10 @@ export class ComposerPathRuntime {
         };
         const emit = (payload) => {
           if (payload.type === "ready") readyResolve();
-          if (payload.type === "transcript") finalAt = performance.now();
+          if (payload.type === "transcript") {
+            finalAt = performance.now();
+            finalText = payload.text;
+          }
           if (payload.type === "error") {
             failed = true;
             readyReject(Error(payload.message));
@@ -243,8 +247,29 @@ export class ComposerPathRuntime {
             void controller
               .finishActive()
               .then((committed) => {
-                if (!committed && !failed)
-                  request.onError(Error("No stock composer insertion"));
+                if (!committed && !failed) {
+                  if (finalText !== "") {
+                    request.onError(Error("No stock composer insertion"));
+                    return;
+                  }
+                  this.pathMetrics = {
+                    providerFinalMs: finalAt - stoppedAt,
+                    composerInsertMs: null,
+                    completionMs: performance.now() - stoppedAt,
+                    committed: false,
+                    onlyTalkRpcs: methods.every((x) => x.startsWith("talk.")),
+                    inputHash: sent.digest("hex"),
+                    relayHash: received.digest("hex"),
+                  };
+                  if (
+                    this.pathMetrics.inputHash !== this.pathMetrics.relayHash ||
+                    !this.pathMetrics.onlyTalkRpcs
+                  )
+                    request.onError(
+                      Error("Stock path audio/RPC invariant failed"),
+                    );
+                  else request.onTranscript("");
+                }
               })
               .finally(() => {
                 controller.dispose();

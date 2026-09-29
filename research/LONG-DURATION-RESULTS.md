@@ -1,6 +1,6 @@
 # Long dictation: preliminary measured results
 
-Status: implementation/evaluation in progress, not release or microphone acceptance.
+Status: experimental implementation ready for review; not release or microphone acceptance.
 All speech here is self-authored, non-looped eSpeak NG synthesis transported as
 8 kHz G.711 mu-law. The five-minute script has 218.332 seconds of synthesized
 paragraph audio and padding to 300 seconds. Public manifests record every hash.
@@ -82,3 +82,42 @@ and yields zero last-20-word edits; this is an offline diagnostic, not a new pac
 latency run. A corrected five-minute replay is required before accepting the fix's
 whole-path result. The first debug feeder attempt hit backpressure because it did
 not await an automatically scheduled job; it is recorded as inconclusive.
+
+
+## Corrected five-minute milestone and final rapid regression
+
+Clean `9d27248` repeated the full 300-second in-process path with contiguous-run
+alignment. All 2,400,000 input bytes again matched at provider ingress. The stock
+composer commit callback received the assembled final, marked late, and no chat-send
+RPC occurred. **Provider final: 551 ms; stock commit: 5008 ms.** The 34 windows took
+at most 1378 ms each. Queue peak was 17.480 seconds / 139,840 bytes against 32 seconds;
+unprocessed coverage peak was 16.980 seconds, including window lookahead. GPU
+memory: 551 MiB baseline, 2829 MiB peak, 551 MiB after disposal. Sampled host GPU
+utilization averaged 9.55% and peaked at 100%; uncontrolled host activity means the
+lower utilization than the first run is not a claimed efficiency improvement.
+
+Quality: **35/611 word edits (5.73% WER), 99/3819 character edits (2.59% CER)**:
+26 substitutions, eight deletions, one insertion. The six-word repeated suffix is
+removed; repeated-phrase inserted-word count is zero and the final 20 words match
+exactly. The omitted German sentence remains absent from the model hypothesis.
+**Keep the bounded-throughput/tail-correction milestone; reject full transcript
+quality acceptance.** Two synthetic paced runs are not an hour-long soak, and
+there is no measured five-minute full-utterance quality comparator or real-mic claim.
+
+The final rapid regression at clean `923cf52` has the same measured runtime source
+hashes as the corrected five-minute run. It again completed 5/5 fixtures: 14/142 word
+edits (9.86% WER), 29/899 character edits (3.23% CER), no aligned deletions or repeated
+inserted phrases. Compare against `long-whole-clean` above, with identical fixtures,
+model and worker settings: the improvement is confined to this synthetic corpus.
+The mixed clip still has five substitutions and an inexact final-five suffix;
+German still has seven substitutions and one insertion. Warm final median was
+511 ms, maximum 693 ms (n=4, including silence); first German final was 849 ms.
+There is insufficient data for a reliable tail percentile or microphone acceptance.
+
+A separate owned-child idle check used a one-second test setting: memory moved
+551 → 2587 → 551 MiB, and the exact worker PID exited. No other process was killed.
+
+The final harness also treats an empty provider final correctly: stock silence
+completes with no composer insertion and no send, rather than a false test error.
+That branch is tested with the actual relay/stock code and a deterministic worker.
+No production code or inference setting changed for that harness correction.
