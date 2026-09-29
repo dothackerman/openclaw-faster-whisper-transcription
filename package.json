@@ -6,11 +6,16 @@
   "type": "module",
   "files": [
     "dist",
-    "python",
+    "python/worker.py",
+    "python/requirements*.txt",
+    "python/requirements*.lock",
     "scripts/bootstrap.py",
+    "docs/*.md",
     "openclaw.plugin.json",
     "README.md",
-    "LICENSE"
+    "LICENSE",
+    "SECURITY.md",
+    "CONTRIBUTING.md"
   ],
   "engines": {
     "node": ">=22.16.0"
@@ -34,9 +39,10 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "test": "npm run build && node --test --test-isolation=none tests/*.test.mjs && .venv/bin/python -m unittest discover -s tests -p \"test_*.py\"",
-    "format": "prettier --write src tests/*.mjs *.json docs/*.md README.md",
-    "format:check": "prettier --check src tests/*.mjs *.json docs/*.md README.md",
-    "prepack": "npm run build"
+    "format": "prettier --write src tests/*.mjs scripts/*.mjs *.json docs/*.md README.md",
+    "format:check": "prettier --check src tests/*.mjs scripts/*.mjs *.json docs/*.md README.md",
+    "prepack": "npm run build",
+    "package:check": "npm run build && mkdir -p .local && npm pack --dry-run --json --ignore-scripts > .local/package-manifest.json && node scripts/check-package.mjs .local/package-manifest.json"
   },
   "devDependencies": {
     "@types/node": "24.0.0",

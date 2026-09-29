@@ -44,13 +44,11 @@ try {
           fail = j;
         });
         done.catch(() => {});
-        const session = runtime
-          .provider()
-          .createSession({
-            providerConfig: {},
-            onTranscript: finish,
-            onError: fail,
-          });
+        const session = runtime.provider().createSession({
+          providerConfig: {},
+          onTranscript: finish,
+          onError: fail,
+        });
         const start = performance.now();
         let stop;
         const row = {

@@ -173,10 +173,10 @@ export class Runtime {
               () =>
                 fail(
                   new Error(
-                    "Faster-Whisper dictation exceeded 120 seconds; start a new dictation",
+                    "Faster-Whisper dictation exceeded its wall-time limit; start a new dictation",
                   ),
                 ),
-              120000,
+              (this.config.maxAudioSeconds + 30) * 1000,
             );
           } catch (e) {
             const error =

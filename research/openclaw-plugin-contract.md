@@ -43,3 +43,21 @@ The generic `--type provider` scaffold builds a model provider, not a transcript
 For local development, `openclaw plugins install -l <path>` links rather than copies. Installing an arbitrary local source is a trust/capability-consent action and can apply to a running Gateway; do this only at the approved activation stage. `openclaw plugins reload <id>` updates a discovered plugin **without restarting the Gateway**, preserving enabled state, but waits up to 60 seconds for in-flight work and may report old native modules still loaded. Therefore a persistent Faster-Whisper worker needs explicit teardown/cleanup on reload, and a fresh process may still be prudent when native GPU libraries persist (inference). [Install semantics](https://github.com/openclaw/openclaw/blob/d30287734dee7ab3d86b216777c11ea195a021b8/docs/cli/plugins/install.md#L12-L65) · [Reload semantics](https://github.com/openclaw/openclaw/blob/d30287734dee7ab3d86b216777c11ea195a021b8/docs/cli/plugins/uninstall-and-update.md#L127-L158)
 
 Recommended isolated verification, grounded in the code path above: typecheck; plugin package/manifest validation; session unit tests for μ-law decoding, bounded buffering, partial replacement, final flush, error cleanup and worker cancellation; invoke `talk.catalog`, `talk.session.create`, append real μ-law audio, stop and assert a final within the 5-second relay drain; then stock browser composer with at least two microphones, confirming editable preview and no auto-send. This is a test plan, not observed test completion. [Relay tests](https://github.com/openclaw/openclaw/blob/d30287734dee7ab3d86b216777c11ea195a021b8/src/gateway/talk/transcription-relay.test.ts) · [Composer tests](https://github.com/openclaw/openclaw/blob/d30287734dee7ab3d86b216777c11ea195a021b8/ui/src/pages/chat/composer-dictation.test.ts)
+
+## Implementation verification correction (P1 review)
+
+The initial UX summary was incomplete. `ComposerDictationController.stop()` at
+`composer-dictation.ts:659–700` commits any nonempty `transcriptSnapshot()` before
+calling `finish()`, and ignores an async final when that immediate commit occurs.
+Only an empty snapshot takes `finish(true)` and the late-final accumulator. Thus
+streaming partials plus reliable final-tail replacement cannot both be achieved
+through the current provider contract alone. The implementation now sends final
+callbacks only; internal speculative decoding never emits previews. The actual
+stock controller/session regression reproduces the old bug and proves corrected
+late insertion. See `docs/STOCK-COMPOSER.md` for the unavoidable five-second
+Stop-to-insertion delay and rejected workarounds.
+
+The actual native loader/selection smoke also verifies that
+`agents.defaults.voiceModel: "faster-whisper/medium"` selects this transcription
+provider without a voice-call entry. The legacy explicit streaming-provider
+setting still wins when present; no live settings were inspected or changed.

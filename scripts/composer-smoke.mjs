@@ -74,9 +74,10 @@ const { ComposerDictationController } = await import(
   pathToFileURL(resolve(source, "ui/src/pages/chat/composer-dictation.ts")).href
 );
 const tick = () => new Promise((r) => setImmediate(r));
-function harness(t, injectLegacyPartial = false) {
+function harness(t, injectLegacyPartial = false, overrides = {}) {
   const jobs = [],
     commits = [],
+    errors = [],
     requests = [],
     listeners = new Set();
   let session, ready;
@@ -95,6 +96,7 @@ function harness(t, injectLegacyPartial = false) {
       python: "/usr/bin/python3",
       modelPath: "/tmp",
       snapshotIntervalSeconds: 2,
+      ...overrides,
     }),
     () => ({
       async start() {},
@@ -149,7 +151,7 @@ function harness(t, injectLegacyPartial = false) {
     realtimeTalkActive: false,
     onCommit: (text, late) => commits.push({ text, late }),
     onError: (message) => {
-      console.error("Synthetic composer error:", message);
+      errors.push(message);
       ready();
     },
     onStateChange: () => {},
@@ -165,10 +167,13 @@ function harness(t, injectLegacyPartial = false) {
     requests,
     emit,
     created,
+    errors,
+    sendAudio: (audio) => session.sendAudio(audio),
     async prefix() {
       assert.equal(controller.startDirect(), true);
       await created;
       await tick();
+      assert.ok(session, errors.join("; "));
       session.sendAudio(Buffer.alloc(16000, 255));
       jobs[0].resolve("The prefix");
       await tick();
@@ -216,5 +221,27 @@ test(
       h.requests.every((method) => method.startsWith("talk.")),
       "No chat send RPC",
     );
+  },
+);
+
+test(
+  "duration cap retains accepted text through the actual stock error-stop path",
+  { timeout: 4000 },
+  async (t) => {
+    const h = harness(t, false, {
+      maxAudioSeconds: 2,
+      snapshotIntervalSeconds: 0,
+    });
+    assert.equal(h.controller.startDirect(), true);
+    await h.created;
+    await tick();
+    h.sendAudio(Buffer.alloc(16001));
+    assert.equal(h.jobs[0].audio.length, 16000);
+    h.jobs[0].resolve("Accepted prefix");
+    await tick();
+    assert.deepEqual(h.commits, [{ text: "Accepted prefix", late: undefined }]);
+    assert.equal(h.errors.length, 1);
+    assert.match(h.errors[0], /duration limit/);
+    assert.ok(h.requests.every((method) => method.startsWith("talk.")));
   },
 );

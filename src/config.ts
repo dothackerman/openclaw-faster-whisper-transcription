@@ -21,7 +21,7 @@ export const defaults = {
   device: "cuda",
   computeType: "float16",
   beamSize: 5,
-  maxAudioSeconds: 30,
+  maxAudioSeconds: 15,
   snapshotIntervalSeconds: 0,
   idleSeconds: 120,
   loadTimeoutMs: 90000,

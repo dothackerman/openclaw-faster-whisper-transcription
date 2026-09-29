@@ -13,7 +13,7 @@ All three research notes are inputs to verify, not implementation authority.
   shared daemon, credential forwarding, or persistent audio/transcript storage.
   A dedicated, explicitly provisioned virtualenv and model directory are required.
   Runtime does not install packages or download models.
-- One admitted dictation and one GPU decode at a time. Retain at most 30 seconds
+- One admitted dictation and one GPU decode at a time. Retain at most 15 seconds
   of mu-law audio by default (configurable up to 120 seconds). Emit exactly one
   final on stop. No UI partials: the P1 review found that stock Stop commits a
   partial before awaiting the final; see STOCK-COMPOSER.md. Optional speculative

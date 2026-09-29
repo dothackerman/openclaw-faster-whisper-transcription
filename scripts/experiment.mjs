@@ -1,5 +1,5 @@
 // Provider-path evaluation; results are LOCAL by default. No Gateway or credentials.
-import { readFile, writeFile, mkdir } from "node:fs/promises";
+import { readFile, writeFile, mkdir, appendFile } from "node:fs/promises";
 import { resolve, dirname } from "node:path";
 import { createHash } from "node:crypto";
 import { spawn, execFileSync } from "node:child_process";
@@ -53,6 +53,7 @@ gpu.stdout.on("data", (chunk) => {
 });
 const runtime = new Runtime(config);
 const rows = [];
+await mkdir(dirname(resolve(output)), { recursive: true, mode: 0o700 });
 const started = performance.now();
 let baselineEnd;
 try {
@@ -156,6 +157,9 @@ try {
         };
       }
       rows.push(row);
+      await appendFile(output + ".rows.jsonl", JSON.stringify(row) + "\n", {
+        mode: 0o600,
+      });
       console.log(
         JSON.stringify({
           fixture: fixture.id,
@@ -190,11 +194,20 @@ try {
     }).trim(),
     harnessSha256: hash(await readFile(new URL(import.meta.url))),
     manifestSha256: hash(manifestBytes),
+    workerSha256: hash(
+      await readFile(new URL("../python/worker.py", import.meta.url)),
+    ),
+    modelSha256: hash(await readFile(resolve(config.modelPath, "model.bin"))),
+    gpuIdentity: execFileSync(
+      "nvidia-smi",
+      ["--query-gpu=name,driver_version,memory.total", "--format=csv,noheader"],
+      { encoding: "utf8" },
+    ).trim(),
     config,
     versions,
     seed: 7419,
     baselineSeconds: 5,
-    telemetryAvailable,
+    telemetryAvailable: telemetryAvailable && telemetry.length > 0,
     baselineMemoryMiB: baseline.length
       ? baseline.reduce((a, x) => a + x.values[0], 0) / baseline.length
       : null,
